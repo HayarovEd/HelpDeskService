@@ -1,0 +1,33 @@
+debug: true
+
+server:
+  port: 9092
+  ssl:
+    key-store: classpath:static/security/keystore.p12
+    key-store-password: mypassword
+    key-password: mypassword
+    key-alias: mykey
+  servlet:
+    context-path: /api
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    enabled: true
+
+
+spring:
+  application:
+    name: help-desk-service
+
+  datasource:
+    url: jdbc:postgresql://0.0.0.0:5432/helpdesk_db
+    username: postgres
+    password: postgres
+
+  jpa:
+    hibernate:
+      ddl-auto: update
