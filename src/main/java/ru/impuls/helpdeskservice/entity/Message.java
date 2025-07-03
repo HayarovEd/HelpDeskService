@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import ru.impuls.helpdeskservice.enums.SenderType;
+import ru.impuls.helpdeskservice.constant.SenderType;
 
 @Getter
 @Setter
