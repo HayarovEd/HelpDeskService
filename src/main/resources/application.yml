@@ -1,4 +1,4 @@
-debug: true
+debug: false
 
 server:
   port: 9092
@@ -24,10 +24,50 @@ spring:
     name: help-desk-service
 
   datasource:
-    url: jdbc:postgresql://0.0.0.0:5432/helpdesk_db
+    url: jdbc:postgresql://localhost:5432/helpdesk_db
     username: postgres
     password: postgres
 
   jpa:
     hibernate:
       ddl-auto: update
+
+application:
+  security:
+    jwt:
+      access-token:
+        expiration: 1200 #minute
+      refresh-token:
+        expiration: 14400 #minute -> 10 day
+      keys:
+        public: ./src/main/resources/static/security/public_key.pem
+        private: ./src/main/resources/static/security/private_key.pem
+
+    cors-allowed-origins:
+      - "http://localhost:3000"
+      - "https://localhost:3000"
+      - "http://localhost:9090"
+      - "https://localhost:9090"
+    public-endpoints:
+      - method: POST
+        path: /users
+      - method: GET
+        path: /users
+      - method: PUT
+        path: /users/*
+      - method: POST
+        path: /auth/*
+      - method: GET
+        path: /auth/*
+      - method: GET
+        path: /v2/api-docs
+      - method: GET
+        path: /v3/api-docs/**
+      - method: GET
+        path: /swagger-resources/**
+      - method: GET
+        path: /configuration/**
+      - method: GET
+        path: /swagger-ui/**
+      - method: GET
+        path: /webjars/**
