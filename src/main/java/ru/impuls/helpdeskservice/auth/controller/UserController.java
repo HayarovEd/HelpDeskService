@@ -1,0 +1,37 @@
+package ru.impuls.helpdeskservice.auth.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.service.UserService;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<UserDto> getAll() {
+        return userService.getAll();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserDto create(@RequestBody UserEditDto userDto) {
+        return userService.create(userDto);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public UserDto update(@PathVariable UUID id, @RequestBody UserDto userDto) {
+        return userService.update(id, userDto);
+    }
+}
