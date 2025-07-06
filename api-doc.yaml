@@ -1,132 +1,219 @@
-openapi: 3.0.4
+openapi: 3.0.3
 info:
-  title: Конечные точки для ImpulsMessenger
-  version: "v0"
+  title: HelpDesk Service API
+  description: |
+    API для системы управления HelpDesk
+    
+    ## Аутентификация
+    API использует JWT токены для аутентификации. Для получения токена используйте эндпоинт `/auth/login`.
+    
+    ## Роли пользователей
+    - **ADMIN** - полный доступ ко всем функциям
+    - **USER** - ограниченный доступ
+    
+    ## Использование токенов
+    После успешной аутентификации вы получите access token, который нужно передавать в заголовке `Authorization: Bearer {token}` для защищенных эндпоинтов.
+    
+    Refresh token автоматически сохраняется в cookies и используется для обновления access token.
+    
+  version: 1.0.0
+  contact:
+    name: Impuls Development Team
+    email: support@impuls.ru
+
 servers:
   - url: https://localhost:9092/api
+    description: Локальный сервер разработки
+  - url: https://api.helpdesk.impuls.ru
+    description: Продакшн сервер
 
 tags:
-  - name: Авторизация
-    description: Операции с авторизацией пользователей
+  - name: Аутентификация
+    description: Операции аутентификации и авторизации
   - name: Пользователи
-    description: Операции с пользователями
+    description: Управление пользователями системы
   - name: Группы
-    description: Операции с группами
+    description: Управление группами
   - name: Подгруппы
-    description: Операции с подгруппами
+    description: Управление подгруппами
+
 paths:
-
   #
-  # АВТОРИЗАЦИЯ
+  # АУТЕНТИФИКАЦИЯ
   #
-
+  
   /auth/login:
     post:
       tags:
-        - Авторизация
-      summary: Вход в аккаунт
+        - Аутентификация
+      summary: Войти в систему
       description: |
-        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+        Аутентификация пользователя по email и паролю.
+        При успешной аутентификации возвращается access token,
+        а refresh token сохраняется в cookies.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginDto'
-        required: true
+            example:
+              email: "user@example.com"
+              password: "password123"
       responses:
         '200':
-          description: Успешная операция
+          description: Успешная аутентификация
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenDto'
-        '400':
-          $ref: '#/components/responses/400'
+              example:
+                token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
         '401':
-          description: Пароль введен не верно
-        '403':
-          description: Аккаунт заблокирован (isDisabled=true)
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid login or password"
+                status: 401
         '404':
-          description: Email не найден
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "User not found"
+                status: 404
         '500':
           $ref: '#/components/responses/500'
+
   /auth/logout:
-    post:
+    get:
       tags:
-        - Авторизация
-      summary: Выход из аккаунта
+        - Аутентификация
+      summary: Выйти из системы
       description: |
-        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+        Выход из системы. Удаляет refresh token из cookies.
       responses:
         '200':
-          description: Успешная операция
+          description: Успешный выход
         '500':
           $ref: '#/components/responses/500'
+
   /auth/refresh:
-    post:
+    get:
       tags:
-        - Авторизация
-      summary: Обновить пару токенов
+        - Аутентификация
+      summary: Обновить токен
       description: |
-        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+        Обновляет пару токенов (access и refresh).
+        Refresh token берется из cookies.
       responses:
         '200':
-          description: Успешная операция
+          description: Токены успешно обновлены
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenDto'
+              example:
+                token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
         '401':
-          description: Токен не валидный
+          description: Refresh token не найден или недействителен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Refresh not found in cookie"
+                status: 401
         '500':
           $ref: '#/components/responses/500'
 
   #
   # ПОЛЬЗОВАТЕЛИ
   #
-
+  
   /users:
     get:
       tags:
         - Пользователи
       summary: Получить список пользователей
       description: |
-        Роль: ADMIN<br>
+        Возвращает список всех пользователей системы.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Успешная операция
+          description: Список пользователей
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/UserDto'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  name: "Иван Иванов"
+                  email: "ivan@example.com"
+                  isDisabled: false
+                  role:
+                    id: "550e8400-e29b-41d4-a716-446655440001"
+                    name: "ADMIN"
+                - id: "550e8400-e29b-41d4-a716-446655440002"
+                  name: "Петр Петров"
+                  email: "petr@example.com"
+                  isDisabled: false
+                  role:
+                    id: "550e8400-e29b-41d4-a716-446655440003"
+                    name: "USER"
         '401':
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
         '500':
           $ref: '#/components/responses/500'
+    
     post:
       tags:
         - Пользователи
-      summary: Добавить пользователя
+      summary: Создать пользователя
       description: |
-        Роль: ADMIN<br>
-        При установке роли нужно брать роль не по id, а по имени<br>
+        Создает нового пользователя в системе.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserEdit'
-        required: true
+              $ref: '#/components/schemas/UserEditDto'
+            example:
+              name: "Новый пользователь"
+              email: "newuser@example.com"
+              password: "password123"
+              isDisabled: false
+              role:
+                name: "USER"
       responses:
-        '200':
-          description: Успешная операция
+        '201':
+          description: Пользователь создан
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserDto'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440004"
+                name: "Новый пользователь"
+                email: "newuser@example.com"
+                isDisabled: false
+                role:
+                  id: "550e8400-e29b-41d4-a716-446655440003"
+                  name: "USER"
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -134,32 +221,54 @@ paths:
         '403':
           $ref: '#/components/responses/403'
         '409':
-          description: Пользователь с таким Email уже существует
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "User already exists"
+                status: 409
         '500':
           $ref: '#/components/responses/500'
+
   /users/{id}:
     put:
       tags:
         - Пользователи
-      summary: Изменить пользователя
+      summary: Обновить пользователя
       description: |
-        Роль: ADMIN<br>
-        При установке роли нужно брать роль не по id, а по имени<br>
+        Обновляет информацию о пользователе.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
-          description: Id изменяемого пользователя
+          description: ID пользователя
           schema:
             type: string
             format: uuid
           required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDto'
+            example:
+              name: "Обновленное имя"
+              email: "updated@example.com"
+              isDisabled: false
+              role:
+                name: "ADMIN"
       responses:
         '200':
-          description: Успешная операция
+          description: Пользователь обновлен
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserDto'
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -167,53 +276,86 @@ paths:
         '403':
           $ref: '#/components/responses/403'
         '404':
-          description: Пользователь с таким Id не найден
-        '409':
-          description: Пользователь с таким Email уже существует
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "User not found"
+                status: 404
         '500':
           $ref: '#/components/responses/500'
 
   #
   # ГРУППЫ
   #
-
+  
   /groups:
     get:
       tags:
         - Группы
       summary: Получить список групп
+      description: |
+        Возвращает список всех групп с их подгруппами.
+        **Требует роль:** USER, ADMIN
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Успешная операция
+          description: Список групп
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Group'
+                  $ref: '#/components/schemas/GroupDto'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440010"
+                  name: "IT отдел"
+                  subgroups:
+                    - id: "550e8400-e29b-41d4-a716-446655440011"
+                      name: "Разработка"
+                    - id: "550e8400-e29b-41d4-a716-446655440012"
+                      name: "Тестирование"
+                - id: "550e8400-e29b-41d4-a716-446655440013"
+                  name: "HR отдел"
+                  subgroups: []
         '401':
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
         '500':
           $ref: '#/components/responses/500'
+    
     post:
       tags:
         - Группы
-      summary: Добавить группу
+      summary: Создать группу
+      description: |
+        Создает новую группу.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupEdit'
-        required: true
+              $ref: '#/components/schemas/GroupEditDto'
+            example:
+              name: "Новая группа"
       responses:
-        '200':
-          description: Успешная операция
+        '201':
+          description: Группа создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Group'
+                $ref: '#/components/schemas/GroupDto'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440014"
+                name: "Новая группа"
+                subgroups: []
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -222,34 +364,97 @@ paths:
           $ref: '#/components/responses/403'
         '409':
           description: Группа с таким именем уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group already exists"
+                status: 409
         '500':
           $ref: '#/components/responses/500'
+
   /groups/{id}:
-    put:
+    get:
       tags:
         - Группы
-      summary: Изменить группу
+      summary: Получить группу по ID
+      description: |
+        Возвращает информацию о группе по её ID.
+        **Требует роль:** USER, ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
-          description: Id изменяемой группы
+          description: ID группы
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: Информация о группе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDto'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440010"
+                name: "IT отдел"
+                subgroups:
+                  - id: "550e8400-e29b-41d4-a716-446655440011"
+                    name: "Разработка"
+                  - id: "550e8400-e29b-41d4-a716-446655440012"
+                    name: "Тестирование"
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Группа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group not found"
+                status: 404
+        '500':
+          $ref: '#/components/responses/500'
+    
+    put:
+      tags:
+        - Группы
+      summary: Обновить группу
+      description: |
+        Обновляет информацию о группе.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID группы
           schema:
             type: string
             format: uuid
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupEdit'
-        required: true
+              $ref: '#/components/schemas/GroupEditDto'
+            example:
+              name: "Обновленное название группы"
       responses:
         '200':
-          description: Успешная операция
+          description: Группа обновлена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Group'
+                $ref: '#/components/schemas/GroupDto'
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -258,67 +463,105 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: Группа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group not found"
+                status: 404
         '409':
           description: Группа с таким именем уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group already exists"
+                status: 409
         '500':
           $ref: '#/components/responses/500'
+    
     delete:
       tags:
         - Группы
       summary: Удалить группу
+      description: |
+        Удаляет группу и все её подгруппы.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
-          description: Id удаляемой группы
+          description: ID группы
           schema:
             type: string
             format: uuid
           required: true
       responses:
         '200':
-          description: Успешная операция
+          description: Группа удалена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Group'
+                $ref: '#/components/schemas/GroupDto'
         '401':
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
         '404':
           description: Группа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group not found"
+                status: 404
         '500':
           $ref: '#/components/responses/500'
 
   #
   # ПОДГРУППЫ
   #
-
+  
   /subgroups:
     post:
       tags:
         - Подгруппы
-      summary: Добавить подгруппу в группу
+      summary: Создать подгруппу
+      description: |
+        Создает новую подгруппу в указанной группе.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: groupId
           in: query
+          description: ID группы, в которой создается подгруппа
           schema:
             type: string
             format: uuid
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubgroupEdit'
-        required: true
+              $ref: '#/components/schemas/SubgroupEditDto'
+            example:
+              name: "Новая подгруппа"
       responses:
-        '200':
-          description: Успешная операция
+        '201':
+          description: Подгруппа создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subgroup'
+                $ref: '#/components/schemas/SubgroupDto'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440015"
+                name: "Новая подгруппа"
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -327,36 +570,58 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: Группа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Group not found"
+                status: 404
         '409':
-          description: Подгруппа с таким именем уже существует
+          description: Подгруппа с таким именем уже существует в группе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Subgroup already exists"
+                status: 409
         '500':
           $ref: '#/components/responses/500'
+
   /subgroups/{id}:
     put:
       tags:
         - Подгруппы
-      summary: Изменить подгруппу
+      summary: Обновить подгруппу
+      description: |
+        Обновляет информацию о подгруппе.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
-          description: Id изменяемой подгруппы
+          description: ID подгруппы
           schema:
             type: string
             format: uuid
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubgroupEdit'
-        required: true
+              $ref: '#/components/schemas/SubgroupEditDto'
+            example:
+              name: "Обновленное название подгруппы"
       responses:
         '200':
-          description: Успешная операция
+          description: Подгруппа обновлена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subgroup'
+                $ref: '#/components/schemas/SubgroupDto'
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -365,143 +630,289 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: Подгруппа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Subgroup not found"
+                status: 404
         '409':
-          description: Подгруппа с таким именем уже существует
+          description: Подгруппа с таким именем уже существует в группе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Subgroup already exists"
+                status: 409
         '500':
           $ref: '#/components/responses/500'
+    
     delete:
       tags:
         - Подгруппы
       summary: Удалить подгруппу
+      description: |
+        Удаляет подгруппу.
+        **Требует роль:** ADMIN
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
-          description: Id удаляемой подгруппы
+          description: ID подгруппы
           schema:
             type: string
             format: uuid
           required: true
       responses:
         '200':
-          description: Успешная операция
+          description: Подгруппа удалена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subgroup'
+                $ref: '#/components/schemas/SubgroupDto'
         '401':
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
         '404':
           description: Подгруппа не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Subgroup not found"
+                status: 404
         '500':
           $ref: '#/components/responses/500'
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации
+
   schemas:
-    Group:
+    # DTO для групп
+    GroupDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор группы
         name:
           type: string
+          description: Название группы
+          minLength: 2
+          maxLength: 100
         subgroups:
           type: array
+          description: Список подгрупп в группе
           items:
-            $ref: '#/components/schemas/Subgroup'
+            $ref: '#/components/schemas/SubgroupDto'
+      required:
+        - id
+        - name
+        - subgroups
 
-    GroupEdit:
+    GroupEditDto:
       type: object
       properties:
         name:
           type: string
+          description: Название группы
+          minLength: 2
+          maxLength: 100
+      required:
+        - name
 
-    Subgroup:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-
-    SubgroupEdit:
-      type: object
-      properties:
-        name:
-          type: string
-
-    User:
+    # DTO для подгрупп
+    SubgroupDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор подгруппы
         name:
           type: string
+          description: Название подгруппы
+          minLength: 2
+          maxLength: 100
+      required:
+        - id
+        - name
+
+    SubgroupEditDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Название подгруппы
+          minLength: 2
+          maxLength: 100
+      required:
+        - name
+
+    # DTO для пользователей
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор пользователя
+        name:
+          type: string
+          description: Имя пользователя
         email:
           type: string
+          format: email
+          description: Email пользователя
         isDisabled:
           type: boolean
+          description: Статус блокировки пользователя
         role:
-          $ref: '#/components/schemas/Role'
+          $ref: '#/components/schemas/RoleDto'
+          description: Роль пользователя
+      required:
+        - id
+        - name
+        - email
+        - isDisabled
+        - role
 
-    UserEdit:
+    UserEditDto:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
         name:
           type: string
+          description: Имя пользователя
         email:
           type: string
+          format: email
+          description: Email пользователя
         password:
           type: string
+          description: Пароль пользователя
         isDisabled:
           type: boolean
+          description: Статус блокировки пользователя
         role:
-          $ref: '#/components/schemas/Role'
+          $ref: '#/components/schemas/RoleDto'
+          description: Роль пользователя
+      required:
+        - name
+        - email
+        - password
+        - isDisabled
+        - role
 
-    Role:
+    # DTO для ролей
+    RoleDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор роли
         name:
           type: string
+          description: Название роли
+          enum: [ADMIN, USER]
+      required:
+        - id
+        - name
 
+    # DTO для аутентификации
     LoginDto:
       type: object
       properties:
         email:
           type: string
+          format: email
+          description: Email пользователя
         password:
           type: string
+          description: Пароль пользователя
+      required:
+        - email
+        - password
 
     TokenDto:
       type: object
       properties:
         token:
           type: string
+          description: JWT access токен
+      required:
+        - token
+
+    # Общие схемы
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Сообщение об ошибке
+        status:
+          type: integer
+          description: HTTP статус код
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+      required:
+        - message
+        - status
 
   responses:
-    400:
-      description: Некорректный синтаксис
-    401:
-      description: Устарел JWT
+    '400':
+      description: Неверный запрос
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: invalid_token
-    403:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Validation failed"
+            status: 400
+            timestamp: "2024-01-01T12:00:00Z"
+    
+    '401':
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Unauthorized"
+            status: 401
+            timestamp: "2024-01-01T12:00:00Z"
+    
+    '403':
       description: Доступ запрещен
-    500:
-      description: Неизвестная ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Access denied"
+            status: 403
+            timestamp: "2024-01-01T12:00:00Z"
+    
+    '500':
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Internal server error"
+            status: 500
+            timestamp: "2024-01-01T12:00:00Z"
