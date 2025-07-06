@@ -66,7 +66,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (!jwtService.isTokenExpired(jwt)) {
                     var userId = jwtService.extractId(jwt);
                     var authorities = jwtService.extractAuthorities(jwt);
-                    var userEmail = "fhfshhs";//jwtService.extractEmail(jwt);
+                    var userEmail = "fhfshhs";//jwtService.extractEmail(jwt); //TODO
                     var authenticatedUser = User.builder()
                             .id(UUID.fromString(userId))
                             .email(userEmail)
