@@ -1,0 +1,507 @@
+openapi: 3.0.4
+info:
+  title: Конечные точки для ImpulsMessenger
+  version: "v0"
+servers:
+  - url: https://localhost:9092/api
+
+tags:
+  - name: Авторизация
+    description: Операции с авторизацией пользователей
+  - name: Пользователи
+    description: Операции с пользователями
+  - name: Группы
+    description: Операции с группами
+  - name: Подгруппы
+    description: Операции с подгруппами
+paths:
+
+  #
+  # АВТОРИЗАЦИЯ
+  #
+
+  /auth/login:
+    post:
+      tags:
+        - Авторизация
+      summary: Вход в аккаунт
+      description: |
+        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          description: Пароль введен не верно
+        '403':
+          description: Аккаунт заблокирован (isDisabled=true)
+        '404':
+          description: Email не найден
+        '500':
+          $ref: '#/components/responses/500'
+  /auth/logout:
+    post:
+      tags:
+        - Авторизация
+      summary: Выход из аккаунта
+      description: |
+        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+      responses:
+        '200':
+          description: Успешная операция
+        '500':
+          $ref: '#/components/responses/500'
+  /auth/refresh:
+    post:
+      tags:
+        - Авторизация
+      summary: Обновить пару токенов
+      description: |
+        Роль: НЕ АВТОРИЗОВАННЫЙ<br>
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenDto'
+        '401':
+          description: Токен не валидный
+        '500':
+          $ref: '#/components/responses/500'
+
+  #
+  # ПОЛЬЗОВАТЕЛИ
+  #
+
+  /users:
+    get:
+      tags:
+        - Пользователи
+      summary: Получить список пользователей
+      description: |
+        Роль: ADMIN<br>
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+    post:
+      tags:
+        - Пользователи
+      summary: Добавить пользователя
+      description: |
+        Роль: ADMIN<br>
+        При установке роли нужно брать роль не по id, а по имени<br>
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserEdit'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          description: Пользователь с таким Email уже существует
+        '500':
+          $ref: '#/components/responses/500'
+  /users/{id}:
+    put:
+      tags:
+        - Пользователи
+      summary: Изменить пользователя
+      description: |
+        Роль: ADMIN<br>
+        При установке роли нужно брать роль не по id, а по имени<br>
+      parameters:
+        - name: id
+          in: path
+          description: Id изменяемого пользователя
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Пользователь с таким Id не найден
+        '409':
+          description: Пользователь с таким Email уже существует
+        '500':
+          $ref: '#/components/responses/500'
+
+  #
+  # ГРУППЫ
+  #
+
+  /groups:
+    get:
+      tags:
+        - Группы
+      summary: Получить список групп
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+    post:
+      tags:
+        - Группы
+      summary: Добавить группу
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupEdit'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          description: Группа с таким именем уже существует
+        '500':
+          $ref: '#/components/responses/500'
+  /groups/{id}:
+    put:
+      tags:
+        - Группы
+      summary: Изменить группу
+      parameters:
+        - name: id
+          in: path
+          description: Id изменяемой группы
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupEdit'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Группа не найдена
+        '409':
+          description: Группа с таким именем уже существует
+        '500':
+          $ref: '#/components/responses/500'
+    delete:
+      tags:
+        - Группы
+      summary: Удалить группу
+      parameters:
+        - name: id
+          in: path
+          description: Id удаляемой группы
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Группа не найдена
+        '500':
+          $ref: '#/components/responses/500'
+
+  #
+  # ПОДГРУППЫ
+  #
+
+  /subgroups:
+    post:
+      tags:
+        - Подгруппы
+      summary: Добавить подгруппу в группу
+      parameters:
+        - name: groupId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubgroupEdit'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subgroup'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Группа не найдена
+        '409':
+          description: Подгруппа с таким именем уже существует
+        '500':
+          $ref: '#/components/responses/500'
+  /subgroups/{id}:
+    put:
+      tags:
+        - Подгруппы
+      summary: Изменить подгруппу
+      parameters:
+        - name: id
+          in: path
+          description: Id изменяемой подгруппы
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubgroupEdit'
+        required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subgroup'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Подгруппа не найдена
+        '409':
+          description: Подгруппа с таким именем уже существует
+        '500':
+          $ref: '#/components/responses/500'
+    delete:
+      tags:
+        - Подгруппы
+      summary: Удалить подгруппу
+      parameters:
+        - name: id
+          in: path
+          description: Id удаляемой подгруппы
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: Успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subgroup'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Подгруппа не найдена
+        '500':
+          $ref: '#/components/responses/500'
+
+components:
+  schemas:
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subgroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subgroup'
+
+    GroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+
+    Subgroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    SubgroupEdit:
+      type: object
+      properties:
+        name:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        isDisabled:
+          type: boolean
+        role:
+          $ref: '#/components/schemas/Role'
+
+    UserEdit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        isDisabled:
+          type: boolean
+        role:
+          $ref: '#/components/schemas/Role'
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    TokenDto:
+      type: object
+      properties:
+        token:
+          type: string
+
+  responses:
+    400:
+      description: Некорректный синтаксис
+    401:
+      description: Устарел JWT
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: invalid_token
+    403:
+      description: Доступ запрещен
+    500:
+      description: Неизвестная ошибка сервера
