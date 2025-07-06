@@ -23,7 +23,7 @@ public class SubgroupController {
         return subgroupService.create(groupId, subgroupDto);
     }
 
-    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public SubgroupDto update(@PathVariable UUID id, @RequestBody @Valid SubgroupEditDto subgroupDto) {
         return subgroupService.update(id, subgroupDto);
