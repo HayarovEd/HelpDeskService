@@ -36,7 +36,7 @@ public class GroupController {
         return groupService.create(groupDto);
     }
 
-    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public GroupDto update(@PathVariable UUID id, @RequestBody @Valid GroupEditDto groupDto) {
         return groupService.update(id, groupDto);
