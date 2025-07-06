@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -41,15 +42,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
-
-        if(authHeader == null || !authHeader.startsWith("Bearer ")){
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        jwt = authHeader.substring(7);
-
         try {
+            if(authHeader == null || !authHeader.startsWith("Bearer ")){
+                throw new AppException(
+                        ErrorMessage.UNAUTHORIZED,
+                        HttpStatus.UNAUTHORIZED
+                );
+            }
+
+            jwt = authHeader.substring(7);
+
             if (!jwtService.isAccessToken(jwt)) {
                 response.sendError(
                         HttpServletResponse.SC_UNAUTHORIZED,
