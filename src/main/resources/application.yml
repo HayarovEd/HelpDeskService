@@ -53,12 +53,6 @@ application:
       - "https://localhost:9090"
     public-endpoints:
       - method: POST
-        path: /users
-      - method: GET
-        path: /users
-      - method: PUT
-        path: /users/*
-      - method: POST
         path: /auth/*
       - method: GET
         path: /auth/*

@@ -2,6 +2,7 @@ package ru.impuls.helpdeskservice.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/users")
+@PreAuthorize("hasAuthority('ADMIN')")
 @RequiredArgsConstructor
 public class UserController {
 
