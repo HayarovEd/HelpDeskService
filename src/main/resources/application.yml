@@ -24,7 +24,7 @@ spring:
     name: help-desk-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/helpdesk_db
+    url: jdbc:postgresql://0.0.0.0:5432/helpdesk_db
     username: postgres
     password: postgres
 
