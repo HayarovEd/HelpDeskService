@@ -32,6 +32,9 @@ spring:
     hibernate:
       ddl-auto: update
 
+logging:
+  config: classpath:logging/logback-master.xml
+
 application:
   security:
     jwt:
