@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import ru.impuls.helpdeskservice.auth.dto.RoleDto;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 import ru.impuls.helpdeskservice.auth.entity.Role;
@@ -53,5 +54,10 @@ public class UserMapperImpl implements UserMapper {
         user.setEmail(userDto.getEmail());
         user.setDisabled(userDto.isDisabled());
         user.setRole(role);
+    }
+
+    @Override
+    public void toEntity(User user, PasswordDto passwordDto) {
+        user.setPassword(passwordEncoder.encode(passwordDto.getPassword()));
     }
 }

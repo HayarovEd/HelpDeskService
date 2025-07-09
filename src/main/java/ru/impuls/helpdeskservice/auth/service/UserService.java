@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.auth.service;
 
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 
@@ -13,4 +14,6 @@ public interface UserService {
     UserDto create(UserEditDto userDto);
 
     UserDto update(UUID id, UserDto userDto);
+
+    UserDto changePassword(UUID id, PasswordDto passwordDto);
 }

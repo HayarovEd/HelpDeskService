@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginDto {
+public class LoginDto extends PasswordDto {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
@@ -29,17 +29,4 @@ public class LoginDto {
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     String email;
-
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters long")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number and 1 special character"
-    )
-    @Schema(
-            description = "Пароль (минимум 8 символов: 1 заглавная, 1 строчная буква, 1 цифра, 1 спецсимвол)",
-            example = "Pas$w0rd",
-            requiredMode = Schema.RequiredMode.REQUIRED
-    )
-    String password;
 }

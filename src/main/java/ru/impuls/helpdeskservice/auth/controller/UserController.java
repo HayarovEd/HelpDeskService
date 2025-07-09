@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 import ru.impuls.helpdeskservice.auth.service.UserService;
@@ -36,5 +37,11 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public UserDto update(@PathVariable UUID id, @RequestBody UserDto userDto) {
         return userService.update(id, userDto);
+    }
+
+    @PatchMapping("/{id}/change-password")
+    @ResponseStatus(HttpStatus.OK)
+    public UserDto changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordDto passwordDto) {
+        return userService.changePassword(id, passwordDto);
     }
 }

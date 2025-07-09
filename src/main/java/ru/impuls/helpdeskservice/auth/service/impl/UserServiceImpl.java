@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
@@ -67,6 +68,20 @@ public class UserServiceImpl implements UserService {
 
         userMapper.toEntity(user, userDto, role);
         user = userRepo.save(user);
+
+        return userMapper.toDto(user);
+    }
+
+    @Override
+    public UserDto changePassword(UUID id, PasswordDto passwordDto) {
+        var user = userRepo.findById(id)
+                .orElseThrow(() -> new AppException(
+                        ErrorMessage.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND
+                ));
+
+        userMapper.toEntity(user, passwordDto);
+        userRepo.save(user);
 
         return userMapper.toDto(user);
     }
