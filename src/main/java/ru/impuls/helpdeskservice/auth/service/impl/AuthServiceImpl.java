@@ -74,10 +74,14 @@ public class AuthServiceImpl implements AuthService {
 
         var userId = jwtService.extractId(refreshToken);
         var user = userRepo.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElse(null);
+
+        if (user == null) {
+            cookieUtil.deleteRefreshTokenFromCookies(response);
+
+            throw new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED);
+        }
+
         var newAccessToken = jwtService.generateAccessToken(user);
         var newRefreshToken = jwtService.generateRefreshToken(user);
 
