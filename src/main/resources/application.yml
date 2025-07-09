@@ -24,9 +24,9 @@ spring:
     name: help-desk-service
 
   datasource:
-    url: jdbc:postgresql://0.0.0.0:5432/helpdesk_db
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
 
   jpa:
     hibernate:
