@@ -93,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
         if (!user.isEnabled()) {
             throw new AppException(
                     ErrorMessage.USER_BLOCKED,
-                    HttpStatus.NOT_FOUND);
+                    HttpStatus.FORBIDDEN);
         }
 
         try {
