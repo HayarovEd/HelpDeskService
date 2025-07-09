@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.auth.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +28,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto create(@RequestBody UserEditDto userDto) {
+    public UserDto create(@RequestBody @Valid UserEditDto userDto) {
         return userService.create(userDto);
     }
 
