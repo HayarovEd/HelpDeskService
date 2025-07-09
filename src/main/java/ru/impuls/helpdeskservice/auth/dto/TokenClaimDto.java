@@ -6,7 +6,7 @@ import ru.impuls.helpdeskservice.auth.entity.Role;
 import java.util.HashMap;
 import java.util.Map;
 
-public record TokenClaimDto(Role role, String tokenType, String email) {
+public record TokenClaimDto(Role role, String tokenType, String email, String name) {
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
@@ -16,6 +16,9 @@ public record TokenClaimDto(Role role, String tokenType, String email) {
         }
         if (role != null) {
             map.put("role", role.getName());
+        }
+        if (name != null) {
+            map.put("name", name);
         }
         map.put("tokenType", tokenType);
         return map;

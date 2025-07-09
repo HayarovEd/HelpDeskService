@@ -116,7 +116,8 @@ public class JwtServiceImpl implements JwtService {
             TokenClaimDto claims = new TokenClaimDto(
                     user.getRole(),
                     TOKEN_TYPE_ACCESS,
-                    null
+                    user.getEmail(),
+                    user.getName()
             );
             return generateToken(user.getId(), accessTokenExpiration, claims.toMap());
         } catch (Exception e) {
@@ -130,6 +131,7 @@ public class JwtServiceImpl implements JwtService {
             TokenClaimDto claims = new TokenClaimDto(
                     null,
                     TOKEN_TYPE_REFRESH,
+                    null,
                     null
             );
             return generateToken(user.getId(), refreshTokenExpiration, claims.toMap());
