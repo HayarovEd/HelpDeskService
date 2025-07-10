@@ -62,28 +62,26 @@ public class JwtFilter extends OncePerRequestFilter {
 
             var role = jwtService.extractRole(jwt);
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                if (!jwtService.isTokenExpired(jwt)) {
-                    var userId = jwtService.extractId(jwt);
-                    var authorities = jwtService.extractAuthorities(jwt);
-                    var userEmail = "fhfshhs";//jwtService.extractEmail(jwt); //TODO
-                    var authenticatedUser = User.builder()
-                            .id(UUID.fromString(userId))
-                            .email(userEmail)
-                            .role(role)
-                            .build();
-                    var authToken = new UsernamePasswordAuthenticationToken(
-                            authenticatedUser,
-                            null,
-                            authorities
-                    );
+            if (!jwtService.isTokenExpired(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                var userId = jwtService.extractId(jwt);
+                var authorities = jwtService.extractAuthorities(jwt);
+                var userEmail = jwtService.extractEmail(jwt);
+                var authenticatedUser = User.builder()
+                        .id(UUID.fromString(userId))
+                        .email(userEmail)
+                        .role(role)
+                        .build();
+                var authToken = new UsernamePasswordAuthenticationToken(
+                        authenticatedUser,
+                        null,
+                        authorities
+                );
 
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
 
             filterChain.doFilter(request, response);
@@ -94,16 +92,4 @@ public class JwtFilter extends OncePerRequestFilter {
             response.getWriter().flush();
         }
     }
-
-    private boolean isPublicEndpoint(HttpServletRequest request) {
-        String method = request.getMethod();
-        String uri = request.getRequestURI();
-
-        return securityProperties.getPublicEndpoints().stream()
-                .anyMatch(endpoint ->
-                        endpoint.getMethod().equalsIgnoreCase(method) &&
-                                uri.matches(endpoint.getPath().replaceAll("\\*", ".*"))
-                );
-    }
-
 }
