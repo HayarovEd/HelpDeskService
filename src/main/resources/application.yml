@@ -32,8 +32,12 @@ spring:
     hibernate:
       ddl-auto: update
 
+  liquibase:
+    change-log: classpath:/db/changelog/master.yml
+    enabled: true
+
 logging:
-  config: classpath:logging/logback-master.xml
+  config: classpath:logging/logback-dev.xml
 
 application:
   security:
