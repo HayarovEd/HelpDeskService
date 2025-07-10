@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.auth.service;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
@@ -27,9 +28,9 @@ public interface JwtService {
 
     boolean isTokenExpired(String token);
 
-    boolean isTokenSignatureValid(String refreshToken);
-
     boolean isRefreshToken(String token);
 
     boolean isAccessToken(String token);
+
+    UsernamePasswordAuthenticationToken getAuthentication(String token);
 }

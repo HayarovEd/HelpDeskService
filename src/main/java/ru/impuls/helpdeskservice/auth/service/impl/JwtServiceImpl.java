@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -179,26 +180,6 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public boolean isTokenSignatureValid(String token) {
-        try {
-            PublicKey publicKey = KeyProviderUtil.getPublicKey(this.publicKeyFromFile);
-            Jwts.parser()
-                    .verifyWith(publicKey)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (ExpiredJwtException e) {
-            throw new AppException(ErrorMessage.TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
-        } catch (SignatureException e) {
-            throw new AppException(ErrorMessage.INVALID_JWT_SIGNATURE, HttpStatus.UNAUTHORIZED);
-        } catch (NoSuchFileException e) {
-            throw new AppException(ErrorMessage.PUBLIC_KEY_FILE_NOT_FOUND, HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    @Override
     public boolean isRefreshToken(String token) {
         try {
             return TOKEN_TYPE_REFRESH.equals(extractTokenType(token));
@@ -218,6 +199,25 @@ public class JwtServiceImpl implements JwtService {
         } catch (Exception e) {
             throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    @Override
+    public UsernamePasswordAuthenticationToken getAuthentication(String jwt) {
+        var userId = this.extractId(jwt);
+        var role = this.extractRole(jwt);
+        var userEmail = this.extractEmail(jwt);
+        var authorities = this.extractAuthorities(jwt);
+        var authenticatedUser = User.builder()
+                .id(UUID.fromString(userId))
+                .email(userEmail)
+                .role(role)
+                .build();
+
+        return new UsernamePasswordAuthenticationToken(
+                authenticatedUser,
+                null,
+                authorities
+        );
     }
 
     private Claims extractAllClaims(String token) {
