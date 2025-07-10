@@ -99,6 +99,11 @@
             <artifactId>java-dotenv</artifactId>
             <version>${dotenv.version}</version>
         </dependency>
+        <!-- WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
