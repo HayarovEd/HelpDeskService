@@ -10,5 +10,10 @@
                  relativeToChangelogFile="true"
                  splitStatements="false"/>
     </changeSet>
+    <changeSet author="Abdulloev Bakhtovar" id="100720251220">
+        <sqlFile path="02_add_roles.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
 
 </databaseChangeLog>
