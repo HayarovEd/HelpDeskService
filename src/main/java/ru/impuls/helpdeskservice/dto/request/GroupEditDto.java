@@ -14,6 +14,6 @@ import lombok.experimental.FieldDefaults;
 public class GroupEditDto {
 
     @NotBlank(message = "Название группы обязательно")
-    @Size(min = 2, max = 100, message = "Название группы должно быть от 2 до 100 символов")
+    @Size(min = 1, max = 100, message = "Название группы должно быть от 1 до 100 символов")
     String name;
 }
