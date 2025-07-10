@@ -39,7 +39,7 @@ public class UserController {
         return userService.update(id, userDto);
     }
 
-    @PatchMapping("/{id}/change-password")
+    @PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.OK)
     public UserDto changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordDto passwordDto) {
         return userService.changePassword(id, passwordDto);
