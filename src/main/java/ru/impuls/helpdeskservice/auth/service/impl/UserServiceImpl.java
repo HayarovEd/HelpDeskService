@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
         var role = roleRepo.findByName(userDto.getRole().getName())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
+                        HttpStatus.BAD_REQUEST
                 ));
         var user = userMapper.toEntity(userDto, role);
         user = userRepo.save(user);
@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
         var role = roleRepo.findByName(userDto.getRole().getName())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
+                        HttpStatus.BAD_REQUEST
                 ));
 
         userMapper.toEntity(user, userDto, role);
