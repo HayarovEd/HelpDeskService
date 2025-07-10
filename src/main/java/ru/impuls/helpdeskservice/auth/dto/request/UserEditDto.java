@@ -15,11 +15,11 @@ import ru.impuls.helpdeskservice.auth.dto.RoleDto;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserEditDto extends LoginDto {
 
-    @NotBlank(message = "Имя не должен быть пустым")
+    @NotBlank(message = "Name is required")
     String name;
 
     @JsonProperty("isDisabled")
-    boolean isDisabled;
+    boolean disabled;
 
     RoleDto role;
 }

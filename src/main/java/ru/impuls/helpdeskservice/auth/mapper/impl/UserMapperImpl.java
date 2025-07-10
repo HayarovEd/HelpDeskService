@@ -30,7 +30,7 @@ public class UserMapperImpl implements UserMapper {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .isDisabled(user.isDisabled())
+                .disabled(user.isDisabled())
                 .role(roleDto)
                 .build();
     }

@@ -19,5 +19,5 @@ public class UserDto extends BaseDto {
     RoleDto role;
 
     @JsonProperty("isDisabled")
-    boolean isDisabled;
+    boolean disabled;
 }
