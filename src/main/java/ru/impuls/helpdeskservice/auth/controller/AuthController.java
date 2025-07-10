@@ -23,13 +23,13 @@ public class AuthController {
         return authService.login(loginDto, response);
     }
 
-    @GetMapping("logout")
+    @PostMapping("logout")
     @ResponseStatus(HttpStatus.OK)
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         authService.logout(request, response);
     }
 
-    @GetMapping("/refresh")
+    @PostMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
     public TokenDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         return authService.refreshToken(request, response);
