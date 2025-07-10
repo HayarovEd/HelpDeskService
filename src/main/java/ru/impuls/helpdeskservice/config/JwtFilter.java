@@ -60,22 +60,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            var role = jwtService.extractRole(jwt);
-
             if (!jwtService.isTokenExpired(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                var userId = jwtService.extractId(jwt);
-                var authorities = jwtService.extractAuthorities(jwt);
-                var userEmail = jwtService.extractEmail(jwt);
-                var authenticatedUser = User.builder()
-                        .id(UUID.fromString(userId))
-                        .email(userEmail)
-                        .role(role)
-                        .build();
-                var authToken = new UsernamePasswordAuthenticationToken(
-                        authenticatedUser,
-                        null,
-                        authorities
-                );
+                var authToken = jwtService.getAuthentication(jwt);
 
                 authToken.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request)
