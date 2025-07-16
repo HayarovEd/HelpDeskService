@@ -64,6 +64,8 @@ application:
       - method: GET
         path: /v2/api-docs
       - method: GET
+        path: /ws/**
+      - method: GET
         path: /v3/api-docs/**
       - method: GET
         path: /swagger-resources/**
