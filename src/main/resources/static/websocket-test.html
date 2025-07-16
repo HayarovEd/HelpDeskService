@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script>
+        let socket;
+        const subscriptions = {};
+
+        function connect() {
+            socket = new WebSocket('wss://localhost:9092/api/ws');
+
+            socket.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('status').innerText = 'CONNECTED';
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('Received:', message);
+
+                    // Вызываем обработчик для соответствующего пути
+                    if (subscriptions[message.path]) {
+                        subscriptions[message.path].forEach(callback => {
+                            callback(message);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                document.getElementById('status').innerText = 'ERROR';
+            };
+
+            socket.onclose = () => {
+                console.log('WebSocket disconnected');
+                document.getElementById('status').innerText = 'DISCONNECTED';
+            };
+        }
+
+        function subscribe(path, callback) {
+            if (!subscriptions[path]) {
+                subscriptions[path] = [];
+            }
+            subscriptions[path].push(callback);
+        }
+
+        function displayGroupEvent(event) {
+            const output = document.getElementById('group-output');
+            output.innerHTML += `
+                <div class="event">
+                    <h3>${event.event}: ${event.data?.name || 'No name'}</h3>
+                    <p>ID: ${event.data?.id || 'No ID'}</p>
+                    <pre>${JSON.stringify(event.data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function displaySubgroupEvent(event) {
+            const output = document.getElementById('subgroup-output');
+            output.innerHTML += `
+                <div class="event">
+                    <h3>${event.event}: ${event.data?.name || 'No name'}</h3>
+                    <p>ID: ${event.data?.id || 'No ID'}</p>
+                    <p>Group: ${event.data?.group?.name || 'No group'}</p>
+                    <pre>${JSON.stringify(event.data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+            }
+        }
+
+        window.onload = () => {
+            connect();
+            subscribe('/groups', displayGroupEvent);
+            subscribe('/subgroups', displaySubgroupEvent);
+        };
+    </script>
+    <style>
+        /* Стили остаются такими же как в предыдущем примере */
+    </style>
+</head>
+<body>
+<h1>WebSocket Test</h1>
+<button onclick="connect()">Connect</button>
+<button onclick="disconnect()">Disconnect</button>
+
+<div class="container">
+    <div class="panel">
+        <h2>Groups</h2>
+        <div>Status: <span id="status" class="disconnected">DISCONNECTED</span></div>
+        <div id="group-output"></div>
+    </div>
+
+    <div class="panel">
+        <h2>Subgroups</h2>
+        <div id="subgroup-output"></div>
+    </div>
+</div>
+</body>
+</html>
