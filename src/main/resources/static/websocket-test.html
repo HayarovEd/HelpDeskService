@@ -7,7 +7,7 @@
         const subscriptions = {};
 
         function connect() {
-            socket = new WebSocket('wss://localhost:9092/api/ws');
+            socket = new WebSocket('wss://localhost:9092/api/ws?token=eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmYzQ5Mzg1OC1hYjBkLTRlOWUtYjM0MS0yMjZhYWM5MGZlOWQiLCJyb2xlIjoiQURNSU4iLCJuYW1lIjoiQWRtaW4iLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJlbWFpbCI6ImFkbWluQG1haWwucnUiLCJpYXQiOjE3NTI2NTYwNTYsImV4cCI6MTc1MjcyODA1Nn0.d7DPNFEapZgr1gxILMMhwa9nx2hGyaGm08X7IRXhDQS2d3a3KUaABHNuHmudAyh99jFuB20Ycnz3rvWU8jFST2A783xMNQLEPbJPgjVeF_dvWktCvV6kikmoFJPOexfOrj8RnFYvKsEpJj0SzLnJKnoMmDtqbaGfFgm9ah5XqKCM9Qit6m1qLjaoMXdf4TheQ6_4McZw5kkqzVdF5jtkFWINzil7ZUs1ySS5HqJj9zwGFM2gyLlAoKXjZJSF-AizewGZ5y5gg4yUfRuCbD5vMH9i3SkE6QjrMfy9srQvH8HZsXlrOgUVLKQy5I7-UnpbFMO6UOK1f3WMnzvYDiBQBw');
 
             socket.onopen = () => {
                 console.log('WebSocket connected');
