@@ -1,8 +1,10 @@
 package ru.impuls.helpdeskservice.mapper.impl;
 
 import org.springframework.stereotype.Component;
+import ru.impuls.helpdeskservice.dto.GroupForSubDto;
 import ru.impuls.helpdeskservice.dto.SubgroupDto;
 import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
+import ru.impuls.helpdeskservice.dto.response.SubgroupEventDto;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.mapper.SubgroupMapper;
@@ -22,6 +24,22 @@ public class SubgroupMapperImpl implements SubgroupMapper {
         return SubgroupDto.builder()
                 .id(subgroup.getId())
                 .name(subgroup.getName())
+                .build();
+    }
+
+    @Override
+    public SubgroupEventDto toEventDto(Subgroup subgroup) {
+        if (subgroup == null) return null;
+
+        var group = GroupForSubDto.builder()
+                .id(subgroup.getGroup().getId())
+                .name(subgroup.getGroup().getName())
+                .build();
+
+        return SubgroupEventDto.builder()
+                .id(subgroup.getId())
+                .name(subgroup.getName())
+                .group(group)
                 .build();
     }
 

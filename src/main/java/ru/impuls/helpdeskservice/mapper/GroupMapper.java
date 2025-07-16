@@ -2,6 +2,7 @@ package ru.impuls.helpdeskservice.mapper;
 
 import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
 import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.response.GroupEventDto;
 import ru.impuls.helpdeskservice.entity.Group;
 
 import java.util.List;
@@ -9,6 +10,8 @@ import java.util.List;
 public interface GroupMapper {
 
     GroupDto toDto(Group group);
+
+    GroupEventDto toEventDto(Group group);
 
     Group toEntity(GroupEditDto groupDto);
 

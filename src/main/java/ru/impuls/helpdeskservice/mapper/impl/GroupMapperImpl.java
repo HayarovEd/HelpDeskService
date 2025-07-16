@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
 import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.response.GroupEventDto;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.mapper.GroupMapper;
 import ru.impuls.helpdeskservice.mapper.SubgroupMapper;
@@ -24,6 +25,17 @@ public class GroupMapperImpl implements GroupMapper {
         if (group == null) return null;
 
         return GroupDto.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .subgroups(subgroupMapper.toDtoList(group.getSubgroups()))
+                .build();
+    }
+
+    @Override
+    public GroupEventDto toEventDto(Group group) {
+        if (group == null) return null;
+
+        return GroupEventDto.builder()
                 .id(group.getId())
                 .name(group.getName())
                 .subgroups(subgroupMapper.toDtoList(group.getSubgroups()))
