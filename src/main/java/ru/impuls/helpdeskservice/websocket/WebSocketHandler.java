@@ -8,9 +8,11 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ru.impuls.helpdeskservice.constant.ErrorMessage;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
@@ -20,6 +22,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) {
+        if (isTokenExpired(session)) return;
+
         sessions.add(session);
     }
 
@@ -31,6 +35,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public <T> void notifyChange(String path, T data, EventType eventType) {
         String message = createMessage(path, data, eventType);
         sessions.forEach(session -> {
+            if (isTokenExpired(session)) return;
+
             try {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(message));
@@ -39,6 +45,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // Логирование ошибки
             }
         });
+    }
+
+    private static boolean isTokenExpired(WebSocketSession session) {
+        Instant expiration = (Instant) session.getAttributes().get("expiration");
+        if (expiration.isBefore(Instant.now())) {
+            try {
+                session.close(CloseStatus.NOT_ACCEPTABLE.withReason(ErrorMessage.UNAUTHORIZED));
+            } catch (IOException e) {
+                // Логирование ошибки
+            }
+            return true;
+        }
+        return false;
     }
 
     private <T> String createMessage(String path, T data, EventType eventType) {
