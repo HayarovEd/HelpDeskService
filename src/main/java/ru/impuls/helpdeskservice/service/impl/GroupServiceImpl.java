@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
 import ru.impuls.helpdeskservice.dto.response.GroupDto;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
-import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.GroupMapper;
 import ru.impuls.helpdeskservice.repository.GroupRepo;
