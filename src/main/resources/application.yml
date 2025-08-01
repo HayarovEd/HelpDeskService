@@ -58,6 +58,8 @@ application:
       - "https://localhost:3000"
       - "http://localhost:9090"
       - "https://localhost:9090"
+      - "http://localhost:9092"
+      - "https://localhost:9092"
     public-endpoints:
       - method: POST
         path: /auth/*
