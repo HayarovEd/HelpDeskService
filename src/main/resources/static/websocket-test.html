@@ -7,7 +7,7 @@
         const subscriptions = {};
 
         function connect() {
-            socket = new WebSocket('wss://localhost:9092/api/ws?token=eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkYmFlNTlhZi01MDhjLTRhOWYtODBiZC0zZjVmODhjMmI3N2YiLCJyb2xlIjoiQURNSU4iLCJuYW1lIjoiQWRtaW4iLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJlbWFpbCI6ImFkbWluQG1haWwucnUiLCJpYXQiOjE3NTQwMjg0MjUsImV4cCI6MTc1NDEwMDQyNX0.nabPIGEcr5aZ16pyLOltywTNvW9QU8E5q_8vGZNzagblSW1ZwR4mG8W-AiDSeaBM8FpaBj7QVdi99nvlfaRup66s9-Pys3BFL8tswVi0HzC6qoXJZGOTIkMlCZ3bXNu7__lZ80QLhg0PXcr8018XKCFG-Z6Tx81KUy1RxWDSkwqs3BImmGTlKdRyNPO0wpGAIraqZW0DEJkMHzAVrwwBP28qPFBDk-CwIhmW-8k5r3m8SEsRIV7JJy1KNMrNCHck6Kf_rvbYubCBud2k_2_NZh3DN6G1qoAm-EvA1vsCngvDMd93L9SI24jYllDDf-T5sKPAjBHXDWi8TFfxAm7Zrw');
+            socket = new WebSocket('wss://10.222.222.76:9092/api/ws?token=eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkYmFlNTlhZi01MDhjLTRhOWYtODBiZC0zZjVmODhjMmI3N2YiLCJyb2xlIjoiQURNSU4iLCJuYW1lIjoiQWRtaW4iLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJlbWFpbCI6ImFkbWluQG1haWwucnUiLCJpYXQiOjE3NTQwMjg0MjUsImV4cCI6MTc1NDEwMDQyNX0.nabPIGEcr5aZ16pyLOltywTNvW9QU8E5q_8vGZNzagblSW1ZwR4mG8W-AiDSeaBM8FpaBj7QVdi99nvlfaRup66s9-Pys3BFL8tswVi0HzC6qoXJZGOTIkMlCZ3bXNu7__lZ80QLhg0PXcr8018XKCFG-Z6Tx81KUy1RxWDSkwqs3BImmGTlKdRyNPO0wpGAIraqZW0DEJkMHzAVrwwBP28qPFBDk-CwIhmW-8k5r3m8SEsRIV7JJy1KNMrNCHck6Kf_rvbYubCBud2k_2_NZh3DN6G1qoAm-EvA1vsCngvDMd93L9SI24jYllDDf-T5sKPAjBHXDWi8TFfxAm7Zrw');
 
             socket.onopen = () => {
                 console.log('WebSocket connected');
