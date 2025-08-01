@@ -22,7 +22,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) {
-        if (isTokenExpired(session)) return;
+        //if (isTokenExpired(session)) return;
 
         sessions.add(session);
     }
@@ -35,7 +35,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public <T> void notifyChange(String path, T data, EventType eventType) {
         String message = createMessage(path, data, eventType);
         sessions.forEach(session -> {
-            if (isTokenExpired(session)) return;
+            //if (isTokenExpired(session)) return;
 
             try {
                 if (session.isOpen()) {
@@ -47,7 +47,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         });
     }
 
-    private static boolean isTokenExpired(WebSocketSession session) {
+    /*private static boolean isTokenExpired(WebSocketSession session) {
         Instant expiration = (Instant) session.getAttributes().get("expiration");
         if (expiration.isBefore(Instant.now())) {
             try {
@@ -58,7 +58,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return true;
         }
         return false;
-    }
+    }*/
 
     private <T> String createMessage(String path, T data, EventType eventType) {
         try {
