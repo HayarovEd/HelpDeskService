@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
@@ -18,6 +19,8 @@ import ru.impuls.helpdeskservice.mapper.LogMapper;
 import ru.impuls.helpdeskservice.repository.LogRepo;
 import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
+import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,8 +34,10 @@ public class LogServiceImpl implements LogService {
     private final LogRepo logRepo;
     private final LogMapper logMapper;
     private final UserRepo userRepo;
+    private final WebSocketHandler webSocketHandler;
 
     @Override
+    @Transactional(readOnly = true)
     public List<LogDto> findAllWithFilter(Instant to, int count) {
 
         if (count < 0 || count > 1000) {
@@ -62,23 +67,28 @@ public class LogServiceImpl implements LogService {
                        LogEntityType entityType,
                        String entityName,
                        UUID entityId) {
-        var authenticatedUserId = AuthUtil.getAuthenticatedUser().getId();
-        var user = userRepo.findById(authenticatedUserId)
+        var authenticatedUser = AuthUtil.getAuthenticatedUser();
+        var user = userRepo.findById(authenticatedUser.getId())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
-        var message = String.format("%s %s с именем '%s' и id '%s'",
+
+        var message = formatLogMessage(action, entityType, entityName, entityId);
+        var log = logMapper.toEntity(message, user);
+
+        log = logRepo.save(log);
+        webSocketHandler.notifyChange("/logs", logMapper.toDto(log), EventType.CREATED);
+    }
+
+    private String formatLogMessage(LogActionType action,
+                                    LogEntityType entityType,
+                                    String entityName,
+                                    UUID entityId) {
+        return String.format("%s %s с именем '%s' и id '%s'",
                 action.getDescription(),
                 entityType.getDescription(),
                 entityName,
-                entityId.toString());
-
-        var log = Log.builder()
-                .text(message)
-                .user(user)
-                .build();
-
-        logRepo.save(log);
+                entityId);
     }
 }
