@@ -3,10 +3,10 @@ package ru.impuls.helpdeskservice.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
-import ru.impuls.helpdeskservice.dto.BaseDto;
+import ru.impuls.helpdeskservice.dto.LogItemDto;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,8 +14,8 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LogDto extends BaseDto {
-    String text;
-    Instant createdDate;
-    UserDto user;
+public class LogDto {
+    private long count;
+    private Instant firstDate;
+    private List<LogItemDto> items;
 }

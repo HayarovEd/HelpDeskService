@@ -5,13 +5,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.LogActionType;
 import ru.impuls.helpdeskservice.constant.LogEntityType;
+import ru.impuls.helpdeskservice.dto.LogItemDto;
 import ru.impuls.helpdeskservice.dto.response.LogDto;
 import ru.impuls.helpdeskservice.entity.Log;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -38,8 +38,7 @@ public class LogServiceImpl implements LogService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<LogDto> findAllWithFilter(Instant to, int count) {
-
+    public LogDto findAllWithFilter(Instant to, int count) {
         if (count < 0 || count > 1000) {
             throw new AppException(
                     "Count must be between 0 and 1000",
@@ -47,19 +46,24 @@ public class LogServiceImpl implements LogService {
             );
         }
 
-        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        long totalCount = to == null
+                ? logRepo.count()
+                : logRepo.countByCreatedDateBefore(to);
 
-        if (to == null) {
-            return logRepo.findAll(pageable)
-                    .stream()
+        Instant firstDate = logRepo.findFirstByOrderByCreatedDateAsc()
+                .map(Log::getCreatedDate)
+                .orElse(null);
+
+        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        List<LogItemDto> items = to == null
+                ? logRepo.findAll(pageable)
                     .map(logMapper::toDto)
-                    .toList();
-        } else {
-            return logRepo.findAllByCreatedDateBefore(to, pageable)
-                    .stream()
+                    .toList()
+                : logRepo.findAllByCreatedDateBefore(to, pageable)
                     .map(logMapper::toDto)
-                    .toList();
-        }
+                    .stream().toList();
+
+        return new LogDto(totalCount, firstDate, items);
     }
 
     @Override

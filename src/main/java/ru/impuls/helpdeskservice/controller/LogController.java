@@ -7,7 +7,6 @@ import ru.impuls.helpdeskservice.dto.response.LogDto;
 import ru.impuls.helpdeskservice.service.LogService;
 
 import java.time.Instant;
-import java.util.List;
 
 @RestController
 @PreAuthorize("hasAuthority('ADMIN')")
@@ -18,7 +17,7 @@ public class LogController {
     private final LogService logService;
 
     @GetMapping
-    public List<LogDto> getAllWithFilter(
+    public LogDto getAllWithFilter(
             @RequestParam(required = false) Instant to,
             @RequestParam(defaultValue = "100") int count) {
 
