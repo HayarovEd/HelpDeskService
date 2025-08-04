@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.impuls.helpdeskservice.constant.LogActionType;
+import ru.impuls.helpdeskservice.constant.LogEntityType;
 import ru.impuls.helpdeskservice.dto.SubgroupDto;
 import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
@@ -85,7 +87,12 @@ public class SubgroupServiceImpl implements SubgroupService {
                 ));
 
         subgroupRepo.delete(subgroup);
-        logService.create("Удалена подгруппа с ID: " + id + " и именем: " + subgroup.getName());
+        logService.create(
+                LogActionType.DELETED,
+                LogEntityType.SUBGROUP,
+                subgroup.getName(),
+                subgroup.getId()
+        );
         webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);
 
         return subgroupMapper.toDto(subgroup);

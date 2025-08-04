@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.impuls.helpdeskservice.constant.LogActionType;
+import ru.impuls.helpdeskservice.constant.LogEntityType;
 import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
 import ru.impuls.helpdeskservice.dto.response.GroupDto;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
@@ -100,7 +102,12 @@ public class GroupServiceImpl implements GroupService {
                 ));
 
         groupRepo.delete(group);
-        logService.create("Удалена группа с ID: " + id + " и именем: " + group.getName());
+        logService.create(
+                LogActionType.DELETED,
+                LogEntityType.GROUP,
+                group.getName(),
+                group.getId()
+        );
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.DELETED);
 
         return groupMapper.toDto(group);

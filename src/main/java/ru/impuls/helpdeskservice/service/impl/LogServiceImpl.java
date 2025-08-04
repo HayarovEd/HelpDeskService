@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.constant.LogActionType;
+import ru.impuls.helpdeskservice.constant.LogEntityType;
 import ru.impuls.helpdeskservice.dto.response.LogDto;
 import ru.impuls.helpdeskservice.entity.Log;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -19,6 +21,7 @@ import ru.impuls.helpdeskservice.util.AuthUtil;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -55,13 +58,22 @@ public class LogServiceImpl implements LogService {
     }
 
     @Override
-    public void create(String message) {
+    public void create(LogActionType action,
+                       LogEntityType entityType,
+                       String entityName,
+                       UUID entityId) {
         var authenticatedUserId = AuthUtil.getAuthenticatedUser().getId();
         var user = userRepo.findById(authenticatedUserId)
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
+        var message = String.format("%s %s с именем '%s' и id '%s'",
+                action.getDescription(),
+                entityType.getDescription(),
+                entityName,
+                entityId.toString());
+
         var log = Log.builder()
                 .text(message)
                 .user(user)
