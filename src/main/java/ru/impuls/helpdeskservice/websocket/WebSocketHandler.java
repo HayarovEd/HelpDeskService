@@ -8,11 +8,9 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ru.impuls.helpdeskservice.constant.ErrorMessage;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
