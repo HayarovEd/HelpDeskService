@@ -102,13 +102,13 @@ public class GroupServiceImpl implements GroupService {
                 ));
 
         groupRepo.delete(group);
+        webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.GROUP,
                 group.getName(),
                 group.getId()
         );
-        webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.DELETED);
 
         return groupMapper.toDto(group);
     }

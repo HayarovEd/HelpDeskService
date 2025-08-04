@@ -87,13 +87,13 @@ public class SubgroupServiceImpl implements SubgroupService {
                 ));
 
         subgroupRepo.delete(subgroup);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.SUBGROUP,
                 subgroup.getName(),
                 subgroup.getId()
         );
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);
 
         return subgroupMapper.toDto(subgroup);
     }
