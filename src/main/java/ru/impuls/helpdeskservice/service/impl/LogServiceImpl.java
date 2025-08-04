@@ -46,10 +46,6 @@ public class LogServiceImpl implements LogService {
             );
         }
 
-        long totalCount = to == null
-                ? logRepo.count()
-                : logRepo.countByCreatedDateBefore(to);
-
         Instant firstDate = logRepo.findFirstByOrderByCreatedDateAsc()
                 .map(Log::getCreatedDate)
                 .orElse(null);
@@ -63,7 +59,7 @@ public class LogServiceImpl implements LogService {
                     .map(logMapper::toDto)
                     .stream().toList();
 
-        return new LogDto(totalCount, firstDate, items);
+        return new LogDto(logRepo.count(), firstDate, items);
     }
 
     @Override
