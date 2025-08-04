@@ -13,6 +13,8 @@ import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
+import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
     private final RoleRepo roleRepo;
+    private final WebSocketHandler webSocketHandler;
 
     @Override
     public List<UserDto> getAll() {
@@ -49,8 +52,10 @@ public class UserServiceImpl implements UserService {
                 ));
         var user = userMapper.toEntity(userDto, role);
         user = userRepo.save(user);
+        var resUserDto = userMapper.toDto(user);
+        webSocketHandler.notifyChange("/users", resUserDto, EventType.CREATED);
 
-        return userMapper.toDto(user);
+        return resUserDto;
     }
 
     @Override
@@ -68,8 +73,10 @@ public class UserServiceImpl implements UserService {
 
         userMapper.toEntity(user, userDto, role);
         user = userRepo.save(user);
+        var resUserDto = userMapper.toDto(user);
+        webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
 
-        return userMapper.toDto(user);
+        return resUserDto;
     }
 
     @Override
@@ -82,7 +89,9 @@ public class UserServiceImpl implements UserService {
 
         userMapper.toEntity(user, passwordDto);
         userRepo.save(user);
+        var resUserDto = userMapper.toDto(user);
+        webSocketHandler.notifyChange("/users", resUserDto, EventType.DELETED);
 
-        return userMapper.toDto(user);
+        return resUserDto;
     }
 }
