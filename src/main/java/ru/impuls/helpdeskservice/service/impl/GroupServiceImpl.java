@@ -1,6 +1,8 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.GroupMapper;
 import ru.impuls.helpdeskservice.repository.GroupRepo;
 import ru.impuls.helpdeskservice.service.GroupService;
+import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
@@ -23,9 +26,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupServiceImpl.class);
     private final GroupRepo groupRepo;
     private final GroupMapper groupMapper;
     private final WebSocketHandler webSocketHandler;
+    private final LogService logService;
 
     @Override
     @Transactional(readOnly = true)
@@ -95,6 +100,7 @@ public class GroupServiceImpl implements GroupService {
                 ));
 
         groupRepo.delete(group);
+        logService.create("Удалена группа с ID: " + id + " и именем: " + group.getName());
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.DELETED);
 
         return groupMapper.toDto(group);

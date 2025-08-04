@@ -7,18 +7,16 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.dto.SubgroupDto;
 import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
-import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.SubgroupMapper;
 import ru.impuls.helpdeskservice.repository.GroupRepo;
 import ru.impuls.helpdeskservice.repository.SubgroupRepo;
+import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.service.SubgroupService;
 import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.UUID;
-
-import static ru.impuls.helpdeskservice.websocket.EventType.*;
 
 @Service
 @Transactional
@@ -29,6 +27,7 @@ public class SubgroupServiceImpl implements SubgroupService {
     private final SubgroupMapper subgroupMapper;
     private final GroupRepo groupRepo;
     private final WebSocketHandler webSocketHandler;
+    private final LogService logService;
 
     @Override
     public SubgroupDto create(UUID groupId, SubgroupEditDto subgroupDto) {
@@ -86,6 +85,7 @@ public class SubgroupServiceImpl implements SubgroupService {
                 ));
 
         subgroupRepo.delete(subgroup);
+        logService.create("Удалена подгруппа с ID: " + id + " и именем: " + subgroup.getName());
         webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);
 
         return subgroupMapper.toDto(subgroup);
