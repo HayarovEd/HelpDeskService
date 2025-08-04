@@ -23,4 +23,5 @@ public class ErrorMessage {
     public static final String REFRESH_NOT_FOUND_IN_COOKIE = "Refresh not found in cookie";
     public static final String ONLY_ACCESS_TOKENS_ALLOWED = "Only access tokens allowed";
     public static final String UNAUTHORIZED = "Unauthorized: Please log in to access this resource.";
+    public static final String USER_NOT_AUTHENTICATED = "User not authenticated";
 }
