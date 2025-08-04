@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface LogService {
     List<LogDto> findAllWithFilter(Instant to, int count);
+    void create(String message);
 }
