@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.List;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")
 @RequestMapping("/logs")
 @RequiredArgsConstructor
 public class LogController {
