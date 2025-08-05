@@ -45,6 +45,7 @@ application:
       access-token:
         expiration: 1200 #minute
       refresh-token:
+        length: 32
         expiration: 14400 #minute -> 10 day
       keys:
         public: ./src/main/resources/static/security/public_key.pem
