@@ -17,6 +17,7 @@ import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -65,6 +66,7 @@ public class UserServiceImpl implements UserService {
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
+        UserDto oldUserDto = userMapper.toDto(user);
         var role = roleRepo.findByName(userDto.getRole().getName())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
@@ -75,6 +77,10 @@ public class UserServiceImpl implements UserService {
         user = userRepo.save(user);
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
+
+        if (!Objects.equals(oldUserDto, resUserDto)) {
+            webSocketHandler.notifyUser(id, "/account", resUserDto, EventType.UPDATED);
+        }
 
         return resUserDto;
     }

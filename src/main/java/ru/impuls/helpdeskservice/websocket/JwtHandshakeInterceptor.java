@@ -33,6 +33,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         attributes.put("expiration", jwtService.extractExpiration(token));
         attributes.put("role", jwtService.extractRole(token).getName());
+        attributes.put("userId", jwtService.extractId(token));
 
         return true;
     }
