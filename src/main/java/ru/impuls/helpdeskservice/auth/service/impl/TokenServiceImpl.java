@@ -49,8 +49,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void deleteAll(User user, TokenType tokenType) {
-
-        //tokenRepository.deleteAllByUserIdAndTokenType_Name(user.getId(), tokenType);
+        tokenRepository.deleteAllByUserIdAndTokenType(user.getId(), tokenType);
     }
 
     /**

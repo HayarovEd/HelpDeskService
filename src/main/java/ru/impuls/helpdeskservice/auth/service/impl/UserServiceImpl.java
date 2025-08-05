@@ -10,8 +10,10 @@ import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
+import ru.impuls.helpdeskservice.auth.service.TokenService;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.EventType;
@@ -30,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final RoleRepo roleRepo;
     private final WebSocketHandler webSocketHandler;
+    private final TokenService tokenService;
 
     @Override
     public List<UserDto> getAll() {
@@ -81,6 +84,7 @@ public class UserServiceImpl implements UserService {
                 || oldUserDto.getRole().getName().equals(user.getRole().getName())
         ) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
+            tokenService.deleteAll(user, TokenType.REFRESH);
         }
 
         user = userRepo.save(user);
@@ -104,6 +108,7 @@ public class UserServiceImpl implements UserService {
 
         userMapper.toEntity(user, passwordDto);
         userRepo.save(user);
+        tokenService.deleteAll(user, TokenType.REFRESH);
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.DELETED);
 
