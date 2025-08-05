@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
@@ -39,7 +40,6 @@ public class AuthServiceImpl implements AuthService {
 
     /************************ login ***************************/
     @Override
-    @Transactional(readOnly = true)
     public TokenDto login(LoginDto loginDto, HttpServletResponse response) {
         var user = userRepo.findByEmail(loginDto.getEmail())
                 .orElseThrow(() -> new AppException(
