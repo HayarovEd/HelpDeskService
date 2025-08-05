@@ -77,7 +77,9 @@ public class UserServiceImpl implements UserService {
         userMapper.toEntity(user, userDto, role);
 
         if (!oldUserDto.getEmail().equals(user.getEmail())
-                && oldUserDto.isDisabled() != user.isDisabled()) {
+                || oldUserDto.isDisabled() != user.isDisabled()
+                || oldUserDto.getRole().getName().equals(user.getRole().getName())
+        ) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
         }
 
