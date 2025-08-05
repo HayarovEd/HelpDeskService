@@ -81,11 +81,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         String userRole = (String) session.getAttributes().get("role");
 
-        if (data instanceof GroupEventDto) {
-            return "ADMIN".equals(userRole);
-        } else if (data instanceof SubgroupEventDto) {
-            return "ADMIN".equals(userRole);
-        } else if (data instanceof LogItemDto) {
+        if (data instanceof LogItemDto) {
             return "ADMIN".equals(userRole);
         } else if (data instanceof UserDto) {
             return "ADMIN".equals(userRole);
