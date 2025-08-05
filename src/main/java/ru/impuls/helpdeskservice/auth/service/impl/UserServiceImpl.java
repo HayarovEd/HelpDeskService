@@ -13,6 +13,7 @@ import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
+import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
@@ -74,6 +75,12 @@ public class UserServiceImpl implements UserService {
                 ));
 
         userMapper.toEntity(user, userDto, role);
+
+        if (!oldUserDto.getEmail().equals(user.getEmail())
+                && oldUserDto.isDisabled() != user.isDisabled()) {
+            user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
+        }
+
         user = userRepo.save(user);
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
@@ -99,5 +106,15 @@ public class UserServiceImpl implements UserService {
         webSocketHandler.notifyChange("/users", resUserDto, EventType.DELETED);
 
         return resUserDto;
+    }
+
+    @Override
+    public String getTokenVersionByUserId(UUID userId) {
+        var user = userRepo.findById(userId)
+                .orElseThrow(() -> new AppException(
+                        "User not found with ID:" + userId,
+                        HttpStatus.NOT_FOUND
+                ));
+        return user.getTokenVersion();
     }
 }

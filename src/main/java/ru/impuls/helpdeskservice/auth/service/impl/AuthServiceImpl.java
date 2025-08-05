@@ -11,15 +11,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.LoginDto;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenDto;
+import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.auth.repository.TokenRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.AuthService;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
+import ru.impuls.helpdeskservice.auth.service.TokenService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
-import java.util.UUID;
+import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +34,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final CookieUtil cookieUtil;
+    private final TokenService tokenService;
+    private final TokenRepo tokenRepo;
 
     /************************ login ***************************/
     @Override
@@ -43,8 +50,9 @@ public class AuthServiceImpl implements AuthService {
         validateUserForLogin(user, loginDto);
 
         var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
+        var refreshToken = jwtService.generateRefreshToken();
 
+        tokenService.save(user, refreshToken, TokenType.REFRESH);
         cookieUtil.addRefreshTokenToCookie(response, refreshToken);
 
         return TokenDto.builder()
@@ -57,6 +65,9 @@ public class AuthServiceImpl implements AuthService {
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieUtil.extractRefreshTokenFromCookies(request);
         if (refreshToken != null) {
+            var token = fetchTokenFromDatabase(refreshToken, response);
+
+            tokenService.delete(token);
             cookieUtil.deleteRefreshTokenFromCookies(response);
         }
     }
@@ -72,19 +83,28 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        var userId = jwtService.extractId(refreshToken);
-        var user = userRepo.findById(UUID.fromString(userId))
-                .orElse(null);
+        var token = fetchTokenFromDatabase(refreshToken, response);
+        validateTokenExpiration(token);
 
-        if (user == null) {
+        var user = Optional.ofNullable(token.getUser())
+                .orElseThrow(() -> new AppException(
+                        "User associated with refresh token not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (user.isDisabled()) {
             cookieUtil.deleteRefreshTokenFromCookies(response);
-
-            throw new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED);
+            throw new AppException(
+                    "Account with email " + user.getEmail() + " is blocked or not verified",
+                    HttpStatus.FORBIDDEN
+            );
         }
 
         var newAccessToken = jwtService.generateAccessToken(user);
-        var newRefreshToken = jwtService.generateRefreshToken(user);
+        var newRefreshToken = jwtService.generateRefreshToken();
 
+        tokenService.delete(token);
+        tokenService.save(user, newRefreshToken, TokenType.REFRESH);
         cookieUtil.deleteRefreshTokenFromCookies(response);
         cookieUtil.addRefreshTokenToCookie(response, newRefreshToken);
 
@@ -111,6 +131,20 @@ public class AuthServiceImpl implements AuthService {
                     ErrorMessage.INVALID_LOGIN_OR_PASSWORD,
                     HttpStatus.UNAUTHORIZED
             );
+        }
+    }
+
+    private Token fetchTokenFromDatabase(String refreshToken, HttpServletResponse response) {
+        return tokenRepo.findByTokenAndTokenType(refreshToken, TokenType.REFRESH)
+                .orElseThrow(() -> {
+                    cookieUtil.deleteRefreshTokenFromCookies(response);
+                    return new AppException("Refresh token not found in database", HttpStatus.UNAUTHORIZED);
+                });
+    }
+
+    private void validateTokenExpiration(Token token) {
+        if (Instant.now().isAfter(token.getExpiresAt())) {
+            throw new AppException("Refresh token expired. Please login again", HttpStatus.UNAUTHORIZED);
         }
     }
 }

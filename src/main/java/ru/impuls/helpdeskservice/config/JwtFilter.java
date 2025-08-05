@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
+import ru.impuls.helpdeskservice.auth.service.UserService;
+import ru.impuls.helpdeskservice.auth.service.impl.UserServiceImpl;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
 import org.springframework.http.HttpMethod;
@@ -27,6 +29,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final SecurityProperties securityProperties;
+    private final UserService userService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -58,6 +61,19 @@ public class JwtFilter extends OncePerRequestFilter {
                         ErrorMessage.ONLY_ACCESS_TOKENS_ALLOWED
                 );
                 return;
+            }
+
+            var userId = jwtService.extractId(jwt);
+            var jwtTokenVersion = jwtService.extractTokenVersion(jwt);
+            var userTokenVersion = userService.getTokenVersionByUserId(UUID.fromString(userId));
+
+            if(userTokenVersion != null
+                    && !userTokenVersion.isEmpty()
+                    && !userTokenVersion.equals(jwtTokenVersion)){
+                throw new AppException(
+                        "invalid_token",
+                        HttpStatus.UNAUTHORIZED
+                );
             }
 
             if (!jwtService.isTokenExpired(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {

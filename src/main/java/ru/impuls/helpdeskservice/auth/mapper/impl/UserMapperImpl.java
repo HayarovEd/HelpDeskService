@@ -10,6 +10,7 @@ import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
+import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 
 @Component
 @RequiredArgsConstructor
@@ -44,6 +45,7 @@ public class UserMapperImpl implements UserMapper {
                 .email(userDto.getEmail())
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .isDisabled(userDto.isDisabled())
+                .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(role)
                 .build();
     }
@@ -59,5 +61,6 @@ public class UserMapperImpl implements UserMapper {
     @Override
     public void toEntity(User user, PasswordDto passwordDto) {
         user.setPassword(passwordEncoder.encode(passwordDto.getPassword()));
+        user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
     }
 }

@@ -12,6 +12,7 @@ import ru.impuls.helpdeskservice.entity.BaseEntity;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -26,14 +27,15 @@ public class User extends BaseEntity implements UserDetails {
     String email;
     String password;
     boolean isDisabled;
+    String tokenVersion;
 
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
 
-    /*@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Singular
-    List<Token> tokens;*/
+    List<Token> tokens;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -54,5 +56,20 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return !Boolean.TRUE.equals(isDisabled);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        if (!super.equals(o)) return false;
+        return isDisabled == user.isDisabled &&
+                Objects.equals(email, user.email) &&
+                Objects.equals(tokenVersion, user.tokenVersion);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), email, isDisabled, tokenVersion);
     }
 }

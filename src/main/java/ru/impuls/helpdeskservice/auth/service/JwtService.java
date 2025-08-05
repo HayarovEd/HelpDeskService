@@ -24,7 +24,7 @@ public interface JwtService {
 
     String generateAccessToken(User user);
 
-    String generateRefreshToken(User user);
+    String generateRefreshToken();
 
     boolean isTokenExpired(String token);
 
@@ -33,4 +33,6 @@ public interface JwtService {
     boolean isAccessToken(String token);
 
     UsernamePasswordAuthenticationToken getAuthentication(String token);
+
+    String extractTokenVersion(String jwt);
 }

@@ -16,4 +16,6 @@ public interface UserService {
     UserDto update(UUID id, UserDto userDto);
 
     UserDto changePassword(UUID id, PasswordDto passwordDto);
+
+    String getTokenVersionByUserId(UUID userId);
 }

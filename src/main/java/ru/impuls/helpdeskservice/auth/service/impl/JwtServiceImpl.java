@@ -17,6 +17,7 @@ import ru.impuls.helpdeskservice.auth.service.JwtService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.KeyProviderUtil;
+import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 
 import java.nio.file.NoSuchFileException;
 import java.security.PrivateKey;
@@ -32,8 +33,8 @@ public class JwtServiceImpl implements JwtService {
     @Value("${application.security.jwt.access-token.expiration}")
     private int accessTokenExpiration;
 
-    @Value("${application.security.jwt.refresh-token.expiration}")
-    private int refreshTokenExpiration;
+    @Value("${application.security.jwt.refresh-token.length}")
+    private int refreshTokenLength;
 
     @Value("${application.security.jwt.keys.public}")
     private String publicKeyFromFile;
@@ -118,7 +119,8 @@ public class JwtServiceImpl implements JwtService {
                     user.getRole(),
                     TOKEN_TYPE_ACCESS,
                     user.getEmail(),
-                    user.getName()
+                    user.getName(),
+                    user.getTokenVersion()
             );
             return generateToken(user.getId(), accessTokenExpiration, claims.toMap());
         } catch (Exception e) {
@@ -127,18 +129,8 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateRefreshToken(User user) {
-        try {
-            TokenClaimDto claims = new TokenClaimDto(
-                    null,
-                    TOKEN_TYPE_REFRESH,
-                    null,
-                    null
-            );
-            return generateToken(user.getId(), refreshTokenExpiration, claims.toMap());
-        } catch (Exception e) {
-            throw new AppException(ErrorMessage.JWT_GENERATION_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public String generateRefreshToken() {
+        return TokenGeneratorUtil.generateAlphaNumericToken(refreshTokenLength);
     }
 
     private String generateToken(UUID sub,
@@ -218,6 +210,11 @@ public class JwtServiceImpl implements JwtService {
                 null,
                 authorities
         );
+    }
+
+    @Override
+    public String extractTokenVersion(String jwt) {
+        return extractClaim(jwt, claims -> claims.get("tokenVersion", String.class));
     }
 
     private Claims extractAllClaims(String token) {
