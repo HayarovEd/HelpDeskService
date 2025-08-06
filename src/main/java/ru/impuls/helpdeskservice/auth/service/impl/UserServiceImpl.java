@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.auth.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAll() {
-        return userRepo.findAll().stream()
+        return userRepo.findAll(Sort.by(Sort.Direction.ASC, "email")).stream()
                 .map(userMapper::toDto)
                 .toList();
     }
