@@ -35,7 +35,7 @@ public class AdminInitConfig implements CommandLineRunner {
                     .name("Admin")
                     .email("admin@mail.ru")
                     .password(passwordEncoder.encode(adminPassword))
-                    .isDisabled(false)
+                    .disabled(false)
                     .role(adminRole)
                     .build();
 
