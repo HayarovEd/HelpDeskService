@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.auth.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepo roleRepo;
     private final WebSocketHandler webSocketHandler;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<UserDto> getAll() {
@@ -56,7 +58,7 @@ public class UserServiceImpl implements UserService {
                         ErrorMessage.ROLE_NOT_FOUND,
                         HttpStatus.BAD_REQUEST
                 ));
-        var user = userMapper.toEntity(userDto, role);
+        var user = userMapper.toEntity(userDto, role, passwordEncoder);
         user = userRepo.save(user);
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.CREATED);
@@ -78,7 +80,7 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.BAD_REQUEST
                 ));
 
-        userMapper.toEntity(user, userDto, role);
+        userMapper.updateEntity(user, userDto, role);
 
         if (!oldUserDto.getEmail().equals(user.getEmail())
                 || oldUserDto.isDisabled() != user.isDisabled()
@@ -106,7 +108,7 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND
                 ));
 
-        userMapper.toEntity(user, passwordDto);
+        userMapper.updatePassword(user, passwordDto, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
         var resUserDto = userMapper.toDto(user);
