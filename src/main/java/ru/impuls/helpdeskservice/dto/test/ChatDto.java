@@ -21,5 +21,4 @@ public class ChatDto extends BaseDto {
     String phone;
     SubgroupDto subgroup;
     List<ConnectionDto> connections;
-    Instant createdDate;
 }
