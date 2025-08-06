@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.dto.test;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
@@ -15,6 +16,10 @@ import java.time.Instant;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MessageDto extends BaseDto {
     String text;
-    Instant date;
-    boolean isSupport;
+
+    @JsonProperty("date")
+    Instant createdDate;
+
+    @JsonProperty("isSupport")
+    boolean support;
 }
