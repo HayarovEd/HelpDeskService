@@ -1,12 +1,12 @@
-package ru.impuls.helpdeskservice.dto.test;
+package ru.impuls.helpdeskservice.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import ru.impuls.helpdeskservice.dto.BaseDto;
 import ru.impuls.helpdeskservice.dto.SubgroupDto;
+import ru.impuls.helpdeskservice.dto.ConnectionDto;
 
-import java.time.Instant;
 import java.util.List;
 
 @Getter

@@ -1,4 +1,4 @@
-package ru.impuls.helpdeskservice.dto.test;
+package ru.impuls.helpdeskservice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
