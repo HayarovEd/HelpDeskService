@@ -22,12 +22,12 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public class Message extends BaseEntity {
 
+    String text;
+    boolean isSupport;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "connection_id")
     Connection connection;
-
-    String text;
-    boolean isSupport;
 
     @CreatedDate
     Instant createdDate;
