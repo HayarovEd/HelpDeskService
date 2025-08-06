@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +12,7 @@ import ru.impuls.helpdeskservice.constant.LogEntityType;
 import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
 import ru.impuls.helpdeskservice.dto.response.GroupDto;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.GroupMapper;
 import ru.impuls.helpdeskservice.repository.GroupRepo;
@@ -19,6 +21,7 @@ import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -37,8 +40,9 @@ public class GroupServiceImpl implements GroupService {
     @Override
     @Transactional(readOnly = true)
     public List<GroupDto> getAll() {
-        return groupRepo.findAll().stream()
+        return groupRepo.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
                 .filter(Objects::nonNull)
+                .peek(group -> group.getSubgroups().sort(Comparator.comparing(Subgroup::getName)))
                 .map(groupMapper::toDto)
                 .toList();
     }
