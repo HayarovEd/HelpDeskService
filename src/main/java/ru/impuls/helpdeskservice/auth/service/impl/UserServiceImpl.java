@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
 
         if (!oldUserDto.getEmail().equals(user.getEmail())
                 || oldUserDto.isDisabled() != user.isDisabled()
-                || oldUserDto.getRole().getName().equals(user.getRole().getName())
+                || !oldUserDto.getRole().getName().equals(user.getRole().getName())
         ) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
             tokenService.deleteAll(user, TokenType.REFRESH);
