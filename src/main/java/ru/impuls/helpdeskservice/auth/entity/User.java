@@ -26,8 +26,10 @@ public class User extends BaseEntity implements UserDetails {
     String name;
     String email;
     String password;
-    boolean isDisabled;
     String tokenVersion;
+
+    @Column(name = "\"disabled\"")
+    boolean disabled;
 
     @ManyToOne
     @JoinColumn(name = "role_id")
@@ -55,7 +57,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return !Boolean.TRUE.equals(isDisabled);
+        return !Boolean.TRUE.equals(disabled);
     }
 
     @Override
@@ -63,13 +65,13 @@ public class User extends BaseEntity implements UserDetails {
         if (this == o) return true;
         if (!(o instanceof User user)) return false;
         if (!super.equals(o)) return false;
-        return isDisabled == user.isDisabled &&
+        return disabled == user.disabled &&
                 Objects.equals(email, user.email) &&
                 Objects.equals(tokenVersion, user.tokenVersion);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), email, isDisabled, tokenVersion);
+        return Objects.hash(super.hashCode(), email, disabled, tokenVersion);
     }
 }
