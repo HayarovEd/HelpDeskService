@@ -25,7 +25,6 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('USER')")
     public List<ChatDto> getChats(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
