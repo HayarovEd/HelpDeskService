@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -25,8 +24,12 @@ public class Chat extends BaseEntity {
     String name;
     String email;
     String phone;
-    boolean isOpen;
-    boolean isWork;
+
+    @Column(name = "is_open")
+    boolean open;
+
+    @Column(name = "is_work")
+    boolean work;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subgroup_id")

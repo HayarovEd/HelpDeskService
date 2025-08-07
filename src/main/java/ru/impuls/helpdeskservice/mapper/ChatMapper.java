@@ -19,8 +19,8 @@ public interface ChatMapper {
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "name", source = "chatDto.name")
     @Mapping(target = "subgroup", source = "subgroup")
-    @Mapping(target = "isOpen", expression = "java(true)")
-    @Mapping(target = "isWork", expression = "java(false)")
+    @Mapping(target = "open", expression = "java(true)")
+    @Mapping(target = "work", expression = "java(false)")
     Chat toEntity(ChatCreateDto chatDto, Subgroup subgroup);
 
     ChatDto toDto(Chat chat);
@@ -29,8 +29,6 @@ public interface ChatMapper {
     @Mapping(target = "name", source = "chat.name")
     @Mapping(target = "email", source = "chat.email")
     @Mapping(target = "phone", source = "chat.phone")
-    @Mapping(target = "isOpen", source = "chat.open")
-    @Mapping(target = "isWork", source = "chat.work")
     @Mapping(target = "subgroup", source = "chat.subgroup")
     @Mapping(target = "createdDate", source = "chat.createdDate")
     @Mapping(target = "connections", source = "connections")
