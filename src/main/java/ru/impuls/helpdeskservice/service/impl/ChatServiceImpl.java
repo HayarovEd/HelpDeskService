@@ -134,6 +134,16 @@ public class ChatServiceImpl implements ChatService {
         return chatMapper.toDto(filteredChat );
     }
 
+    @Override
+    public ChatDto delete(UUID id) {
+        Chat chat = chatRepository.findById(id)
+                .orElseThrow(() -> new AppException("Chat not found", HttpStatus.NOT_FOUND));
+
+        chatRepository.delete(chat);
+
+        return chatMapper.toDto(chat);
+    }
+
     /*@Override
     public void joinChat(UUID chatId, UUID userId) {
         Chat chat = chatRepository.findById(chatId)

@@ -56,6 +56,11 @@ public class ChatController {
         return chatService.getById(id, to, count);
     }
 
+    @DeleteMapping("/{id}")
+    public ChatDto delete(@PathVariable UUID id) {
+        return chatService.delete(id);
+    }
+
     /*@PostMapping("/{id}/join")
     @PreAuthorize("hasRole('SUPPORT')")
     @Operation(

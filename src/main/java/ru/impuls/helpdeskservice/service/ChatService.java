@@ -22,6 +22,8 @@ public interface ChatService {
 
     ChatDto getById(UUID id, Instant to, int count);
 
+    ChatDto delete(UUID id);
+
     /*void joinChat(UUID chatId, UUID userId);
 
     void exitChat(UUID chatId, UUID userId);
