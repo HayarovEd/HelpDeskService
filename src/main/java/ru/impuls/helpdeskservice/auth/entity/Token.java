@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.entity.BaseEntity;
 
@@ -22,6 +23,10 @@ public class Token extends BaseEntity {
     String token;
     Instant createdAt;
     Instant expiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "position")
+    RefreshTokenPosition position;
 
     @Enumerated(EnumType.STRING)
     TokenType tokenType;

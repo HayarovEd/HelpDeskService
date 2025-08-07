@@ -19,11 +19,13 @@ import ru.impuls.helpdeskservice.auth.service.AuthService;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
 import ru.impuls.helpdeskservice.auth.service.TokenService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -100,12 +102,33 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
+        // Получаем все refresh токены пользователя
+        List<Token> existingTokens = tokenRepo.findByUserAndTokenType(user, TokenType.REFRESH);
+
+        if (token.getPosition() != null) {
+            if (token.getPosition() == RefreshTokenPosition.LAST) {
+                existingTokens.stream()
+                        .filter(t -> t.getPosition() == RefreshTokenPosition.PREVIOUS)
+                        .findFirst()
+                        .ifPresent(tokenRepo::delete);
+
+                token.setPosition(RefreshTokenPosition.PREVIOUS);
+                tokenRepo.save(token);
+            } else if (token.getPosition() == RefreshTokenPosition.PREVIOUS) {
+                existingTokens.stream()
+                        .filter(t -> t.getPosition() == RefreshTokenPosition.LAST)
+                        .findFirst()
+                        .ifPresent(tokenRepo::delete);
+            } else {
+                cookieUtil.deleteRefreshTokenFromCookies(response);
+                throw new AppException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
+            }
+        }
+
         var newAccessToken = jwtService.generateAccessToken(user);
         var newRefreshToken = jwtService.generateRefreshToken();
 
-        tokenService.delete(token);
         tokenService.save(user, newRefreshToken, TokenType.REFRESH);
-        cookieUtil.deleteRefreshTokenFromCookies(response);
         cookieUtil.addRefreshTokenToCookie(response, newRefreshToken);
 
         return TokenDto.builder()

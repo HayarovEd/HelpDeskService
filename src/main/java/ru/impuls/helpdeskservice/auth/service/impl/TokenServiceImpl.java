@@ -9,6 +9,7 @@ import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.TokenRepo;
 import ru.impuls.helpdeskservice.auth.service.TokenService;
+import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
 
@@ -38,6 +39,10 @@ public class TokenServiceImpl implements TokenService {
                 .tokenType(tokenType)
                 .user(user)
                 .build();
+
+        if (tokenType == TokenType.REFRESH) {
+            token.setPosition(RefreshTokenPosition.LAST);
+        }
 
         tokenRepository.save(token);
     }
