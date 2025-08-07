@@ -1,14 +1,9 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.repository.UserRepo;
-import ru.impuls.helpdeskservice.dto.MessageDto;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 import ru.impuls.helpdeskservice.entity.Chat;
@@ -17,9 +12,10 @@ import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
+import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
+import ru.impuls.helpdeskservice.mapper.ConnectionMapperImpl;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.ChatRepo;
-import ru.impuls.helpdeskservice.repository.GroupRepo;
 import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.repository.SubgroupRepo;
 import ru.impuls.helpdeskservice.service.ChatService;
@@ -27,7 +23,6 @@ import ru.impuls.helpdeskservice.service.ConnectionService;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -40,6 +35,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMapper chatMapper;
     private final ConnectionService connectionService;
     private final MessageMapper messageMapper;
+    private final ConnectionMapper connectionMapper;
 
     /*@Override
     @Transactional(readOnly = true)
@@ -113,20 +109,29 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException("Chat not found", HttpStatus.NOT_FOUND));
 
-        Pageable pageable = PageRequest.of(0, count);
+        List<Connection> connections = chat.getConnections();
 
-        List<Message> messages;
-        if (to == null) {
-            messages = messageRepo.findMessagesByChatId(chatId, pageable);
-        } else {
-            messages = messageRepo.findMessagesByChatIdBefore(chatId, to, pageable);
-        }
+        List<Connection> filteredConnections = connections.stream()
+                .map(connection -> {
+                    Connection filteredConnection = connectionMapper.toEntity(connection);
 
-        List<MessageDto> messageDtos = messages.stream()
-                .map(messageMapper::toDto)
+                    List<Message> filteredMessages;
+                    if (to == null) {
+                        filteredMessages = messageRepo.findTopNByConnectionId(
+                                connection.getId(), count);
+                    } else {
+                        filteredMessages = messageRepo.findTopNByConnectionIdAndCreatedDate(
+                                connection.getId(), to, count);
+                    }
+
+                    filteredConnection.setMessages(filteredMessages);
+                    return filteredConnection;
+                })
                 .toList();
 
-        return chatMapper.toDto(chat);
+        Chat filteredChat  = chatMapper.toEntity(chat, filteredConnections);
+
+        return chatMapper.toDto(filteredChat );
     }
 
     /*@Override

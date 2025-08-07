@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ru.impuls.helpdeskservice.entity.Message;
 
 import javax.swing.text.html.Option;
@@ -21,5 +22,20 @@ public interface MessageRepo extends JpaRepository<Message, UUID> {
 
     @Query("select m from Message m where m.connection.chat.id = :chatId and m.createdDate < :to order by m.createdDate desc")
     List<Message> findMessagesByChatIdBefore(UUID chatId, Instant to, Pageable pageable);
+
+
+    @Query("SELECT m FROM Message m WHERE m.connection.id = :connectionId " +
+            "ORDER BY m.createdDate DESC LIMIT :count")
+    List<Message> findTopNByConnectionId(
+            @Param("connectionId") UUID connectionId,
+            @Param("count") int count);
+
+    @Query("SELECT m FROM Message m WHERE m.connection.id = :connectionId " +
+            "AND m.createdDate < :to " +
+            "ORDER BY m.createdDate DESC LIMIT :count")
+    List<Message> findTopNByConnectionIdAndCreatedDate(
+            @Param("connectionId") UUID connectionId,
+            @Param("to") Instant to,
+            @Param("count") int count);
 
 }

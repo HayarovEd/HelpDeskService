@@ -17,4 +17,7 @@ public interface ConnectionMapper {
     @Mapping(target = "messages", ignore = true)
     @Mapping(target = "chat", source = "chat")
     Connection toEntity(Chat chat);
+
+    @Mapping(target = "messages", ignore = true)
+    Connection toEntity(Connection connection);
 }
