@@ -1,9 +1,16 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 import ru.impuls.helpdeskservice.entity.Chat;
@@ -15,13 +22,15 @@ import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapperImpl;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
-import ru.impuls.helpdeskservice.repository.ChatRepo;
-import ru.impuls.helpdeskservice.repository.MessageRepo;
-import ru.impuls.helpdeskservice.repository.SubgroupRepo;
+import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
+import ru.impuls.helpdeskservice.util.AuthUtil;
+import ru.impuls.helpdeskservice.util.ChatSpecifications;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -36,51 +45,114 @@ public class ChatServiceImpl implements ChatService {
     private final ConnectionService connectionService;
     private final MessageMapper messageMapper;
     private final ConnectionMapper connectionMapper;
+    private final GroupRepo groupRepo;
+    private final ConnectionRepo connectionRepo;
 
-    /*@Override
+    @Override
     @Transactional(readOnly = true)
-    public Page<ChatDto> getChats(
+    public List<ChatDto> getChats(
             UUID groupId,
             UUID subgroupId,
             Instant to,
             String search,
             Boolean isOpen,
             Boolean isWork,
+            Boolean isMy,
             int count) {
 
+        /*// Валидация параметров
+        validateParameters(count, groupId, subgroupId);
+
+        // Получение текущего пользователя для фильтра isMy
+        User currentUser = isMy != null && isMy ?
+                AuthUtil.getAuthenticatedUser() : null;
+
+        // Создание спецификации для фильтрации
+        Specification<Chat> spec = Specification.where(null);
+
+        // Фильтрация по подгруппе или группе
+        if (subgroupId != null) {
+            spec = spec.and(ChatSpecifications.hasSubgroupId(subgroupId));
+        } else if (groupId != null) {
+            spec = spec.and(ChatSpecifications.hasGroupId(groupId));
+        }
+
+        // Фильтрация по дате последнего сообщения
+        if (to != null) {
+            spec = spec.and(ChatSpecifications.hasLastMessageBefore(to));
+        }
+
+        // Фильтрация по поисковой строке
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(ChatSpecifications.matchesSearch(search));
+        }
+
+        // Фильтрация по статусу открытости
+        if (isOpen != null) {
+            spec = spec.and(ChatSpecifications.isOpen(isOpen));
+        }
+
+        // Фильтрация по статусу работы
+        if (isWork != null) {
+            spec = spec.and(ChatSpecifications.isWork(isWork));
+        }
+
+        // Фильтрация по участию пользователя
+        if (currentUser != null) {
+            spec = spec.and(ChatSpecifications.hasUser(currentUser));
+        }
+
+        // Сортировка и пагинация
+        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        Page<Chat> chatPage = chatRepository.findAll(spec, pageable);
+
+        // Для каждого чата загружаем только последнее подключение и сообщение
+        List<Chat> chats = chatPage.getContent();
+        for (Chat chat : chats) {
+            loadLastConnectionAndMessage(chat);
+        }
+
+        return chatPage.map(chatMapper::toDto);*/
+
+        List<Chat> chatPage = chatRepository.findAll();
+        return chatPage.stream()
+                .map(chatMapper::toDto)
+                .toList();
+    }
+
+    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
         if (count < 0 || count > 1000) {
-            throw new AppException(
-                    "Count must be between 0 and 1000",
-                    HttpStatus.BAD_REQUEST);
-        }
-        if (!groupRepo.existsById(groupId)) {
-            throw new AppException(
-                    ErrorMessage.GROUP_NOT_FOUND,
-                    HttpStatus.NOT_FOUND
-            );
-        }
-        if (!subgroupRepo.existsById(subgroupId)) {
-            throw new AppException(
-                    ErrorMessage.SUBGROUP_NOT_FOUND,
-                    HttpStatus.NOT_FOUND
-            );
+            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
         }
 
-        PageRequest pageable = PageRequest.of(
-                0,
-                count,
-                Sort.by("createdDate").descending()
-        );
+        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
+            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
 
-        // TODO: Реализовать фильтрацию по isMy (чаты, в которых участвовал пользователь)
+        if (groupId != null && !groupRepo.existsById(groupId)) {
+            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+    }
 
-        LocalDateTime toDateTime = to != null ?
-                LocalDateTime.ofInstant(to, ZoneId.systemDefault()) : null;
+    private void loadLastConnectionAndMessage(Chat chat) {
+        // Получаем последнее подключение для чата
+        Pageable connectionPageable = PageRequest.of(0, 1, Sort.by("startDate").descending());
+        Page<Connection> connections = connectionRepo.findByChatId(chat.getId(), connectionPageable);
 
-        Page<Chat> chats = chatRepository.findChatsWithFilters(
-                groupId, subgroupId, toDateTime, search, isOpen, isWork, pageable);
+        if (!connections.isEmpty()) {
+            Connection lastConnection = connections.getContent().getFirst();
 
-        return chats.map(chatMapper::toDto);*/
+            // Получаем последнее сообщение для подключения
+            Pageable messagePageable = PageRequest.of(0, 1, Sort.by("createdDate").descending());
+            Page<Message> messages = messageRepo.findByConnectionId(lastConnection.getId(), messagePageable);
+
+            if (!messages.isEmpty()) {
+                lastConnection.setMessages(Collections.singletonList(messages.getContent().getFirst()));
+            }
+
+            chat.setConnections(Collections.singletonList(lastConnection));
+        }
+    }
 
     @Override
     public ChatDto create(UUID subgroupId, ChatCreateDto chatCreateDto) {

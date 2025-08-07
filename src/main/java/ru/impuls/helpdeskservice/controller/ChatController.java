@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
+import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.service.ChatService;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,8 +25,8 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping
-    //@PreAuthorize("hasAuthority('USER')")
-    public ResponseEntity<Page<ChatDto>> getChats(
+    @PreAuthorize("hasAuthority('USER')")
+    public List<ChatDto> getChats(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
             @RequestParam(required = false) Instant to,
@@ -34,10 +36,7 @@ public class ChatController {
             @RequestParam(required = false) Boolean isWork,
             @RequestParam(required = false) Boolean isMy) {
 
-        /*Page<ChatDto> chats = chatService.getChats(
-                groupId, subgroupId, to, search, isOpen, isWork, count);*/
-
-        return ResponseEntity.ok(null);
+        return chatService.getChats(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
     }
 
     @PostMapping
@@ -57,6 +56,7 @@ public class ChatController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ChatDto delete(@PathVariable UUID id) {
         return chatService.delete(id);
     }

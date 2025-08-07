@@ -1,22 +1,26 @@
 package ru.impuls.helpdeskservice.service;
 
+import org.springframework.data.domain.Page;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
+import ru.impuls.helpdeskservice.entity.Chat;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public interface ChatService {
 
-    /*Page<ChatDto> getChats(
+    List<ChatDto> getChats(
             UUID groupId,
             UUID subgroupId,
             Instant to,
             String search,
             Boolean isOpen,
             Boolean isWork,
+            Boolean isMy,
             int count
-    );*/
+    );
 
     ChatDto create(UUID subgroupId, ChatCreateDto chatCreateDto);
 
