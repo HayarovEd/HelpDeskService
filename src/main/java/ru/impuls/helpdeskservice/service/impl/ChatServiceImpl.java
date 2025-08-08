@@ -12,6 +12,7 @@ import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
+import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
@@ -205,7 +206,6 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void joinChat(UUID chatId) {
-
         var userId = AuthUtil.getAuthenticatedUser().getId();
 
         Chat chat = chatRepository.findById(chatId)
@@ -230,8 +230,10 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
     }
 
-    /*@Override
-    public void exitChat(UUID chatId, UUID userId) {
+    @Override
+    public void exitChat(UUID chatId) {
+        var userId = AuthUtil.getAuthenticatedUser().getId();
+
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(
                         "Chat not found",
@@ -251,7 +253,7 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
     }
 
-    @Override
+    /*@Override
     public void closeChat(UUID chatId, UUID userId) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(

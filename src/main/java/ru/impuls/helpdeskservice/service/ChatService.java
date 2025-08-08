@@ -28,9 +28,9 @@ public interface ChatService {
 
     void joinChat(UUID chatId);
 
-    /*void exitChat(UUID chatId, UUID userId);
+    void exitChat(UUID chatId);
 
-    void closeChat(UUID chatId, UUID userId);
+    /*void closeChat(UUID chatId, UUID userId);
 
     void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
 

@@ -66,16 +66,14 @@ public class ChatController {
         chatService.joinChat(id);
     }
 
-    /*@PostMapping("/{id}/exit")
+    @PostMapping("/{id}/exit")
     @PreAuthorize("hasAuthority('SUPPORT')")
-    public ResponseEntity<Void> exitChat(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        chatService.exitChat(id, userDetails.getId());
+    public ResponseEntity<Void> exitChat(@PathVariable UUID id) {
+        chatService.exitChat(id);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/close")
+    /*@PostMapping("/{id}/close")
     @PreAuthorize("hasAuthority('SUPPORT')")
     public ResponseEntity<Void> closeChat(
             @PathVariable UUID id,
