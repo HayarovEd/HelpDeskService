@@ -75,8 +75,9 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public void validateCurrentUserIsResponder(Chat chat, UUID userId) {
         Connection currentConnection = getCurrentConnection(chat);
-        if (currentConnection == null || currentConnection.getUser() == null ||
-                !currentConnection.getUser().getId().equals(userId)) {
+        if (currentConnection == null
+                || currentConnection.getUser() == null
+                || !currentConnection.getUser().getId().equals(userId)) {
             throw new AppException(
                     "You are not the responder of this chat",
                     HttpStatus.FORBIDDEN);

@@ -220,10 +220,7 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND
                 ));
 
-        // Закрываем текущее соединение, если оно есть
         connectionService.closeCurrentConnection(chat);
-
-        // Создаем новое соединение с поддержкой
         connectionService.createSupportConnection(chat, user);
 
         chat.setWork(true);
@@ -240,13 +237,8 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND
                 ));
 
-        // Проверяем, что текущий пользователь является отвечающим
         connectionService.validateCurrentUserIsResponder(chat, userId);
-
-        // Закрываем текущее соединение
         connectionService.closeCurrentConnection(chat);
-
-        // Создаем новое соединение без поддержки
         connectionService.createClientConnection(chat);
 
         chat.setWork(false);
@@ -263,10 +255,7 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND
                 ));
 
-        // Проверяем, что текущий пользователь является отвечающим
         connectionService.validateCurrentUserIsResponder(chat, userId);
-
-        // Закрываем текущее соединение
         connectionService.closeCurrentConnection(chat);
 
         chat.setOpen(false);
