@@ -30,9 +30,9 @@ public interface ChatService {
 
     void exitChat(UUID chatId);
 
-    /*void closeChat(UUID chatId, UUID userId);
+    void closeChat(UUID chatId);
 
-    void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
+    /*void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
 
     void sendSupportMessage(UUID chatId, UUID userId, MessageCreateDto messageCreateDto);*/
 }

@@ -73,16 +73,14 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-    /*@PostMapping("/{id}/close")
+    @PostMapping("/{id}/close")
     @PreAuthorize("hasAuthority('SUPPORT')")
-    public ResponseEntity<Void> closeChat(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        chatService.closeChat(id, userDetails.getId());
+    public ResponseEntity<Void> closeChat(@PathVariable UUID id) {
+        chatService.closeChat(id);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/message/client")
+    /*@PostMapping("/{id}/message/client")
     public ResponseEntity<Void> sendClientMessage(
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
