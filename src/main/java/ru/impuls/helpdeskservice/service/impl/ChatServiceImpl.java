@@ -203,6 +203,33 @@ public class ChatServiceImpl implements ChatService {
         return chatMapper.toDto(chat);
     }
 
+    @Override
+    public void joinChat(UUID chatId) {
+
+        var userId = AuthUtil.getAuthenticatedUser().getId();
+
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new AppException(
+                        "Chat not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new AppException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        // Закрываем текущее соединение, если оно есть
+        connectionService.closeCurrentConnection(chat);
+
+        // Создаем новое соединение с поддержкой
+        connectionService.createSupportConnection(chat, user);
+
+        chat.setWork(true);
+        chatRepository.save(chat);
+    }
+
     /*@Override
     public void exitChat(UUID chatId, UUID userId) {
         Chat chat = chatRepository.findById(chatId)
