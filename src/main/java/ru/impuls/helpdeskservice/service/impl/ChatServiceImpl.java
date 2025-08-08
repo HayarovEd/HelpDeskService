@@ -5,11 +5,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
@@ -20,18 +20,15 @@ import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
-import ru.impuls.helpdeskservice.mapper.ConnectionMapperImpl;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
-import ru.impuls.helpdeskservice.util.ChatSpecifications;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -47,6 +44,7 @@ public class ChatServiceImpl implements ChatService {
     private final ConnectionMapper connectionMapper;
     private final GroupRepo groupRepo;
     private final ConnectionRepo connectionRepo;
+    private final UserRepo userRepo;
 
     @Override
     @Transactional(readOnly = true)
@@ -114,44 +112,31 @@ public class ChatServiceImpl implements ChatService {
 
         return chatPage.map(chatMapper::toDto);*/
 
-        List<Chat> chatPage = chatRepository.findAll();
-        return chatPage.stream()
+        //List<Chat> chatPage = chatRepository.findAll();
+
+        return chatRepository.findAll().stream()
+                .map(this::processChat)
                 .map(chatMapper::toDto)
-                .toList();
+                .collect(Collectors.toList());
     }
 
-    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
-        if (count < 0 || count > 1000) {
-            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
-        }
+    private Chat processChat(Chat chat) {
+        List<Connection> sortedConnections = chat.getConnections().stream()
+                .sorted(Comparator.comparing(Connection::getStartDate).reversed())
+                .map(this::processConnection)
+                .collect(Collectors.toList());
 
-        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
-            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
-
-        if (groupId != null && !groupRepo.existsById(groupId)) {
-            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
+        chat.setConnections(sortedConnections);
+        return chat;
     }
 
-    private void loadLastConnectionAndMessage(Chat chat) {
-        // Получаем последнее подключение для чата
-        Pageable connectionPageable = PageRequest.of(0, 1, Sort.by("startDate").descending());
-        Page<Connection> connections = connectionRepo.findByChatId(chat.getId(), connectionPageable);
+    private Connection processConnection(Connection connection) {
+        List<Message> sortedMessages = connection.getMessages().stream()
+                .sorted(Comparator.comparing(Message::getCreatedDate).reversed())
+                .collect(Collectors.toList());
 
-        if (!connections.isEmpty()) {
-            Connection lastConnection = connections.getContent().getFirst();
-
-            // Получаем последнее сообщение для подключения
-            Pageable messagePageable = PageRequest.of(0, 1, Sort.by("createdDate").descending());
-            Page<Message> messages = messageRepo.findByConnectionId(lastConnection.getId(), messagePageable);
-
-            if (!messages.isEmpty()) {
-                lastConnection.setMessages(Collections.singletonList(messages.getContent().getFirst()));
-            }
-
-            chat.setConnections(Collections.singletonList(lastConnection));
-        }
+        connection.setMessages(sortedMessages);
+        return connection;
     }
 
     @Override
@@ -181,7 +166,9 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException("Chat not found", HttpStatus.NOT_FOUND));
 
-        List<Connection> connections = chat.getConnections();
+        List<Connection> connections = chat.getConnections().stream()
+                .sorted(Comparator.comparing(Connection::getStartDate).reversed())
+                .toList();
 
         List<Connection> filteredConnections = connections.stream()
                 .map(connection -> {
@@ -217,30 +204,6 @@ public class ChatServiceImpl implements ChatService {
     }
 
     /*@Override
-    public void joinChat(UUID chatId, UUID userId) {
-        Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(
-                        "User not found",
-                        HttpStatus.NOT_FOUND
-                ));
-
-        // Закрываем текущее соединение, если оно есть
-        connectionService.closeCurrentConnection(chat);
-
-        // Создаем новое соединение с поддержкой
-        connectionService.createSupportConnection(chat, user);
-
-        chat.setWork(true);
-        chatRepository.save(chat);
-    }
-
-    @Override
     public void exitChat(UUID chatId, UUID userId) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(
@@ -301,4 +264,38 @@ public class ChatServiceImpl implements ChatService {
 
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
     }*/
+
+    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
+        if (count < 0 || count > 1000) {
+            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
+        }
+
+        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
+            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+
+        if (groupId != null && !groupRepo.existsById(groupId)) {
+            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private void loadLastConnectionAndMessage(Chat chat) {
+        // Получаем последнее подключение для чата
+        Pageable connectionPageable = PageRequest.of(0, 1, Sort.by("startDate").descending());
+        Page<Connection> connections = connectionRepo.findByChatId(chat.getId(), connectionPageable);
+
+        if (!connections.isEmpty()) {
+            Connection lastConnection = connections.getContent().getFirst();
+
+            // Получаем последнее сообщение для подключения
+            Pageable messagePageable = PageRequest.of(0, 1, Sort.by("createdDate").descending());
+            Page<Message> messages = messageRepo.findByConnectionId(lastConnection.getId(), messagePageable);
+
+            if (!messages.isEmpty()) {
+                lastConnection.setMessages(Collections.singletonList(messages.getContent().getFirst()));
+            }
+
+            chat.setConnections(Collections.singletonList(lastConnection));
+        }
+    }
 }

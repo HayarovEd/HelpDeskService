@@ -60,27 +60,13 @@ public class ChatController {
         return chatService.delete(id);
     }
 
-    /*@PostMapping("/{id}/join")
-    @PreAuthorize("hasRole('SUPPORT')")
-    @Operation(
-            summary = "Присоединиться к чату по ID",
-            description = "Роль: SUPPORT\n\nМожно присоединиться, только если у чата нет отвечающего. Данные берутся из JWT"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Присоединиться к чату"),
-            @ApiResponse(responseCode = "401", description = "Не авторизован"),
-            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
-            @ApiResponse(responseCode = "404", description = "Чат не найден"),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
-    })
-    public ResponseEntity<Void> joinChat(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        chatService.joinChat(id, userDetails.getId());
-        return ResponseEntity.ok().build();
+    @PostMapping("/{id}/join")
+    @PreAuthorize("hasAuthority('SUPPORT')")
+    public void joinChat(@PathVariable UUID id) {
+        chatService.joinChat(id);
     }
 
-    @PostMapping("/{id}/exit")
+    /*@PostMapping("/{id}/exit")
     @PreAuthorize("hasAuthority('SUPPORT')")
     public ResponseEntity<Void> exitChat(
             @PathVariable UUID id,

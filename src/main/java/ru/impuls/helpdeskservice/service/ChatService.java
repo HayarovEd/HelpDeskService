@@ -1,9 +1,7 @@
 package ru.impuls.helpdeskservice.service;
 
-import org.springframework.data.domain.Page;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
-import ru.impuls.helpdeskservice.entity.Chat;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,9 +26,9 @@ public interface ChatService {
 
     ChatDto delete(UUID id);
 
-    /*void joinChat(UUID chatId, UUID userId);
+    void joinChat(UUID chatId);
 
-    void exitChat(UUID chatId, UUID userId);
+    /*void exitChat(UUID chatId, UUID userId);
 
     void closeChat(UUID chatId, UUID userId);
 

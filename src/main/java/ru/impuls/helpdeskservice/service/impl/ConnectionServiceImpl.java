@@ -57,7 +57,6 @@ public class ConnectionServiceImpl implements ConnectionService {
         Connection connection = Connection.builder()
                 .chat(chat)
                 .user(user)
-                .startDate(Instant.now())
                 .build();
 
         connectionRepository.save(connection);
