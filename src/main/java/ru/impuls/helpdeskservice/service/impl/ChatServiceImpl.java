@@ -247,19 +247,16 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void closeChat(UUID chatId) {
-        var userId = AuthUtil.getAuthenticatedUser().getId();
-
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(
                         "Chat not found",
                         HttpStatus.NOT_FOUND
                 ));
 
-        connectionService.validateCurrentUserIsResponder(chat, userId);
         connectionService.closeCurrentConnection(chat);
-
         chat.setOpen(false);
         chat.setWork(false);
+
         chatRepository.save(chat);
     }
 

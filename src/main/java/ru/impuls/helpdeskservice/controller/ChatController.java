@@ -74,7 +74,6 @@ public class ChatController {
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void closeChat(@PathVariable UUID id) {
         chatService.closeChat(id);
     }
