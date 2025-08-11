@@ -61,23 +61,21 @@ public class ChatController {
     }
 
     @PostMapping("/{id}/join")
-    @PreAuthorize("hasAuthority('SUPPORT')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void joinChat(@PathVariable UUID id) {
         chatService.joinChat(id);
     }
 
     @PostMapping("/{id}/exit")
-    @PreAuthorize("hasAuthority('SUPPORT')")
-    public ResponseEntity<Void> exitChat(@PathVariable UUID id) {
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
+    public void exitChat(@PathVariable UUID id) {
         chatService.exitChat(id);
-        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasAuthority('SUPPORT')")
-    public ResponseEntity<Void> closeChat(@PathVariable UUID id) {
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
+    public void closeChat(@PathVariable UUID id) {
         chatService.closeChat(id);
-        return ResponseEntity.ok().build();
     }
 
     /*@PostMapping("/{id}/message/client")
