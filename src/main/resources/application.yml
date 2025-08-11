@@ -68,6 +68,8 @@ application:
         path: /chats/*
       - method: POST
         path: /chats
+      - method: POST
+        path: /chats/{id}/message/client
       - method: GET
         path: /v2/api-docs
       - method: GET
