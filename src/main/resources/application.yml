@@ -65,6 +65,10 @@ application:
       - method: POST
         path: /auth/*
       - method: GET
+        path: /chats/*
+      - method: POST
+        path: /chats
+      - method: GET
         path: /v2/api-docs
       - method: GET
         path: /ws/**
