@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
@@ -28,6 +29,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final MessageRepo messageRepository;
     private final ConnectionMapper connectionMapper;
     private final MessageMapper messageMapper;
+    private final UserRepo userRepo;
 
     @Override
     public Connection createInitialConnection(Chat chat, String messageText) {
@@ -110,6 +112,14 @@ public class ConnectionServiceImpl implements ConnectionService {
 
         if (!chat.isOpen()) {
             createInitialConnection(chat, text);
+            var con = chat.getConnections().getFirst();
+
+            if (con.getUser() == null) {
+                var user = userRepo.findById(userId)
+                        .orElse(null);
+                con.setUser(user);
+            }
+
             chat.setOpen(true);
             return;
         }
@@ -119,7 +129,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         Message message = Message.builder()
                 .connection(currentConnection)
                 .text(text)
-                .isSupport(false)
+                .isSupport(true)
                 .build();
 
         messageRepository.save(message);
