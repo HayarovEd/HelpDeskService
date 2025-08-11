@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
+import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
@@ -108,23 +109,15 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public void addSupportMessage(Chat chat, UUID userId, String text) {
-        Connection currentConnection;
 
         if (!chat.isOpen()) {
-            createInitialConnection(chat, text);
-            var con = chat.getConnections().getFirst();
-
-            if (con.getUser() == null) {
-                var user = userRepo.findById(userId)
-                        .orElse(null);
-                con.setUser(user);
-            }
-
-            chat.setOpen(true);
-            return;
+            throw new AppException(
+                    ErrorMessage.CHAT_IS_CLOSED,
+                    HttpStatus.BAD_REQUEST
+            );
         }
 
-        currentConnection = getCurrentConnection(chat);
+        Connection currentConnection = getCurrentConnection(chat);
         validateCurrentUserIsResponder(chat, userId);
         Message message = Message.builder()
                 .connection(currentConnection)
