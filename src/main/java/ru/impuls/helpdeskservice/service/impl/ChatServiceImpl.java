@@ -214,6 +214,13 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND
                 ));
 
+        if (!chat.isOpen()) {
+            throw new AppException(
+                    ErrorMessage.CHAT_IS_CLOSED,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new AppException(
                         "User not found",
