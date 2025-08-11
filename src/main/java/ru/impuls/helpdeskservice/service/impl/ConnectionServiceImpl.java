@@ -88,8 +88,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     public void addClientMessage(Chat chat, String text) {
         Connection currentConnection = getCurrentConnection(chat);
         if (currentConnection == null) {
-            Connection tmp = createInitialConnection(chat, text);
-            return;
+            currentConnection = createInitialConnection(chat, text);
         }
 
         Message message = Message.builder()

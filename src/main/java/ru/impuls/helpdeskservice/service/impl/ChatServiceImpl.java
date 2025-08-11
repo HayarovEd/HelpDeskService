@@ -263,7 +263,7 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
     }
 
-    /*@Override
+    @Override
     public void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(
@@ -275,7 +275,9 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void sendSupportMessage(UUID chatId, UUID userId, MessageCreateDto messageCreateDto) {
+    public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto) {
+        var userId = AuthUtil.getAuthenticatedUser().getId();
+
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(
                         "Chat not found",
@@ -283,7 +285,7 @@ public class ChatServiceImpl implements ChatService {
                 ));
 
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
-    }*/
+    }
 
     private void validateParameters(int count, UUID groupId, UUID subgroupId) {
         if (count < 0 || count > 1000) {

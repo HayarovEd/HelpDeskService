@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.service;
 
 import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
+import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 
 import java.time.Instant;
@@ -32,7 +33,7 @@ public interface ChatService {
 
     void closeChat(UUID chatId);
 
-    /*void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
+    void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
 
-    void sendSupportMessage(UUID chatId, UUID userId, MessageCreateDto messageCreateDto);*/
+    void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto);
 }

@@ -78,21 +78,18 @@ public class ChatController {
         chatService.closeChat(id);
     }
 
-    /*@PostMapping("/{id}/message/client")
-    public ResponseEntity<Void> sendClientMessage(
+    @PostMapping("/{id}/message/client")
+    public void sendClientMessage(
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
         chatService.sendClientMessage(id, messageCreateDto);
-        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/message/support")
-    @PreAuthorize("hasAuthority('USER')")
-    public ResponseEntity<Void> sendSupportMessage(
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
+    public void sendSupportMessage(
             @PathVariable UUID id,
-            @RequestBody MessageCreateDto messageCreateDto,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        chatService.sendSupportMessage(id, userDetails.getId(), messageCreateDto);
-        return ResponseEntity.ok().build();
-    }*/
+            @RequestBody MessageCreateDto messageCreateDto) {
+        chatService.sendSupportMessage(id,messageCreateDto);
+    }
 }
