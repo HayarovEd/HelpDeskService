@@ -86,9 +86,12 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public void addClientMessage(Chat chat, String text) {
-        Connection currentConnection = getCurrentConnection(chat);
-        if (currentConnection == null) {
+        Connection currentConnection;
+        if (!chat.isOpen()) {
             currentConnection = createInitialConnection(chat, text);
+            chat.setOpen(true);
+        } else {
+            currentConnection = getCurrentConnection(chat);
         }
 
         Message message = Message.builder()
@@ -102,7 +105,14 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     @Override
     public void addSupportMessage(Chat chat, UUID userId, String text) {
-        Connection currentConnection = getCurrentConnection(chat);
+        Connection currentConnection;
+        if (!chat.isOpen()) {
+            currentConnection = createInitialConnection(chat, text);
+            chat.setOpen(true);
+        } else {
+            currentConnection = getCurrentConnection(chat);
+        }
+
         validateCurrentUserIsResponder(chat, userId);
 
         Message message = Message.builder()
