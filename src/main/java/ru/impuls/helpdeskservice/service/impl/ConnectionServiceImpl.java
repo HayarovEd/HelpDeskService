@@ -87,13 +87,14 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public void addClientMessage(Chat chat, String text) {
         Connection currentConnection;
+
         if (!chat.isOpen()) {
-            currentConnection = createInitialConnection(chat, text);
+            createInitialConnection(chat, text);
             chat.setOpen(true);
-        } else {
-            currentConnection = getCurrentConnection(chat);
+            return;
         }
 
+        currentConnection = getCurrentConnection(chat);
         Message message = Message.builder()
                 .connection(currentConnection)
                 .text(text)
@@ -106,19 +107,19 @@ public class ConnectionServiceImpl implements ConnectionService {
     @Override
     public void addSupportMessage(Chat chat, UUID userId, String text) {
         Connection currentConnection;
+
         if (!chat.isOpen()) {
-            currentConnection = createInitialConnection(chat, text);
+            createInitialConnection(chat, text);
             chat.setOpen(true);
-        } else {
-            currentConnection = getCurrentConnection(chat);
+            return;
         }
 
+        currentConnection = getCurrentConnection(chat);
         validateCurrentUserIsResponder(chat, userId);
-
         Message message = Message.builder()
                 .connection(currentConnection)
                 .text(text)
-                .isSupport(true)
+                .isSupport(false)
                 .build();
 
         messageRepository.save(message);
