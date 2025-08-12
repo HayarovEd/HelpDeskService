@@ -28,8 +28,6 @@ public interface JwtService {
 
     boolean isTokenExpired(String token);
 
-    boolean isRefreshToken(String token);
-
     boolean isAccessToken(String token);
 
     UsernamePasswordAuthenticationToken getAuthentication(String token);

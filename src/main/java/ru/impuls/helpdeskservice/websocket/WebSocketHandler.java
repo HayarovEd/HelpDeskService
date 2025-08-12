@@ -12,17 +12,14 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.dto.LogItemDto;
-import ru.impuls.helpdeskservice.dto.response.GroupEventDto;
-import ru.impuls.helpdeskservice.dto.response.SubgroupEventDto;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
@@ -110,7 +107,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         if (data instanceof LogItemDto) {
             return "ADMIN".equals(userRole);
-        } else if (data instanceof UserDto) {
+        } else if (data instanceof UserResDto) {
             return "ADMIN".equals(userRole);
         }
 

@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 
 import java.util.List;
@@ -23,25 +23,25 @@ public class UserController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<UserDto> getAll() {
+    public List<UserResDto> getAll() {
         return userService.getAll();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto create(@RequestBody @Valid UserEditDto userDto) {
+    public UserResDto create(@RequestBody @Valid UserEditReqReqDto userDto) {
         return userService.create(userDto);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public UserDto update(@PathVariable UUID id, @RequestBody UserDto userDto) {
-        return userService.update(id, userDto);
+    public UserResDto update(@PathVariable UUID id, @RequestBody UserResDto userResDto) {
+        return userService.update(id, userResDto);
     }
 
     @PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.OK)
-    public UserDto changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordDto passwordDto) {
-        return userService.changePassword(id, passwordDto);
+    public UserResDto changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordReqDto passwordReqDto) {
+        return userService.changePassword(id, passwordReqDto);
     }
 }

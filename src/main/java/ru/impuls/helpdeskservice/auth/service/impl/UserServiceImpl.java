@@ -6,9 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.dto.request.PasswordDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditDto;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
@@ -38,14 +38,14 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public List<UserDto> getAll() {
+    public List<UserResDto> getAll() {
         return userRepo.findAll(Sort.by(Sort.Direction.ASC, "email")).stream()
                 .map(userMapper::toDto)
                 .toList();
     }
 
     @Override
-    public UserDto create(UserEditDto userDto) {
+    public UserResDto create(UserEditReqReqDto userDto) {
         if(userRepo.existsByEmail(userDto.getEmail())) {
             throw new AppException(
                     ErrorMessage.USER_ALREADY_EXISTS,
@@ -67,23 +67,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto update(UUID id, UserDto userDto) {
+    public UserResDto update(UUID id, UserResDto userResDto) {
         var user = userRepo.findById(id)
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
-        UserDto oldUserDto = userMapper.toDto(user);
-        var role = roleRepo.findByName(userDto.getRole().getName())
+        UserResDto oldUserResDto = userMapper.toDto(user);
+        var role = roleRepo.findByName(userResDto.getRole().getName())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
                         HttpStatus.BAD_REQUEST
                 ));
 
-        userMapper.updateEntity(user, userDto, role);
+        userMapper.updateEntity(user, userResDto, role);
 
-        if (!oldUserDto.getEmail().equals(user.getEmail())
-                || oldUserDto.isDisabled() != user.isDisabled()
+        if (!oldUserResDto.getEmail().equals(user.getEmail())
+                || oldUserResDto.isDisabled() != user.isDisabled()
         ) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
             tokenService.deleteAll(user, TokenType.REFRESH);
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
 
-        if (!Objects.equals(oldUserDto, resUserDto)) {
+        if (!Objects.equals(oldUserResDto, resUserDto)) {
             webSocketHandler.notifyUser(id, "/account", resUserDto, EventType.UPDATED);
         }
 
@@ -101,14 +101,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto changePassword(UUID id, PasswordDto passwordDto) {
+    public UserResDto changePassword(UUID id, PasswordReqDto passwordReqDto) {
         var user = userRepo.findById(id)
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
 
-        userMapper.updatePassword(user, passwordDto, passwordEncoder);
+        userMapper.updatePassword(user, passwordReqDto, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
         var resUserDto = userMapper.toDto(user);

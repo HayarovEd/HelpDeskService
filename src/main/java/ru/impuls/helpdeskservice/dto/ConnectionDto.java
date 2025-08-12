@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +23,6 @@ public class ConnectionDto extends BaseDto {
     @JsonProperty("end")
     Instant endDate;
 
-    UserDto user;
+    UserResDto user;
     List<MessageDto> messages;
 }

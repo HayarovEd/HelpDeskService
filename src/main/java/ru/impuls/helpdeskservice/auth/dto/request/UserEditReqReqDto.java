@@ -13,7 +13,7 @@ import ru.impuls.helpdeskservice.auth.dto.RoleDto;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserEditDto extends LoginDto {
+public class UserEditReqReqDto extends LoginReqReqDto {
 
     @NotBlank(message = "Name is required")
     String name;

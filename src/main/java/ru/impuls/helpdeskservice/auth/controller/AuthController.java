@@ -6,8 +6,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.auth.dto.request.LoginDto;
-import ru.impuls.helpdeskservice.auth.dto.response.TokenDto;
+import ru.impuls.helpdeskservice.auth.dto.request.LoginReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.response.TokenResDto;
 import ru.impuls.helpdeskservice.auth.service.AuthService;
 
 @RestController
@@ -19,8 +19,8 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public TokenDto login(@RequestBody @Valid LoginDto loginDto, HttpServletResponse response) {
-        return authService.login(loginDto, response);
+    public TokenResDto login(@RequestBody @Valid LoginReqReqDto loginReqDto, HttpServletResponse response) {
+        return authService.login(loginReqDto, response);
     }
 
     @PostMapping("logout")
@@ -31,7 +31,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
-    public TokenDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public TokenResDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         return authService.refreshToken(request, response);
     }
 

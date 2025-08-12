@@ -3,7 +3,7 @@ package ru.impuls.helpdeskservice.dto;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import ru.impuls.helpdeskservice.auth.dto.response.UserDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 
 import java.time.Instant;
 
@@ -16,5 +16,5 @@ import java.time.Instant;
 public class LogItemDto extends BaseDto {
     String text;
     Instant createdDate;
-    UserDto user;
+    UserResDto user;
 }

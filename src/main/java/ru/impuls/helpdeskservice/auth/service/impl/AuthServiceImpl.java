@@ -9,8 +9,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.dto.request.LoginDto;
-import ru.impuls.helpdeskservice.auth.dto.response.TokenDto;
+import ru.impuls.helpdeskservice.auth.dto.request.LoginReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.response.TokenResDto;
 import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.TokenRepo;
@@ -42,14 +42,14 @@ public class AuthServiceImpl implements AuthService {
 
     /************************ login ***************************/
     @Override
-    public TokenDto login(LoginDto loginDto, HttpServletResponse response) {
-        var user = userRepo.findByEmail(loginDto.getEmail())
+    public TokenResDto login(LoginReqReqDto loginReqDto, HttpServletResponse response) {
+        var user = userRepo.findByEmail(loginReqDto.getEmail())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
 
-        validateUserForLogin(user, loginDto);
+        validateUserForLogin(user, loginReqDto);
 
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken();
@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
         tokenService.save(user, refreshToken, TokenType.REFRESH);
         cookieUtil.addRefreshTokenToCookie(response, refreshToken);
 
-        return TokenDto.builder()
+        return TokenResDto.builder()
                 .token(accessToken)
                 .build();
     }
@@ -76,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
 
     /************************ refresh ***************************/
     @Override
-    public TokenDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public TokenResDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieUtil.extractRefreshTokenFromCookies(request);
         if (refreshToken == null) {
             throw new AppException(
@@ -102,7 +102,6 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        // Получаем все refresh токены пользователя
         List<Token> existingTokens = tokenRepo.findByUserAndTokenType(user, TokenType.REFRESH);
 
         if (token.getPosition() != null) {
@@ -131,12 +130,12 @@ public class AuthServiceImpl implements AuthService {
         tokenService.save(user, newRefreshToken, TokenType.REFRESH);
         cookieUtil.addRefreshTokenToCookie(response, newRefreshToken);
 
-        return TokenDto.builder()
+        return TokenResDto.builder()
                 .token(newAccessToken)
                 .build();
     }
 
-    private void validateUserForLogin(User user, LoginDto loginDto) {
+    private void validateUserForLogin(User user, LoginReqReqDto loginReqDto) {
         if (!user.isEnabled()) {
             throw new AppException(
                     ErrorMessage.USER_BLOCKED,
@@ -146,8 +145,8 @@ public class AuthServiceImpl implements AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginDto.getEmail(),
-                            loginDto.getPassword()
+                            loginReqDto.getEmail(),
+                            loginReqDto.getPassword()
                     ));
         } catch (BadCredentialsException e) {
             throw new AppException(

@@ -13,7 +13,7 @@ import ru.impuls.helpdeskservice.dto.BaseDto;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserDto extends BaseDto {
+public class UserResDto extends BaseDto {
     String name;
     String email;
     RoleDto role;
