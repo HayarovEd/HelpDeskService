@@ -31,7 +31,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupServiceImpl.class);
     private final GroupRepo groupRepo;
     private final GroupMapper groupMapper;
     private final WebSocketHandler webSocketHandler;
