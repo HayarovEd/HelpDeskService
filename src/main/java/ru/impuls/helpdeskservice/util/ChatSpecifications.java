@@ -50,12 +50,12 @@ public class ChatSpecifications {
 
     public static Specification<Chat> isOpen(boolean isOpen) {
         return (root, query, cb) ->
-                cb.equal(root.get("isOpen"), isOpen);
+                cb.equal(root.get("open"), isOpen);
     }
 
     public static Specification<Chat> isWork(boolean isWork) {
         return (root, query, cb) ->
-                cb.equal(root.get("isWork"), isWork);
+                cb.equal(root.get("work"), isWork);
     }
 
     public static Specification<Chat> hasUser(User user) {

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
+import ru.impuls.helpdeskservice.util.ChatSpecifications;
 import ru.impuls.helpdeskservice.websocket.EventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
@@ -48,99 +50,6 @@ public class ChatServiceImpl implements ChatService {
     private final GroupRepo groupRepo;
     private final ConnectionRepo connectionRepo;
     private final UserRepo userRepo;
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ChatDto> getChats(
-            UUID groupId,
-            UUID subgroupId,
-            Instant to,
-            String search,
-            Boolean isOpen,
-            Boolean isWork,
-            Boolean isMy,
-            int count) {
-
-        /*// Валидация параметров
-        validateParameters(count, groupId, subgroupId);
-
-        // Получение текущего пользователя для фильтра isMy
-        User currentUser = isMy != null && isMy ?
-                AuthUtil.getAuthenticatedUser() : null;
-
-        // Создание спецификации для фильтрации
-        Specification<Chat> spec = Specification.where(null);
-
-        // Фильтрация по подгруппе или группе
-        if (subgroupId != null) {
-            spec = spec.and(ChatSpecifications.hasSubgroupId(subgroupId));
-        } else if (groupId != null) {
-            spec = spec.and(ChatSpecifications.hasGroupId(groupId));
-        }
-
-        // Фильтрация по дате последнего сообщения
-        if (to != null) {
-            spec = spec.and(ChatSpecifications.hasLastMessageBefore(to));
-        }
-
-        // Фильтрация по поисковой строке
-        if (search != null && !search.isEmpty()) {
-            spec = spec.and(ChatSpecifications.matchesSearch(search));
-        }
-
-        // Фильтрация по статусу открытости
-        if (isOpen != null) {
-            spec = spec.and(ChatSpecifications.isOpen(isOpen));
-        }
-
-        // Фильтрация по статусу работы
-        if (isWork != null) {
-            spec = spec.and(ChatSpecifications.isWork(isWork));
-        }
-
-        // Фильтрация по участию пользователя
-        if (currentUser != null) {
-            spec = spec.and(ChatSpecifications.hasUser(currentUser));
-        }
-
-        // Сортировка и пагинация
-        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
-        Page<Chat> chatPage = chatRepository.findAll(spec, pageable);
-
-        // Для каждого чата загружаем только последнее подключение и сообщение
-        List<Chat> chats = chatPage.getContent();
-        for (Chat chat : chats) {
-            loadLastConnectionAndMessage(chat);
-        }
-
-        return chatPage.map(chatMapper::toDto);*/
-
-        //List<Chat> chatPage = chatRepository.findAll();
-
-        return chatRepository.findAll().stream()
-                .map(this::processChat)
-                .map(chatMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    private Chat processChat(Chat chat) {
-        List<Connection> sortedConnections = chat.getConnections().stream()
-                .sorted(Comparator.comparing(Connection::getStartDate).reversed())
-                .map(this::processConnection)
-                .collect(Collectors.toList());
-
-        chat.setConnections(sortedConnections);
-        return chat;
-    }
-
-    private Connection processConnection(Connection connection) {
-        List<Message> sortedMessages = connection.getMessages().stream()
-                .sorted(Comparator.comparing(Message::getCreatedDate).reversed())
-                .collect(Collectors.toList());
-
-        connection.setMessages(sortedMessages);
-        return connection;
-    }
 
     @Override
     public ChatDto create(UUID subgroupId, ChatCreateDto chatCreateDto) {
@@ -296,18 +205,68 @@ public class ChatServiceImpl implements ChatService {
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
     }
 
-    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
-        if (count < 0 || count > 1000) {
-            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChatDto> getChats(
+            UUID groupId,
+            UUID subgroupId,
+            Instant to,
+            String search,
+            Boolean isOpen,
+            Boolean isWork,
+            Boolean isMy,
+            int count) {
+
+        // Валидация параметров
+        validateParameters(count, groupId, subgroupId);
+
+        // Получение текущего пользователя для фильтра isMy
+        User currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
+
+        // Создание спецификации для фильтрации
+        Specification<Chat> spec = Specification.where(null);
+
+        if (subgroupId != null) {
+            spec = spec.and(ChatSpecifications.hasSubgroupId(subgroupId));
+        } else if (groupId != null) {
+            spec = spec.and(ChatSpecifications.hasGroupId(groupId));
         }
 
-        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
-            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        if (to != null) {
+            spec = spec.and(ChatSpecifications.hasLastMessageBefore(to));
         }
 
-        if (groupId != null && !groupRepo.existsById(groupId)) {
-            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(ChatSpecifications.matchesSearch(search));
         }
+
+        if (isOpen != null) {
+            spec = spec.and(ChatSpecifications.isOpen(isOpen));
+        }
+
+        if (isWork != null) {
+            spec = spec.and(ChatSpecifications.isWork(isWork));
+        }
+
+        if (currentUser != null) {
+            spec = spec.and(ChatSpecifications.hasUser(currentUser));
+        }
+
+        // Пагинация и сортировка по дате создания (последние чаты первыми)
+        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        Page<Chat> chatPage = chatRepository.findAll(spec, pageable);
+
+        List<Chat> chats = chatPage.getContent();
+
+        // Для каждого чата загружаем последнее подключение с одним последним сообщением
+        for (Chat chat : chats) {
+            loadLastConnectionAndMessage(chat);
+        }
+
+        // Преобразуем в DTO и возвращаем список
+        return chats.stream()
+                .map(chatMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     private void loadLastConnectionAndMessage(Chat chat) {
@@ -324,9 +283,28 @@ public class ChatServiceImpl implements ChatService {
 
             if (!messages.isEmpty()) {
                 lastConnection.setMessages(Collections.singletonList(messages.getContent().getFirst()));
+            } else {
+                lastConnection.setMessages(Collections.emptyList());
             }
 
             chat.setConnections(Collections.singletonList(lastConnection));
+        } else {
+            chat.setConnections(Collections.emptyList());
         }
     }
+
+    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
+        if (count < 0 || count > 1000) {
+            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
+        }
+
+        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
+            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+
+        if (groupId != null && !groupRepo.existsById(groupId)) {
+            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+    }
+
 }
