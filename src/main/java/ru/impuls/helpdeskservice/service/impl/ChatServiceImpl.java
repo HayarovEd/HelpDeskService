@@ -26,6 +26,8 @@ import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
+import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.*;
@@ -41,7 +43,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepo messageRepo;
     private final ChatMapper chatMapper;
     private final ConnectionService connectionService;
-    private final MessageMapper messageMapper;
+    private final WebSocketHandler webSocketHandler;
     private final ConnectionMapper connectionMapper;
     private final GroupRepo groupRepo;
     private final ConnectionRepo connectionRepo;
@@ -154,7 +156,10 @@ public class ChatServiceImpl implements ChatService {
         Connection connection = connectionService.createInitialConnection(chat, chatCreateDto.getMessage());
         chat.setConnections(Collections.singletonList(connection));
 
-        return chatMapper.toDto(chat);
+        var chatDto = chatMapper.toDto(chat);
+        webSocketHandler.notifyChange("/chats", chatDto, EventType.CREATED);
+
+        return chatDto;
     }
 
     @Override
