@@ -24,11 +24,9 @@ public class Message extends BaseEntity {
 
     String text;
     boolean isSupport;
+    Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "connection_id")
     Connection connection;
-
-    @CreatedDate
-    Instant createdDate;
 }

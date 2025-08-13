@@ -12,10 +12,10 @@ public interface ConnectionMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "startDate", ignore = true)
     @Mapping(target = "endDate", ignore = true)
     @Mapping(target = "messages", ignore = true)
     @Mapping(target = "chat", source = "chat")
+    @Mapping(target = "startDate", source = "chat.createdDate")
     Connection toEntity(Chat chat);
 
     @Mapping(target = "messages", ignore = true)

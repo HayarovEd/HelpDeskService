@@ -23,6 +23,11 @@ public class ChatCreateDto {
             regexp = "^[\\w.-]+@[\\w-]+\\.[\\w-]{2,4}(\\.[\\w-]{2,4})?$",
             message = "Email must be in format: user@domain.com or user@domain.co.uk"
     )
+    @Schema(
+            description = "Email пользователя",
+            example = "user@example.com",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     String email;
 
     @NotBlank(message = "Phone is required")

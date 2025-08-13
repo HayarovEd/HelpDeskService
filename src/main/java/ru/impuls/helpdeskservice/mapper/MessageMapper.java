@@ -12,10 +12,9 @@ import ru.impuls.helpdeskservice.entity.Message;
 public interface MessageMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "createdDate", source = "connection.startDate")
     @Mapping(target = "connection", source = "connection")
     Message toEntity(Connection connection, String text, boolean isSupport);
 
-    //@Mapping(target = "isSupport", source = "isSupport")
     MessageDto toDto(Message message);
 }

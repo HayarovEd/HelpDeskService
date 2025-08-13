@@ -32,9 +32,7 @@ public class Connection extends BaseEntity {
     @JoinColumn(name = "user_id")
     User user;
 
-    @CreatedDate
     Instant startDate;
-
     Instant endDate;
 
     @OneToMany(mappedBy = "connection", cascade = CascadeType.ALL, orphanRemoval = true)
