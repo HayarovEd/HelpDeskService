@@ -92,12 +92,9 @@ public class ChatServiceImpl implements ChatService {
                 break;
             }
 
-            List<Message> messages;
-            if (to == null) {
-                messages = messageRepo.findTopNByConnectionId(connection.getId(), remaining);
-            } else {
-                messages = messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
-            }
+            List<Message> messages = (to == null)
+                    ? messageRepo.findTopNByConnectionId(connection.getId(), remaining)
+                    : messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
 
             remaining -= messages.size();
 
