@@ -89,10 +89,7 @@ public class ChatServiceImpl implements ChatService {
 
         for (Connection connection : connections) {
             if (remaining <= 0) {
-                Connection emptyConn = connectionMapper.toEntity(connection);
-                emptyConn.setMessages(Collections.emptyList());
-                resultConnections.add(emptyConn);
-                continue;
+                break;
             }
 
             List<Message> messages;
