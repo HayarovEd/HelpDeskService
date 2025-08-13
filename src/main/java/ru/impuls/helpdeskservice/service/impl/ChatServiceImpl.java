@@ -85,28 +85,32 @@ public class ChatServiceImpl implements ChatService {
                 .toList();
 
         int remaining = count;
-        List<Connection> resultConnections = new ArrayList<>();
+        List<Connection> connectionsWithMessages = new ArrayList<>();
 
         for (Connection connection : connections) {
             if (remaining <= 0) {
                 break;
             }
 
-            List<Message> messages = (to == null)
-                    ? messageRepo.findTopNByConnectionId(connection.getId(), remaining)
-                    : messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
+            List<Message> messages;
+            if (to == null) {
+                messages = messageRepo.findTopNByConnectionId(connection.getId(), remaining);
+            } else {
+                messages = messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
+            }
 
-            remaining -= messages.size();
-
-            Connection connWithMessages = connectionMapper.toEntity(connection);
-            connWithMessages.setMessages(messages);
-            resultConnections.add(connWithMessages);
+            if (!messages.isEmpty()) {
+                Connection connWithMessages = connectionMapper.toEntity(connection);
+                connWithMessages.setMessages(messages);
+                connectionsWithMessages.add(connWithMessages);
+                remaining -= messages.size();
+            }
+            // Если сообщений нет — connection не добавляем, remaining не трогаем
         }
 
-        Chat filteredChat = chatMapper.toEntity(chat, resultConnections);
+        Chat filteredChat = chatMapper.toEntity(chat, connectionsWithMessages);
         return chatMapper.toDto(filteredChat);
     }
-
 
     @Override
     public ChatDto delete(UUID id) {
