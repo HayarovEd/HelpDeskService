@@ -22,7 +22,6 @@ import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
-import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
@@ -85,28 +84,35 @@ public class ChatServiceImpl implements ChatService {
                 .sorted(Comparator.comparing(Connection::getStartDate).reversed())
                 .toList();
 
-        List<Connection> filteredConnections = connections.stream()
-                .map(connection -> {
-                    Connection filteredConnection = connectionMapper.toEntity(connection);
+        int remaining = count;
+        List<Connection> resultConnections = new ArrayList<>();
 
-                    List<Message> filteredMessages;
-                    if (to == null) {
-                        filteredMessages = messageRepo.findTopNByConnectionId(
-                                connection.getId(), count);
-                    } else {
-                        filteredMessages = messageRepo.findTopNByConnectionIdAndCreatedDate(
-                                connection.getId(), to, count);
-                    }
+        for (Connection connection : connections) {
+            if (remaining <= 0) {
+                Connection emptyConn = connectionMapper.toEntity(connection);
+                emptyConn.setMessages(Collections.emptyList());
+                resultConnections.add(emptyConn);
+                continue;
+            }
 
-                    filteredConnection.setMessages(filteredMessages);
-                    return filteredConnection;
-                })
-                .toList();
+            List<Message> messages;
+            if (to == null) {
+                messages = messageRepo.findTopNByConnectionId(connection.getId(), remaining);
+            } else {
+                messages = messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
+            }
 
-        Chat filteredChat  = chatMapper.toEntity(chat, filteredConnections);
+            remaining -= messages.size();
 
-        return chatMapper.toDto(filteredChat );
+            Connection connWithMessages = connectionMapper.toEntity(connection);
+            connWithMessages.setMessages(messages);
+            resultConnections.add(connWithMessages);
+        }
+
+        Chat filteredChat = chatMapper.toEntity(chat, resultConnections);
+        return chatMapper.toDto(filteredChat);
     }
+
 
     @Override
     public ChatDto delete(UUID id) {
