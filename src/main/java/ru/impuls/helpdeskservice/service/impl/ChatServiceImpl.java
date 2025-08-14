@@ -92,12 +92,9 @@ public class ChatServiceImpl implements ChatService {
                 break;
             }
 
-            if (to != null && connection.getStartDate().isAfter(to)) {
-                Connection connWithMessages = connectionMapper.toEntity(connection);
-                connWithMessages.setMessages(Collections.emptyList());
-                filteredConnections.add(connWithMessages);
+            /*if (to != null && connection.getStartDate().isBefore(to)) {
                 continue;
-            }
+            }*/
 
             List<Message> messages;
             if (to == null) {
