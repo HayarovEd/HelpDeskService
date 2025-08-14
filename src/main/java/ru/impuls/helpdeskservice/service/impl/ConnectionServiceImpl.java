@@ -68,7 +68,6 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .chat(chat)
                 .user(user)
                 .startDate(Instant.now())
-                .messages(Collections.emptyList())
                 .build();
 
         connectionRepository.save(connection);
@@ -93,6 +92,10 @@ public class ConnectionServiceImpl implements ConnectionService {
         ConnectionDto connectionDto = connectionMapper.toDto(connection);
         notifyChatDto.setConnections(Collections.singletonList(connectionDto));
         webSocketHandler.notifyChange("/chats/connections", notifyChatDto, EventType.UPDATED);
+
+        // Notify both general and chat-specific subscribers
+        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, EventType.UPDATED);
+        webSocketHandler.notifyChatConnections(chat.getId(), notifyChatDto);
     }
 
     @Override
@@ -136,6 +139,10 @@ public class ConnectionServiceImpl implements ConnectionService {
         Chat notificationChat = chatMapper.toEntity(chat, Collections.singletonList(connectionWithMessage));
 
         webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), EventType.UPDATED);
+
+        // Notify both general and chat-specific subscribers
+        webSocketHandler.notifyChange("/chats/messages", notificationChat, EventType.UPDATED);
+        webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
     }
 
     @Override

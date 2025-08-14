@@ -85,11 +85,18 @@ public class ChatServiceImpl implements ChatService {
                 .toList();
 
         int remaining = count;
-        List<Connection> connectionsWithMessages = new ArrayList<>();
+        List<Connection> filteredConnections = new ArrayList<>();
 
         for (Connection connection : connections) {
             if (remaining <= 0) {
                 break;
+            }
+
+            if (to != null && connection.getStartDate().isAfter(to)) {
+                Connection connWithMessages = connectionMapper.toEntity(connection);
+                connWithMessages.setMessages(Collections.emptyList());
+                filteredConnections.add(connWithMessages);
+                continue;
             }
 
             List<Message> messages;
@@ -99,15 +106,17 @@ public class ChatServiceImpl implements ChatService {
                 messages = messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
             }
 
+            Connection connWithMessages = connectionMapper.toEntity(connection);
             if (!messages.isEmpty()) {
-                Connection connWithMessages = connectionMapper.toEntity(connection);
                 connWithMessages.setMessages(messages);
-                connectionsWithMessages.add(connWithMessages);
                 remaining -= messages.size();
+            } else {
+                connWithMessages.setMessages(Collections.emptyList());
             }
+            filteredConnections.add(connWithMessages);
         }
 
-        Chat filteredChat = chatMapper.toEntity(chat, connectionsWithMessages);
+        Chat filteredChat = chatMapper.toEntity(chat, filteredConnections);
         return chatMapper.toDto(filteredChat);
     }
 
