@@ -105,7 +105,6 @@ public class ChatServiceImpl implements ChatService {
                 connectionsWithMessages.add(connWithMessages);
                 remaining -= messages.size();
             }
-            // Если сообщений нет — connection не добавляем, remaining не трогаем
         }
 
         Chat filteredChat = chatMapper.toEntity(chat, connectionsWithMessages);

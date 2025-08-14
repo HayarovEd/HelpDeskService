@@ -5,17 +5,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
-import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.dto.ConnectionDto;
+import ru.impuls.helpdeskservice.dto.response.ChatDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
+import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.ConnectionRepo;
 import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.service.ConnectionService;
+import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -30,7 +34,8 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final MessageRepo messageRepository;
     private final ConnectionMapper connectionMapper;
     private final MessageMapper messageMapper;
-    private final UserRepo userRepo;
+    private final WebSocketHandler webSocketHandler;
+    private final ChatMapper chatMapper;
 
     @Override
     public Connection createInitialConnection(Chat chat, String messageText) {
@@ -42,6 +47,8 @@ public class ConnectionServiceImpl implements ConnectionService {
         messageRepository.save(message);
 
         connection.setMessages(Collections.singletonList(message));
+
+        notifyInCreateConnection(chat, connection);
 
         return connection;
     }
@@ -60,9 +67,13 @@ public class ConnectionServiceImpl implements ConnectionService {
         Connection connection = Connection.builder()
                 .chat(chat)
                 .user(user)
+                .startDate(Instant.now())
+                .messages(Collections.emptyList())
                 .build();
 
         connectionRepository.save(connection);
+
+        notifyInCreateConnection(chat, connection);
     }
 
     @Override
@@ -73,6 +84,15 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
 
         connectionRepository.save(connection);
+
+        notifyInCreateConnection(chat, connection);
+    }
+
+    private void notifyInCreateConnection(Chat chat, Connection connection) {
+        ChatDto notifyChatDto = chatMapper.toDto(chat);
+        ConnectionDto connectionDto = connectionMapper.toDto(connection);
+        notifyChatDto.setConnections(Collections.singletonList(connectionDto));
+        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, EventType.UPDATED);
     }
 
     @Override
@@ -105,7 +125,17 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .createdDate(Instant.now())
                 .build();
 
+        saveMessageAndNotifyChange(chat, message, currentConnection);
+    }
+
+    private void saveMessageAndNotifyChange(Chat chat, Message message, Connection currentConnection) {
         messageRepository.save(message);
+
+        Connection connectionWithMessage = connectionMapper.toEntity(currentConnection);
+        connectionWithMessage.setMessages(Collections.singletonList(message));
+        Chat notificationChat = chatMapper.toEntity(chat, Collections.singletonList(connectionWithMessage));
+
+        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), EventType.UPDATED);
     }
 
     @Override
@@ -127,7 +157,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .createdDate(Instant.now())
                 .build();
 
-        messageRepository.save(message);
+        saveMessageAndNotifyChange(chat, message, currentConnection);
     }
 
     private Connection getCurrentConnection(Chat chat) {

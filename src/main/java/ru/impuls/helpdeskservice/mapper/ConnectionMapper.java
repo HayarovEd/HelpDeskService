@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import ru.impuls.helpdeskservice.dto.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 
@@ -20,4 +21,6 @@ public interface ConnectionMapper {
 
     @Mapping(target = "messages", ignore = true)
     Connection toEntity(Connection connection);
+
+    ConnectionDto toDto(Connection connection);
 }
