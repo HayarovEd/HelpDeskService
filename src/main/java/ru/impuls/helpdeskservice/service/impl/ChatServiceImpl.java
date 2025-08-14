@@ -188,6 +188,8 @@ public class ChatServiceImpl implements ChatService {
         chat.setWork(false);
 
         chatRepository.save(chat);
+
+        notifyChatUpdated(chat);
     }
 
     @Override
@@ -198,7 +200,12 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND
                 ));
 
+        boolean wasClosed = !chat.isOpen();
         connectionService.addClientMessage(chat, messageCreateDto.getText());
+
+        if (wasClosed && chat.isOpen()) {
+            notifyChatUpdated(chat);
+        }
     }
 
     @Override
@@ -316,4 +323,10 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
+    private void notifyChatUpdated(Chat chat) {
+        loadLastConnectionAndMessage(chat);
+
+        ChatDto chatDto = chatMapper.toDto(chat);
+        webSocketHandler.notifyChange("/chats", chatDto, EventType.UPDATED);
+    }
 }
