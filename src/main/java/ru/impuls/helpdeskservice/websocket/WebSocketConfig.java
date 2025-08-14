@@ -20,5 +20,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry.addHandler(webSocketHandler, "/ws")
                 .setAllowedOrigins("*")
                 .addInterceptors(new JwtHandshakeInterceptor(jwtService));
+
+        registry.addHandler(webSocketHandler, "/ws/chats/{id}/connections")
+                .setAllowedOrigins("*");
+
+        registry.addHandler(webSocketHandler, "/ws/chats/{id}/messages")
+                .setAllowedOrigins("*");
     }
 }

@@ -69,6 +69,10 @@ application:
       - method: POST
         path: /chats
       - method: POST
+        path: /chats/{id}/messages
+      - method: POST
+        path: /chats/{id}/connections
+      - method: POST
         path: /chats/{id}/message/client
       - method: POST
         path: /chats/{id}/close

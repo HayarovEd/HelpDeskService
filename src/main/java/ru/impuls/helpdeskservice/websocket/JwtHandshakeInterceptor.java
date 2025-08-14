@@ -23,6 +23,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    @NotNull org.springframework.web.socket.WebSocketHandler wsHandler,
                                    @NotNull Map<String, Object> attributes) {
 
+        String path = request.getURI().getPath();
+
+        // Allow unauthenticated access for specific chat paths
+        /*if (path.matches("/ws/chats/[a-fA-F0-9-]{36}/connections")
+                || path.matches("/ws/chats/[a-fA-F0-9-]{36}/messages")) {
+            return true;
+        }*/
+
         // Получаем токен из параметров запроса или заголовков
         String token = extractToken(request);
 
