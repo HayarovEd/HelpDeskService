@@ -55,14 +55,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
             jwt = authHeader.substring(7);
 
-            if (!jwtService.isAccessToken(jwt)) {
-                response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
-                        ErrorMessage.ONLY_ACCESS_TOKENS_ALLOWED
-                );
-                return;
-            }
-
             var userId = jwtService.extractId(jwt);
             var jwtTokenVersion = jwtService.extractTokenVersion(jwt);
             var userTokenVersion = userService.getTokenVersionByUserId(UUID.fromString(userId));

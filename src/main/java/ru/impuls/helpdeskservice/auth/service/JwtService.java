@@ -14,8 +14,6 @@ public interface JwtService {
 
     String extractId(String jwt);
 
-    String extractTokenType(String jwt);
-
     Role extractRole(String jwt);
 
     Instant extractExpiration(String token);
@@ -27,8 +25,6 @@ public interface JwtService {
     String generateRefreshToken();
 
     boolean isTokenExpired(String token);
-
-    boolean isAccessToken(String token);
 
     UsernamePasswordAuthenticationToken getAuthentication(String token);
 

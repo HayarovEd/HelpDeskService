@@ -42,9 +42,6 @@ public class JwtServiceImpl implements JwtService {
     @Value("${application.security.jwt.keys.private}")
     private String privateKeyFromFile;
 
-    private static final String TOKEN_TYPE_ACCESS = "ACCESS";
-    private static final String TOKEN_TYPE_REFRESH = "REFRESH";
-
     @Override
     public String extractEmail(String jwt) {
         try {
@@ -117,7 +114,6 @@ public class JwtServiceImpl implements JwtService {
         try {
             TokenClaimDto claims = new TokenClaimDto(
                     user.getRole(),
-                    TOKEN_TYPE_ACCESS,
                     user.getEmail(),
                     user.getName(),
                     user.getTokenVersion()
@@ -166,17 +162,6 @@ public class JwtServiceImpl implements JwtService {
                 return true;
             }
             throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
-        } catch (Exception e) {
-            throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    @Override
-    public boolean isAccessToken(String token) {
-        try {
-            return TOKEN_TYPE_ACCESS.equals(extractTokenType(token));
-        } catch (AppException e) {
-            throw e;
         } catch (Exception e) {
             throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
         }
