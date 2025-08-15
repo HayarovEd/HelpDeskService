@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 
@@ -29,7 +29,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResDto create(@RequestBody @Valid UserEditReqReqDto userDto) {
+    public UserResDto create(@RequestBody @Valid UserEditReqDto userDto) {
         return userService.create(userDto);
     }
 

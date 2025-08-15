@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginReqReqDto extends PasswordReqDto {
+public class LoginReqDto extends PasswordReqDto {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")

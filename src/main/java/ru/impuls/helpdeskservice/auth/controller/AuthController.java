@@ -6,7 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.auth.dto.request.LoginReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.LoginReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenResDto;
 import ru.impuls.helpdeskservice.auth.service.AuthService;
 
@@ -19,7 +19,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public TokenResDto login(@RequestBody @Valid LoginReqReqDto loginReqDto, HttpServletResponse response) {
+    public TokenResDto login(@RequestBody @Valid LoginReqDto loginReqDto, HttpServletResponse response) {
         return authService.login(loginReqDto, response);
     }
 

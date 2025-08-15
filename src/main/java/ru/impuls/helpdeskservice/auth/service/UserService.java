@@ -1,7 +1,7 @@
 package ru.impuls.helpdeskservice.auth.service;
 
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 
 import java.util.List;
@@ -11,7 +11,7 @@ public interface UserService {
 
     List<UserResDto> getAll();
 
-    UserResDto create(UserEditReqReqDto userDto);
+    UserResDto create(UserEditReqDto userDto);
 
     UserResDto update(UUID id, UserResDto userResDto);
 

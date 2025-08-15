@@ -9,7 +9,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.dto.request.LoginReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.LoginReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenResDto;
 import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
@@ -42,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
 
     /************************ login ***************************/
     @Override
-    public TokenResDto login(LoginReqReqDto loginReqDto, HttpServletResponse response) {
+    public TokenResDto login(LoginReqDto loginReqDto, HttpServletResponse response) {
         var user = userRepo.findByEmail(loginReqDto.getEmail())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
@@ -135,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    private void validateUserForLogin(User user, LoginReqReqDto loginReqDto) {
+    private void validateUserForLogin(User user, LoginReqDto loginReqDto) {
         if (!user.isEnabled()) {
             throw new AppException(
                     ErrorMessage.USER_BLOCKED,

@@ -2,7 +2,7 @@ package ru.impuls.helpdeskservice.auth.mapper;
 
 import org.mapstruct.*;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
@@ -25,7 +25,7 @@ public interface UserMapper {
     @Mapping(target = "password", expression = "java(passwordEncoder.encode(userDto.getPassword()))")
     @Mapping(target = "tokenVersion", expression = "java(TokenGeneratorUtil.generateNumericToken(8))")
     @Mapping(target = "role", source = "role")
-    User toEntity(UserEditReqReqDto userDto, Role role, @Context PasswordEncoder passwordEncoder);
+    User toEntity(UserEditReqDto userDto, Role role, @Context PasswordEncoder passwordEncoder);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tokens", ignore = true)

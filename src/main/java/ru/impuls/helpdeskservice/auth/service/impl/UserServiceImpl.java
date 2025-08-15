@@ -7,7 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqReqDto;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResDto create(UserEditReqReqDto userDto) {
+    public UserResDto create(UserEditReqDto userDto) {
         if(userRepo.existsByEmail(userDto.getEmail())) {
             throw new AppException(
                     ErrorMessage.USER_ALREADY_EXISTS,
