@@ -71,15 +71,6 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String extractTokenType(String jwt) {
-        try {
-            return extractClaim(jwt, claims -> claims.get("tokenType", String.class));
-        } catch (Exception e) {
-            throw new AppException(ErrorMessage.INVALID_JWT_TOKEN, HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    @Override
     public Instant extractExpiration(String token) {
         try {
             return extractClaim(token, claims ->
