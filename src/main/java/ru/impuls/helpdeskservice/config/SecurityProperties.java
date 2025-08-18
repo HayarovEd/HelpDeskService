@@ -24,14 +24,11 @@ public class SecurityProperties {
     private List<String> corsAllowedOrigins = new ArrayList<>();
     private List<PublicEndpoint> publicEndpoints = new ArrayList<>();
 
-    @Value("${application.api.base-path:/api}")
-    private String apiBasePath;
-
     public boolean isPublicEndpoint(HttpMethod method, String uri) {
         return publicEndpoints.stream()
                 .anyMatch(endpoint ->
                         matchesMethod(endpoint.getMethod(), method) &&
-                                pathMatcher.match(apiBasePath + endpoint.getPath(), uri)
+                                pathMatcher.match(endpoint.getPath(), uri)
                 );
     }
 

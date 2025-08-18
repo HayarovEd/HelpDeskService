@@ -7,8 +7,6 @@ server:
     key-store-password: mypassword
     key-password: mypassword
     key-alias: mykey
-  servlet:
-    context-path: /api
 
 springdoc:
   swagger-ui:
@@ -62,24 +60,29 @@ application:
       - "http://localhost:9092"
       - "https://localhost:9092"
     public-endpoints:
+      # api
       - method: POST
-        path: /auth/*
+        path: /api/auth/*
       - method: GET
-        path: /chats/*
+        path: /api/chats/*
       - method: POST
-        path: /chats
+        path: /api/chats
       - method: POST
-        path: /chats/{id}/messages
+        path: /api/chats/{id}/messages
       - method: POST
-        path: /chats/{id}/connections
+        path: /api/chats/{id}/connections
       - method: POST
-        path: /chats/{id}/message/client
+        path: /api/chats/{id}/message/client
       - method: POST
-        path: /chats/{id}/close
+        path: /api/chats/{id}/close
       - method: GET
-        path: /v2/api-docs
-      - method: GET
+
+      # websocket
         path: /ws/**
+      - method: GET
+
+      # swagger
+        path: /v2/api-docs
       - method: GET
         path: /v3/api-docs/**
       - method: GET

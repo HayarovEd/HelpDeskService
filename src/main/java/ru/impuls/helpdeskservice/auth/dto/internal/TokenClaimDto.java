@@ -1,4 +1,4 @@
-package ru.impuls.helpdeskservice.auth.dto;
+package ru.impuls.helpdeskservice.auth.dto.internal;
 
 
 import ru.impuls.helpdeskservice.auth.entity.Role;

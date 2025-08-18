@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/chats")
+@RequestMapping("/api/chats")
 @RequiredArgsConstructor
 public class ChatController {
     private final ChatService chatService;

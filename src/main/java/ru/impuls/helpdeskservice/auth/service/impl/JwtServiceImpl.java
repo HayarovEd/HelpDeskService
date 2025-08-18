@@ -10,7 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
-import ru.impuls.helpdeskservice.auth.dto.TokenClaimDto;
+import ru.impuls.helpdeskservice.auth.dto.internal.TokenClaimDto;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.service.JwtService;

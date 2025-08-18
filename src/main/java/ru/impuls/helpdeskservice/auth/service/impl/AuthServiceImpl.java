@@ -9,8 +9,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.dto.request.LoginReqDto;
-import ru.impuls.helpdeskservice.auth.dto.response.TokenResDto;
+import ru.impuls.helpdeskservice.auth.dto.request.LoginRequest;
+import ru.impuls.helpdeskservice.auth.dto.response.TokenResponse;
 import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.TokenRepo;
@@ -42,41 +42,39 @@ public class AuthServiceImpl implements AuthService {
 
     /************************ login ***************************/
     @Override
-    public TokenResDto login(LoginReqDto loginReqDto, HttpServletResponse response) {
-        var user = userRepo.findByEmail(loginReqDto.getEmail())
+    public TokenResponse login(LoginRequest loginRequest, HttpServletResponse servletResponse) {
+        var user = userRepo.findByEmail(loginRequest.email())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
 
-        validateUserForLogin(user, loginReqDto);
+        validateUserForLogin(user, loginRequest);
 
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken();
 
         tokenService.save(user, refreshToken, TokenType.REFRESH);
-        cookieUtil.addRefreshTokenToCookie(response, refreshToken);
+        cookieUtil.addRefreshTokenToCookie(servletResponse, refreshToken);
 
-        return TokenResDto.builder()
-                .token(accessToken)
-                .build();
+        return new TokenResponse(accessToken);
     }
 
     /************************ logout ***************************/
     @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = cookieUtil.extractRefreshTokenFromCookies(request);
+    public void logout(HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        String refreshToken = cookieUtil.extractRefreshTokenFromCookies(servletRequest);
         if (refreshToken != null) {
-            var token = fetchTokenFromDatabase(refreshToken, response);
+            var token = fetchTokenFromDatabase(refreshToken, servletResponse);
 
             tokenService.delete(token);
-            cookieUtil.deleteRefreshTokenFromCookies(response);
+            cookieUtil.deleteRefreshTokenFromCookies(servletResponse);
         }
     }
 
     /************************ refresh ***************************/
     @Override
-    public TokenResDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public TokenResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieUtil.extractRefreshTokenFromCookies(request);
         if (refreshToken == null) {
             throw new AppException(
@@ -130,12 +128,10 @@ public class AuthServiceImpl implements AuthService {
         tokenService.save(user, newRefreshToken, TokenType.REFRESH);
         cookieUtil.addRefreshTokenToCookie(response, newRefreshToken);
 
-        return TokenResDto.builder()
-                .token(newAccessToken)
-                .build();
+        return new TokenResponse(newAccessToken);
     }
 
-    private void validateUserForLogin(User user, LoginReqDto loginReqDto) {
+    private void validateUserForLogin(User user, LoginRequest loginRequest) {
         if (!user.isEnabled()) {
             throw new AppException(
                     ErrorMessage.USER_BLOCKED,
@@ -145,8 +141,8 @@ public class AuthServiceImpl implements AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginReqDto.getEmail(),
-                            loginReqDto.getPassword()
+                            loginRequest.email(),
+                            loginRequest.password()
                     ));
         } catch (BadCredentialsException e) {
             throw new AppException(

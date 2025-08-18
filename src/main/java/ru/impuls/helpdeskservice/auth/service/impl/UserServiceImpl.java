@@ -6,9 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
-import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordRequest;
+import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
@@ -38,27 +39,27 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public List<UserResDto> getAll() {
+    public List<UserResponse> getAll() {
         return userRepo.findAll(Sort.by(Sort.Direction.ASC, "email")).stream()
                 .map(userMapper::toDto)
                 .toList();
     }
 
     @Override
-    public UserResDto create(UserEditReqDto userDto) {
-        if(userRepo.existsByEmail(userDto.getEmail())) {
+    public UserResponse create(UserCreateRequest userCreateRequest) {
+        if(userRepo.existsByEmail(userCreateRequest.email())) {
             throw new AppException(
                     ErrorMessage.USER_ALREADY_EXISTS,
                     HttpStatus.CONFLICT
             );
         }
 
-        var role = roleRepo.findByName(userDto.getRole().getName())
+        var role = roleRepo.findByName(userCreateRequest.role().name())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
                         HttpStatus.BAD_REQUEST
                 ));
-        var user = userMapper.toEntity(userDto, role, passwordEncoder);
+        var user = userMapper.toEntity(userCreateRequest, role, passwordEncoder);
         user = userRepo.save(user);
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.CREATED);
@@ -67,23 +68,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResDto update(UUID id, UserResDto userResDto) {
+    public UserResponse update(UUID id, UserEditRequest userEditRequest) {
         var user = userRepo.findById(id)
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
-        UserResDto oldUserResDto = userMapper.toDto(user);
-        var role = roleRepo.findByName(userResDto.getRole().getName())
+        UserResponse oldUserResponse = userMapper.toDto(user);
+        var role = roleRepo.findByName(userEditRequest.role().name())
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.ROLE_NOT_FOUND,
                         HttpStatus.BAD_REQUEST
                 ));
 
-        userMapper.updateEntity(user, userResDto, role);
+        userMapper.updateEntity(user, userEditRequest, role);
 
-        if (!oldUserResDto.getEmail().equals(user.getEmail())
-                || oldUserResDto.isDisabled() != user.isDisabled()
+        if (!oldUserResponse.email().equals(user.getEmail())
+                || oldUserResponse.disabled() != user.isDisabled()
         ) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
             tokenService.deleteAll(user, TokenType.REFRESH);
@@ -93,7 +94,7 @@ public class UserServiceImpl implements UserService {
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
 
-        if (!Objects.equals(oldUserResDto, resUserDto)) {
+        if (!Objects.equals(oldUserResponse, resUserDto)) {
             webSocketHandler.notifyUser(id, "/account", resUserDto, EventType.UPDATED);
         }
 
@@ -101,16 +102,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResDto changePassword(UUID id, PasswordReqDto passwordReqDto) {
+    public UserResponse changePassword(UUID id, PasswordRequest passwordRequest) {
         var user = userRepo.findById(id)
                 .orElseThrow(() -> new AppException(
                         ErrorMessage.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND
                 ));
 
-        userMapper.updatePassword(user, passwordReqDto, passwordEncoder);
+        userMapper.updatePassword(user, passwordRequest, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
+
         var resUserDto = userMapper.toDto(user);
         webSocketHandler.notifyChange("/users", resUserDto, EventType.DELETED);
 

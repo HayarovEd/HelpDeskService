@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/groups")
+@RequestMapping("/api/groups")
 @RequiredArgsConstructor
 public class GroupController {
 

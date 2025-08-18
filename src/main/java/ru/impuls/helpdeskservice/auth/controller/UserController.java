@@ -5,16 +5,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.auth.dto.request.PasswordReqDto;
-import ru.impuls.helpdeskservice.auth.dto.request.UserEditReqDto;
-import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
+import ru.impuls.helpdeskservice.auth.dto.request.PasswordRequest;
+import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
+import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @PreAuthorize("hasAuthority('ADMIN')")
 @RequiredArgsConstructor
 public class UserController {
@@ -23,25 +24,25 @@ public class UserController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<UserResDto> getAll() {
+    public List<UserResponse> getAll() {
         return userService.getAll();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResDto create(@RequestBody @Valid UserEditReqDto userDto) {
-        return userService.create(userDto);
+    public UserResponse create(@RequestBody @Valid UserCreateRequest userCreateRequest) {
+        return userService.create(userCreateRequest);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public UserResDto update(@PathVariable UUID id, @RequestBody UserResDto userResDto) {
-        return userService.update(id, userResDto);
+    public UserResponse update(@PathVariable UUID id, @RequestBody UserEditRequest userEditRequest) {
+        return userService.update(id, userEditRequest);
     }
 
     @PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.OK)
-    public UserResDto changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordReqDto passwordReqDto) {
-        return userService.changePassword(id, passwordReqDto);
+    public UserResponse changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordRequest passwordRequest) {
+        return userService.changePassword(id, passwordRequest);
     }
 }

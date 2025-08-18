@@ -11,7 +11,7 @@ import ru.impuls.helpdeskservice.service.SubgroupService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/subgroups")
+@RequestMapping("/api/subgroups")
 @RequiredArgsConstructor
 public class SubgroupController {
 

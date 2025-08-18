@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ru.impuls.helpdeskservice.auth.dto.response.UserResDto;
+import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 import ru.impuls.helpdeskservice.dto.LogItemDto;
 
 @Component
@@ -126,7 +126,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         if (data instanceof LogItemDto) {
             return "ADMIN".equals(userRole);
-        } else if (data instanceof UserResDto) {
+        } else if (data instanceof UserResponse) {
             return "ADMIN".equals(userRole);
         }
 
