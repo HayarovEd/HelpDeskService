@@ -1,4 +1,4 @@
-package ru.impuls.helpdeskservice.dto.event;
+package ru.impuls.helpdeskservice.websocket.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ru.impuls.helpdeskservice.auth.dto.internal.RoleDto;

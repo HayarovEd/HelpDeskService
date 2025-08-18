@@ -16,9 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.impuls.helpdeskservice.constant.WebsocketEventType;
-import ru.impuls.helpdeskservice.dto.event.LogItemEvent;
-import ru.impuls.helpdeskservice.dto.internal.LogItemDto;
-import ru.impuls.helpdeskservice.dto.event.UserEvent;
+import ru.impuls.helpdeskservice.websocket.event.LogItemEvent;
+import ru.impuls.helpdeskservice.websocket.event.UserEvent;
 
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 

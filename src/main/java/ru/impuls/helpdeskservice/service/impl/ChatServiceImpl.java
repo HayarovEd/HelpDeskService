@@ -12,13 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
-import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
+import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
-import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
@@ -33,6 +32,8 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static ru.impuls.helpdeskservice.constant.ErrorMessage.SUBGROUP_NOT_FOUND;
 
 @Service
 @Transactional
@@ -51,23 +52,18 @@ public class ChatServiceImpl implements ChatService {
     private final UserRepo userRepo;
 
     @Override
-    public ChatDto create(UUID subgroupId, ChatCreateDto chatCreateDto) {
-        Subgroup subgroup = subgroupRepo.findById(subgroupId)
-                .orElseThrow(() -> new AppException(
-                        "Subgroup not found",
-                        HttpStatus.NOT_FOUND
-                ));
+    public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
+        var subgroup = subgroupRepo.findById(subgroupId)
+                .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        Chat chat = chatMapper.toEntity(chatCreateDto, subgroup);
+        var chat = chatMapper.toEntity(chatRequest, subgroup);
         chatRepository.save(chat);
 
-        Connection connection = connectionService.createInitialConnection(chat, chatCreateDto.getMessage());
-        chat.setConnections(Collections.singletonList(connection));
+        var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
 
-        var chatDto = chatMapper.toDto(chat);
-        webSocketHandler.notifyChange("/chats", chatDto, WebsocketEventType.CREATED);
+        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), WebsocketEventType.CREATED);
 
-        return chatDto;
+        return chatMapper.toDto(chat, connectionDto);
     }
 
     @Override
@@ -315,7 +311,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
-            throw new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+            throw new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
 
         if (groupId != null && !groupRepo.existsById(groupId)) {

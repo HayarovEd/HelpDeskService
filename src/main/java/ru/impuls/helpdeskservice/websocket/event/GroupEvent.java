@@ -1,4 +1,4 @@
-package ru.impuls.helpdeskservice.dto.event;
+package ru.impuls.helpdeskservice.websocket.event;
 
 import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
 

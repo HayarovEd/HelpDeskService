@@ -7,7 +7,7 @@ import org.mapstruct.ReportingPolicy;
 import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
 import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
-import ru.impuls.helpdeskservice.dto.event.SubgroupEvent;
+import ru.impuls.helpdeskservice.websocket.event.SubgroupEvent;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;
 

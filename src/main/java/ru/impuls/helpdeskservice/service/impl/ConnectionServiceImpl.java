@@ -6,8 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
-import ru.impuls.helpdeskservice.dto.ConnectionDto;
-import ru.impuls.helpdeskservice.dto.response.ChatDto;
+import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
@@ -18,12 +17,13 @@ import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.ConnectionRepo;
 import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.service.ConnectionService;
-import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.Collections;
 import java.util.UUID;
+
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 @Service
 @Transactional
@@ -38,19 +38,18 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final ChatMapper chatMapper;
 
     @Override
-    public Connection createInitialConnection(Chat chat, String messageText) {
+    public ConnectionDto createInitialConnection(Chat chat, String messageText) {
 
-        Connection connection = connectionMapper.toEntity(chat);
+        var connection = connectionMapper.toEntity(chat);
         connectionRepository.save(connection);
 
-        Message message = messageMapper.toEntity(connection, messageText, false);
+        var message = messageMapper.toEntity(connection, messageText, false);
         messageRepository.save(message);
-
         connection.setMessages(Collections.singletonList(message));
 
         notifyInCreateConnection(chat, connection);
 
-        return connection;
+        return connectionMapper.toDto(connection);
     }
 
     @Override
@@ -88,14 +87,11 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
     private void notifyInCreateConnection(Chat chat, Connection connection) {
-        ChatDto notifyChatDto = chatMapper.toDto(chat);
-        ConnectionDto connectionDto = connectionMapper.toDto(connection);
-        notifyChatDto.setConnections(Collections.singletonList(connectionDto));
-        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, WebsocketEventType.UPDATED);
+        var connectionDto = connectionMapper.toDto(connection);
+        var chatEvent = chatMapper.toEvent(chat, connectionDto);
 
-        // Notify both general and chat-specific subscribers
-        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, WebsocketEventType.UPDATED);
-        webSocketHandler.notifyChatConnections(chat.getId(), notifyChatDto);
+        webSocketHandler.notifyChange("/chats/connections", chatEvent, UPDATED);
+        webSocketHandler.notifyChatConnections(chat.getId(), chatEvent);
     }
 
     @Override
@@ -138,10 +134,10 @@ public class ConnectionServiceImpl implements ConnectionService {
         connectionWithMessage.setMessages(Collections.singletonList(message));
         Chat notificationChat = chatMapper.toEntity(chat, Collections.singletonList(connectionWithMessage));
 
-        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), WebsocketEventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), UPDATED);
 
         // Notify both general and chat-specific subscribers
-        webSocketHandler.notifyChange("/chats/messages", notificationChat, WebsocketEventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/messages", notificationChat, UPDATED);
         webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
     }
 

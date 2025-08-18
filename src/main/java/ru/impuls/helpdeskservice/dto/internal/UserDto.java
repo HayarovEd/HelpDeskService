@@ -5,7 +5,7 @@ import ru.impuls.helpdeskservice.auth.dto.internal.RoleDto;
 
 import java.util.UUID;
 
-public record UserForLogItemDto(
+public record UserDto(
         UUID id,
         String name,
         String email,

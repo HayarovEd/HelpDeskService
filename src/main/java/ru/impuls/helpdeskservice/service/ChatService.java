@@ -1,6 +1,6 @@
 package ru.impuls.helpdeskservice.service;
 
-import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
+import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
 
@@ -21,7 +21,7 @@ public interface ChatService {
             int count
     );
 
-    ChatDto create(UUID subgroupId, ChatCreateDto chatCreateDto);
+    ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest);
 
     ChatDto getById(UUID id, Instant to, int count);
 

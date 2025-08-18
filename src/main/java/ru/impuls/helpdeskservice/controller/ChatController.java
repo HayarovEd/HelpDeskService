@@ -1,19 +1,12 @@
 package ru.impuls.helpdeskservice.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.dto.request.ChatCreateDto;
+import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
-import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.service.ChatService;
 
 import java.time.Instant;
@@ -26,7 +19,7 @@ import java.util.UUID;
 public class ChatController {
     private final ChatService chatService;
 
-    @GetMapping
+    /*@GetMapping
     public List<ChatDto> getChats(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
@@ -38,16 +31,16 @@ public class ChatController {
             @RequestParam(required = false) Boolean isMy) {
 
         return chatService.getChats(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
-    }
+    }*/
 
     @PostMapping
     public ChatDto create(
             @RequestParam UUID subgroupId,
-            @RequestBody @Valid ChatCreateDto chatCreateDto) {
-        return chatService.create(subgroupId, chatCreateDto);
+            @RequestBody @Valid ChatCreateRequest chatRequest) {
+        return chatService.create(subgroupId, chatRequest);
     }
 
-    @GetMapping("/{id}")
+   /* @GetMapping("/{id}")
     public ChatDto getById(
             @PathVariable UUID id,
             @RequestParam(required = false) Instant to,
@@ -92,5 +85,5 @@ public class ChatController {
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
         chatService.sendSupportMessage(id,messageCreateDto);
-    }
+    }*/
 }

@@ -3,7 +3,7 @@ package ru.impuls.helpdeskservice.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-import ru.impuls.helpdeskservice.dto.MessageDto;
+import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
 

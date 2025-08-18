@@ -5,7 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import ru.impuls.helpdeskservice.dto.BaseDto;
-import ru.impuls.helpdeskservice.dto.ConnectionDto;
+import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 
 import java.time.Instant;
 import java.util.List;

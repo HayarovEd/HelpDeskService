@@ -4,7 +4,7 @@ import org.mapstruct.*;
 import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
 import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
-import ru.impuls.helpdeskservice.dto.event.GroupEvent;
+import ru.impuls.helpdeskservice.websocket.event.GroupEvent;
 import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;

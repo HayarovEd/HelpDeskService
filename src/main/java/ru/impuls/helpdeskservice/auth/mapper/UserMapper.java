@@ -10,7 +10,7 @@ import ru.impuls.helpdeskservice.auth.entity.User;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
-import ru.impuls.helpdeskservice.dto.event.UserEvent;
+import ru.impuls.helpdeskservice.websocket.event.UserEvent;
 
 @Mapper(
         componentModel = "spring",

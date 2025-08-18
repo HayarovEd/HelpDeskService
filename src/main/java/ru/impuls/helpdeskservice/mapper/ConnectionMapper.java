@@ -3,9 +3,10 @@ package ru.impuls.helpdeskservice.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-import ru.impuls.helpdeskservice.dto.ConnectionDto;
+import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
+import ru.impuls.helpdeskservice.entity.Message;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.ERROR)

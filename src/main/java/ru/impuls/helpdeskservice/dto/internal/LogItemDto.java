@@ -7,5 +7,5 @@ public record LogItemDto (
         UUID id,
         String text,
         Instant createdDate,
-        UserForLogItemDto user
+        UserDto user
 ) {}

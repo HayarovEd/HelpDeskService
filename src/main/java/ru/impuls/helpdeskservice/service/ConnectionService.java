@@ -1,14 +1,14 @@
 package ru.impuls.helpdeskservice.service;
 
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
-import ru.impuls.helpdeskservice.entity.Connection;
 
 import java.util.UUID;
 
 public interface ConnectionService {
 
-    Connection createInitialConnection(Chat chat, String messageText);
+    ConnectionDto createInitialConnection(Chat chat, String messageText);
 
     void closeCurrentConnection(Chat chat);
 
