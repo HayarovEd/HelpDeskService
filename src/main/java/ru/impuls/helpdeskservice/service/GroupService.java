@@ -1,20 +1,21 @@
 package ru.impuls.helpdeskservice.service;
 
-import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
-import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
+import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface GroupService {
 
-    List<GroupDto> getAll();
+    List<GroupResponse> getAll();
 
-    GroupDto getById(UUID id);
+    GroupResponse getById(UUID id);
 
-    GroupDto create(GroupEditDto groupDto);
+    GroupResponse create(GroupCreateRequest groupRequest);
 
-    GroupDto update(UUID id, GroupEditDto groupDto);
+    GroupResponse update(UUID id, GroupEditRequest groupRequest);
 
-    GroupDto delete(UUID id);
+    GroupResponse delete(UUID id);
 }

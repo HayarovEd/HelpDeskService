@@ -5,7 +5,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import ru.impuls.helpdeskservice.dto.BaseDto;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
 import ru.impuls.helpdeskservice.dto.ConnectionDto;
 
 import java.time.Instant;
@@ -29,6 +28,6 @@ public class ChatDto extends BaseDto {
     boolean work;
 
     Instant createdDate;
-    SubgroupDto subgroup;
+    SubgroupResponse subgroup;
     List<ConnectionDto> connections;
 }

@@ -12,7 +12,7 @@ import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.LogActionType;
 import ru.impuls.helpdeskservice.constant.LogEntityType;
 import ru.impuls.helpdeskservice.dto.LogItemDto;
-import ru.impuls.helpdeskservice.dto.response.LogDto;
+import ru.impuls.helpdeskservice.dto.response.LogResponse;
 import ru.impuls.helpdeskservice.entity.Log;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.LogMapper;
@@ -38,12 +38,9 @@ public class LogServiceImpl implements LogService {
 
     @Override
     @Transactional(readOnly = true)
-    public LogDto findAllWithFilter(Instant to, int count) {
+    public LogResponse findAllWithFilter(Instant to, int count) {
         if (count < 0 || count > 1000) {
-            throw new AppException(
-                    "Count must be between 0 and 1000",
-                    HttpStatus.BAD_REQUEST
-            );
+            throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
         }
 
         Instant firstDate = logRepo.findFirstByOrderByCreatedDateAsc()
@@ -59,7 +56,7 @@ public class LogServiceImpl implements LogService {
                     .map(logMapper::toDto)
                     .stream().toList();
 
-        return new LogDto(logRepo.count(), firstDate, items);
+        return new LogResponse(logRepo.count(), firstDate, items);
     }
 
     @Override
@@ -69,11 +66,7 @@ public class LogServiceImpl implements LogService {
                        UUID entityId) {
         var authenticatedUser = AuthUtil.getAuthenticatedUser();
         var user = userRepo.findById(authenticatedUser.getId())
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
-
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         var message = formatLogMessage(action, entityType, entityName, entityId);
         var log = logMapper.toEntity(message, user);
 

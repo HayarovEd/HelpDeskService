@@ -4,8 +4,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
-import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
+import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
+import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
 import ru.impuls.helpdeskservice.dto.response.SubgroupEventDto;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;
@@ -15,7 +16,7 @@ import ru.impuls.helpdeskservice.entity.Subgroup;
         unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface SubgroupMapper {
 
-    SubgroupDto toDto(Subgroup subgroup);
+    SubgroupResponse toDto(Subgroup subgroup);
 
     @Mapping(source = "group.id", target = "group.id")
     @Mapping(source = "group.name", target = "group.name")
@@ -23,10 +24,10 @@ public interface SubgroupMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "group", ignore = true)
-    void toEntity(@MappingTarget Subgroup subgroup, SubgroupEditDto subgroupDto);
+    void toEntity(@MappingTarget Subgroup subgroup, SubgroupEditRequest subgroupRequest);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "name", source = "subgroupDto.name")
+    @Mapping(target = "name", source = "subgroupRequest.name")
     @Mapping(target = "group", source = "group")
-    Subgroup toEntity(SubgroupEditDto subgroupDto, Group group);
+    Subgroup toEntity(SubgroupCreateRequest subgroupRequest, Group group);
 }

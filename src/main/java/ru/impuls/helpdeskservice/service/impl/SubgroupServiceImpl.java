@@ -6,8 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.constant.LogActionType;
 import ru.impuls.helpdeskservice.constant.LogEntityType;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
-import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
+import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
+import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.SubgroupMapper;
@@ -32,22 +33,17 @@ public class SubgroupServiceImpl implements SubgroupService {
     private final LogService logService;
 
     @Override
-    public SubgroupDto create(UUID groupId, SubgroupEditDto subgroupDto) {
+    public SubgroupResponse create(UUID groupId, SubgroupCreateRequest subgroupRequest) {
         var group = groupRepo.findById(groupId)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.GROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        if (subgroupRepo.existsByNameAndGroupId(subgroupDto.getName(), groupId)) {
-            throw new AppException(
-                    ErrorMessage.SUBGROUP_ALREADY_EXISTS,
-                    HttpStatus.CONFLICT
-            );
+        if (subgroupRepo.existsByNameAndGroupId(subgroupRequest.name(), groupId)) {
+            throw new AppException(ErrorMessage.SUBGROUP_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
 
-        var subgroup = subgroupMapper.toEntity(subgroupDto, group);
+        var subgroup = subgroupMapper.toEntity(subgroupRequest, group);
         subgroup = subgroupRepo.save(subgroup);
+
         webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.CREATED);
 
         return subgroupMapper.toDto(subgroup);
@@ -55,36 +51,28 @@ public class SubgroupServiceImpl implements SubgroupService {
     }
 
     @Override
-    public SubgroupDto update(UUID id, SubgroupEditDto subgroupDto) {
+    public SubgroupResponse update(UUID id, SubgroupEditRequest subgroupRequest) {
         var subgroup = subgroupRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.SUBGROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
         var groupId = subgroup.getGroup().getId();
 
-        if (!subgroup.getName().equals(subgroupDto.getName())
-                && subgroupRepo.existsByNameAndGroupId(subgroupDto.getName(), groupId)) {
-            throw new AppException(
-                    ErrorMessage.SUBGROUP_ALREADY_EXISTS,
-                    HttpStatus.CONFLICT
-            );
+        if (!subgroup.getName().equals(subgroupRequest.name())
+                && subgroupRepo.existsByNameAndGroupId(subgroupRequest.name(), groupId)) {
+            throw new AppException(ErrorMessage.SUBGROUP_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
 
-        subgroupMapper.toEntity(subgroup, subgroupDto);
+        subgroupMapper.toEntity(subgroup, subgroupRequest);
         subgroup = subgroupRepo.save(subgroup);
+
         webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.UPDATED);
 
         return subgroupMapper.toDto(subgroup);
     }
 
     @Override
-    public SubgroupDto delete(UUID id) {
+    public SubgroupResponse delete(UUID id) {
         var subgroup = subgroupRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.SUBGROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         subgroupRepo.delete(subgroup);
         webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);

@@ -4,7 +4,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import ru.impuls.helpdeskservice.dto.BaseDto;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
 
 import java.util.List;
 
@@ -16,5 +15,5 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GroupEventDto extends BaseDto {
     String name;
-    List<SubgroupDto> subgroups;
+    List<SubgroupResponse> subgroups;
 }

@@ -1,9 +1,10 @@
 package ru.impuls.helpdeskservice.mapper;
 
 import org.mapstruct.*;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
-import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
-import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
+import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
+import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 import ru.impuls.helpdeskservice.dto.response.GroupEventDto;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;
@@ -15,17 +16,26 @@ import java.util.List;
         unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface GroupMapper {
 
-    GroupDto toDto(final Group group);
+    default GroupResponse toDto(Group group) {
+        if (group == null) {
+            return null;
+        }
+        return new GroupResponse(
+                group.getId(),
+                group.getName(),
+                group.getSubgroups() == null ? Collections.emptyList() : mapSubgroups(group.getSubgroups())
+        );
+    }
 
-    GroupEventDto toEventDto(final Group group);
+    GroupEventDto toEventDto(Group group);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "subgroups", ignore = true)
-    Group toEntity(final GroupEditDto groupDto);
+    Group toEntity(GroupCreateRequest groupRequest);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "subgroups", ignore = true)
-    void toEntity(@MappingTarget final Group group, final GroupEditDto groupDto);
+    void toEntity(@MappingTarget final Group group, final GroupEditRequest groupDto);
 
     default List<SubgroupDto> mapSubgroups(List<Subgroup> subgroups) {
         return subgroups == null ? Collections.emptyList() :

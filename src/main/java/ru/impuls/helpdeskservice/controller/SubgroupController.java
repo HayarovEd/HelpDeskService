@@ -4,8 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
-import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
+import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
+import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
 import ru.impuls.helpdeskservice.service.SubgroupService;
 
 import java.util.UUID;
@@ -19,19 +20,21 @@ public class SubgroupController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SubgroupDto create(@RequestParam UUID groupId, @RequestBody @Valid SubgroupEditDto subgroupDto) {
-        return subgroupService.create(groupId, subgroupDto);
+    public SubgroupResponse create(@RequestParam UUID groupId,
+                                   @RequestBody @Valid SubgroupCreateRequest subgroupRequest) {
+        return subgroupService.create(groupId, subgroupRequest);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public SubgroupDto update(@PathVariable UUID id, @RequestBody @Valid SubgroupEditDto subgroupDto) {
-        return subgroupService.update(id, subgroupDto);
+    public SubgroupResponse update(@PathVariable UUID id,
+                                   @RequestBody @Valid SubgroupEditRequest subgroupRequest) {
+        return subgroupService.update(id, subgroupRequest);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public SubgroupDto delete(@PathVariable UUID id) {
+    public SubgroupResponse delete(@PathVariable UUID id) {
         return subgroupService.delete(id);
     }
 }

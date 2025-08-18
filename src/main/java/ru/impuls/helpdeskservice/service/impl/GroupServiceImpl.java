@@ -1,16 +1,15 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.constant.LogActionType;
 import ru.impuls.helpdeskservice.constant.LogEntityType;
-import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
-import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
+import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -38,7 +37,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupDto> getAll() {
+    public List<GroupResponse> getAll() {
         return groupRepo.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
                 .filter(Objects::nonNull)
                 .peek(group -> group.getSubgroups().sort(Comparator.comparing(Subgroup::getName)))
@@ -48,25 +47,19 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public GroupDto getById(UUID id) {
+    public GroupResponse getById(UUID id) {
         return groupRepo.findById(id)
                 .map(groupMapper::toDto)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.GROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 
     @Override
-    public GroupDto create(GroupEditDto groupDto) {
-        if (groupRepo.existsByName(groupDto.getName())) {
-            throw new AppException(
-                    ErrorMessage.GROUP_ALREADY_EXISTS,
-                    HttpStatus.CONFLICT
-            );
+    public GroupResponse create(GroupCreateRequest groupRequest) {
+        if (groupRepo.existsByName(groupRequest.name())) {
+            throw new AppException(ErrorMessage.GROUP_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
 
-        var group = groupMapper.toEntity(groupDto);
+        var group = groupMapper.toEntity(groupRequest);
         group = groupRepo.save(group);
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.CREATED);
 
@@ -74,22 +67,16 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupDto update(UUID id, GroupEditDto groupDto) {
+    public GroupResponse update(UUID id, GroupEditRequest groupRequest) {
         var group = groupRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.GROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        if (!group.getName().equals(groupDto.getName())
-                && groupRepo.existsByName(groupDto.getName())) {
-            throw new AppException(
-                    ErrorMessage.GROUP_ALREADY_EXISTS,
-                    HttpStatus.CONFLICT
-            );
+        if (!group.getName().equals(groupRequest.name())
+                && groupRepo.existsByName(groupRequest.name())) {
+            throw new AppException(ErrorMessage.GROUP_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
 
-        groupMapper.toEntity(group, groupDto);
+        groupMapper.toEntity(group, groupRequest);
         group = groupRepo.save(group);
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.UPDATED);
 
@@ -97,12 +84,9 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupDto delete(UUID id) {
+    public GroupResponse delete(UUID id) {
         var group = groupRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.GROUP_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         groupRepo.delete(group);
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), EventType.DELETED);

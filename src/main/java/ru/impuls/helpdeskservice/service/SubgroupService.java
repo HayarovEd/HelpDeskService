@@ -1,15 +1,16 @@
 package ru.impuls.helpdeskservice.service;
 
-import ru.impuls.helpdeskservice.dto.SubgroupDto;
-import ru.impuls.helpdeskservice.dto.request.SubgroupEditDto;
+import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
+import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
 
 import java.util.UUID;
 
 public interface SubgroupService {
 
-    SubgroupDto create(UUID groupId, SubgroupEditDto subgroupDto);
+    SubgroupResponse create(UUID groupId, SubgroupCreateRequest subgroupRequest);
 
-    SubgroupDto update(UUID id, SubgroupEditDto subgroupDto);
+    SubgroupResponse update(UUID id, SubgroupEditRequest subgroupRequest);
 
-    SubgroupDto delete(UUID id);
+    SubgroupResponse delete(UUID id);
 }

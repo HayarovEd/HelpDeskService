@@ -4,8 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.dto.request.GroupEditDto;
-import ru.impuls.helpdeskservice.dto.response.GroupDto;
+import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
+import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
+import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 import ru.impuls.helpdeskservice.service.GroupService;
 
 import java.util.List;
@@ -20,31 +21,31 @@ public class GroupController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<GroupDto> getAllGroups() {
+    public List<GroupResponse> getAll() {
         return groupService.getAll();
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public GroupDto getById(@PathVariable UUID id) {
+    public GroupResponse getById(@PathVariable UUID id) {
         return groupService.getById(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GroupDto create(@RequestBody @Valid GroupEditDto groupDto) {
-        return groupService.create(groupDto);
+    public GroupResponse create(@RequestBody @Valid GroupCreateRequest groupRequest) {
+        return groupService.create(groupRequest);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public GroupDto update(@PathVariable UUID id, @RequestBody @Valid GroupEditDto groupDto) {
-        return groupService.update(id, groupDto);
+    public GroupResponse update(@PathVariable UUID id, @RequestBody @Valid GroupEditRequest groupRequest) {
+        return groupService.update(id, groupRequest);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public GroupDto delete(@PathVariable UUID id) {
+    public GroupResponse delete(@PathVariable UUID id) {
         return groupService.delete(id);
     }
 }
