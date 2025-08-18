@@ -19,7 +19,7 @@ import java.util.UUID;
 public class ChatController {
     private final ChatService chatService;
 
-    /*@GetMapping
+    @GetMapping
     public List<ChatDto> getChats(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
@@ -31,7 +31,7 @@ public class ChatController {
             @RequestParam(required = false) Boolean isMy) {
 
         return chatService.getChats(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
-    }*/
+    }
 
     @PostMapping
     public ChatDto create(

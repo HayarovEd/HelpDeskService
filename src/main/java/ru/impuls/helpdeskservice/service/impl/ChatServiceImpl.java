@@ -229,56 +229,36 @@ public class ChatServiceImpl implements ChatService {
             Boolean isMy,
             int count) {
 
-        // Валидация параметров
         validateParameters(count, groupId, subgroupId);
 
-        // Получение текущего пользователя для фильтра isMy
-        User currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
+        var currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
+        var spec = buildSpecification(groupId, subgroupId, to, search, isOpen, isWork, currentUser);
+        var pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        var chatPage = chatRepository.findAll(spec, pageable);
+        var chats = chatPage.getContent();
 
-        // Создание спецификации для фильтрации
-        Specification<Chat> spec = Specification.where(null);
-
-        if (subgroupId != null) {
-            spec = spec.and(ChatSpecifications.hasSubgroupId(subgroupId));
-        } else if (groupId != null) {
-            spec = spec.and(ChatSpecifications.hasGroupId(groupId));
-        }
-
-        if (to != null) {
-            spec = spec.and(ChatSpecifications.hasLastMessageBefore(to));
-        }
-
-        if (search != null && !search.isEmpty()) {
-            spec = spec.and(ChatSpecifications.matchesSearch(search));
-        }
-
-        if (isOpen != null) {
-            spec = spec.and(ChatSpecifications.isOpen(isOpen));
-        }
-
-        if (isWork != null) {
-            spec = spec.and(ChatSpecifications.isWork(isWork));
-        }
-
-        if (currentUser != null) {
-            spec = spec.and(ChatSpecifications.hasUser(currentUser));
-        }
-
-        // Пагинация и сортировка по дате создания (последние чаты первыми)
-        Pageable pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
-        Page<Chat> chatPage = chatRepository.findAll(spec, pageable);
-
-        List<Chat> chats = chatPage.getContent();
-
-        // Для каждого чата загружаем последнее подключение с одним последним сообщением
         for (Chat chat : chats) {
             loadLastConnectionAndMessage(chat);
         }
 
-        // Преобразуем в DTO и возвращаем список
         return chats.stream()
                 .map(chatMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private Specification<Chat> buildSpecification(UUID groupId, UUID subgroupId,
+                                                   Instant to, String search,
+                                                   Boolean isOpen, Boolean isWork,
+                                                   User currentUser) {
+        return Specification.allOf(
+                subgroupId != null ? ChatSpecifications.hasSubgroupId(subgroupId) : null,
+                subgroupId == null && groupId != null ? ChatSpecifications.hasGroupId(groupId) : null,
+                to != null ? ChatSpecifications.hasLastMessageBefore(to) : null,
+                search != null && !search.isEmpty() ? ChatSpecifications.matchesSearch(search) : null,
+                isOpen != null ? ChatSpecifications.isOpen(isOpen) : null,
+                isWork != null ? ChatSpecifications.isWork(isWork) : null,
+                currentUser != null ? ChatSpecifications.hasUser(currentUser) : null
+        );
     }
 
     private void loadLastConnectionAndMessage(Chat chat) {
