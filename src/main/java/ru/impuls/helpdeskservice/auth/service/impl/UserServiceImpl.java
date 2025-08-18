@@ -56,8 +56,8 @@ public class UserServiceImpl implements UserService {
         var role = roleRepo.findByName(userCreateRequest.role().name())
                 .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
         var user = userMapper.toEntity(userCreateRequest, role, passwordEncoder);
-        userRepo.save(user);
 
+        userRepo.save(user);
         webSocketHandler.notifyChange("/users", userMapper.toEvent(user), CREATED);
 
         return userMapper.toDto(user);
@@ -98,7 +98,6 @@ public class UserServiceImpl implements UserService {
         userMapper.updatePassword(user, passwordRequest, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
-
         webSocketHandler.notifyChange("/users", userMapper.toEvent(user), DELETED);
 
         return userMapper.toDto(user);
@@ -108,6 +107,7 @@ public class UserServiceImpl implements UserService {
     public String getTokenVersionByUserId(UUID userId) {
         var user = userRepo.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
         return user.getTokenVersion();
     }
 }

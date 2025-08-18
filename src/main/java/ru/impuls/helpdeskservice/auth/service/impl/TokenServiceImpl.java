@@ -57,9 +57,6 @@ public class TokenServiceImpl implements TokenService {
         tokenRepository.deleteAllByUserIdAndTokenType(user.getId(), tokenType);
     }
 
-    /**
-     * Рассчитывает срок действия токена в зависимости от его типа.
-     */
     private Instant calculateExpirationDate(TokenType tokenTypeName, Instant createdDate) {
         Duration tokenDuration = switch (tokenTypeName) {
             case REFRESH -> Duration.ofMinutes(refreshTokenExpiration);

@@ -44,10 +44,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse login(LoginRequest loginRequest, HttpServletResponse servletResponse) {
         var user = userRepo.findByEmail(loginRequest.email())
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         validateUserForLogin(user, loginRequest);
 
@@ -77,10 +74,7 @@ public class AuthServiceImpl implements AuthService {
     public TokenResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieUtil.extractRefreshTokenFromCookies(request);
         if (refreshToken == null) {
-            throw new AppException(
-                    ErrorMessage.REFRESH_NOT_FOUND_IN_COOKIE,
-                    HttpStatus.UNAUTHORIZED
-            );
+            throw new AppException(ErrorMessage.REFRESH_NOT_FOUND_IN_COOKIE, HttpStatus.UNAUTHORIZED);
         }
 
         var token = fetchTokenFromDatabase(refreshToken, response);
@@ -133,9 +127,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void validateUserForLogin(User user, LoginRequest loginRequest) {
         if (!user.isEnabled()) {
-            throw new AppException(
-                    ErrorMessage.USER_BLOCKED,
-                    HttpStatus.FORBIDDEN);
+            throw new AppException(ErrorMessage.USER_BLOCKED, HttpStatus.FORBIDDEN);
         }
 
         try {
@@ -145,10 +137,7 @@ public class AuthServiceImpl implements AuthService {
                             loginRequest.password()
                     ));
         } catch (BadCredentialsException e) {
-            throw new AppException(
-                    ErrorMessage.INVALID_LOGIN_OR_PASSWORD,
-                    HttpStatus.UNAUTHORIZED
-            );
+            throw new AppException(ErrorMessage.INVALID_LOGIN_OR_PASSWORD, HttpStatus.UNAUTHORIZED);
         }
     }
 
