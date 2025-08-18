@@ -11,7 +11,7 @@ import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.LogActionType;
 import ru.impuls.helpdeskservice.constant.LogEntityType;
-import ru.impuls.helpdeskservice.dto.LogItemDto;
+import ru.impuls.helpdeskservice.dto.internal.LogItemDto;
 import ru.impuls.helpdeskservice.dto.response.LogResponse;
 import ru.impuls.helpdeskservice.entity.Log;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -25,6 +25,8 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
 
 @Service
 @Transactional
@@ -71,7 +73,7 @@ public class LogServiceImpl implements LogService {
         var log = logMapper.toEntity(message, user);
 
         logRepo.save(log);
-        webSocketHandler.notifyChange("/logs", logMapper.toDto(log), WebsocketEventType.CREATED);
+        webSocketHandler.notifyChange("/logs", logMapper.toEvent(log), CREATED);
     }
 
     private String formatLogMessage(LogActionType action,

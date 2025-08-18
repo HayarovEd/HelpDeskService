@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -62,7 +64,7 @@ public class GroupServiceImpl implements GroupService {
         var group = groupMapper.toEntity(groupRequest);
 
         groupRepo.save(group);
-        webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), WebsocketEventType.CREATED);
+        webSocketHandler.notifyChange("/groups", groupMapper.toEvent(group), CREATED);
 
         return groupMapper.toDto(group);
     }
@@ -79,7 +81,7 @@ public class GroupServiceImpl implements GroupService {
 
         groupMapper.toEntity(group, groupRequest);
         groupRepo.save(group);
-        webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), WebsocketEventType.UPDATED);
+        webSocketHandler.notifyChange("/groups", groupMapper.toEvent(group), WebsocketEventType.UPDATED);
 
         return groupMapper.toDto(group);
     }
@@ -90,7 +92,7 @@ public class GroupServiceImpl implements GroupService {
                 .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         groupRepo.delete(group);
-        webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), WebsocketEventType.DELETED);
+        webSocketHandler.notifyChange("/groups", groupMapper.toEvent(group), WebsocketEventType.DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.GROUP,

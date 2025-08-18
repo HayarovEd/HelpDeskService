@@ -4,7 +4,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import ru.impuls.helpdeskservice.auth.entity.User;
-import ru.impuls.helpdeskservice.dto.LogItemDto;
+import ru.impuls.helpdeskservice.dto.internal.LogItemDto;
+import ru.impuls.helpdeskservice.dto.event.LogItemEvent;
 import ru.impuls.helpdeskservice.entity.Log;
 
 @Mapper(componentModel = "spring",
@@ -16,4 +17,6 @@ public interface LogMapper {
     @Mapping(target = "id" , ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     Log toEntity(String text, User user);
+
+    LogItemEvent toEvent(Log log);
 }

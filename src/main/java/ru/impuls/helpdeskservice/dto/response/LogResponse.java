@@ -1,6 +1,6 @@
 package ru.impuls.helpdeskservice.dto.response;
 
-import ru.impuls.helpdeskservice.dto.LogItemDto;
+import ru.impuls.helpdeskservice.dto.internal.LogItemDto;
 
 import java.time.Instant;
 import java.util.List;

@@ -21,6 +21,8 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.UUID;
 
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.DELETED;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -74,7 +76,7 @@ public class SubgroupServiceImpl implements SubgroupService {
                 .orElseThrow(() -> new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         subgroupRepo.delete(subgroup);
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEvent(subgroup), WebsocketEventType.DELETED);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEvent(subgroup), DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.SUBGROUP,
