@@ -7,7 +7,7 @@ import org.mapstruct.ReportingPolicy;
 import ru.impuls.helpdeskservice.dto.response.SubgroupResponse;
 import ru.impuls.helpdeskservice.dto.request.SubgroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.SubgroupEditRequest;
-import ru.impuls.helpdeskservice.dto.response.SubgroupEventDto;
+import ru.impuls.helpdeskservice.dto.event.SubgroupEvent;
 import ru.impuls.helpdeskservice.entity.Group;
 import ru.impuls.helpdeskservice.entity.Subgroup;
 
@@ -20,7 +20,7 @@ public interface SubgroupMapper {
 
     @Mapping(source = "group.id", target = "group.id")
     @Mapping(source = "group.name", target = "group.name")
-    SubgroupEventDto toEventDto(Subgroup subgroup);
+    SubgroupEvent toEvent(Subgroup subgroup);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "group", ignore = true)

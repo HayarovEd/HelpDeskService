@@ -42,9 +42,9 @@ public class SubgroupServiceImpl implements SubgroupService {
         }
 
         var subgroup = subgroupMapper.toEntity(subgroupRequest, group);
-        subgroup = subgroupRepo.save(subgroup);
 
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.CREATED);
+        subgroupRepo.save(subgroup);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEvent(subgroup), WebsocketEventType.CREATED);
 
         return subgroupMapper.toDto(subgroup);
 
@@ -62,9 +62,8 @@ public class SubgroupServiceImpl implements SubgroupService {
         }
 
         subgroupMapper.toEntity(subgroup, subgroupRequest);
-        subgroup = subgroupRepo.save(subgroup);
-
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.UPDATED);
+        subgroupRepo.save(subgroup);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEvent(subgroup), WebsocketEventType.UPDATED);
 
         return subgroupMapper.toDto(subgroup);
     }
@@ -75,7 +74,7 @@ public class SubgroupServiceImpl implements SubgroupService {
                 .orElseThrow(() -> new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         subgroupRepo.delete(subgroup);
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.DELETED);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEvent(subgroup), WebsocketEventType.DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.SUBGROUP,

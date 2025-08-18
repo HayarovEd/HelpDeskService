@@ -70,7 +70,7 @@ public class LogServiceImpl implements LogService {
         var message = formatLogMessage(action, entityType, entityName, entityId);
         var log = logMapper.toEntity(message, user);
 
-        log = logRepo.save(log);
+        logRepo.save(log);
         webSocketHandler.notifyChange("/logs", logMapper.toDto(log), WebsocketEventType.CREATED);
     }
 

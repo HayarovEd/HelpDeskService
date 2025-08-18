@@ -60,7 +60,8 @@ public class GroupServiceImpl implements GroupService {
         }
 
         var group = groupMapper.toEntity(groupRequest);
-        group = groupRepo.save(group);
+
+        groupRepo.save(group);
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), WebsocketEventType.CREATED);
 
         return groupMapper.toDto(group);
@@ -77,7 +78,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         groupMapper.toEntity(group, groupRequest);
-        group = groupRepo.save(group);
+        groupRepo.save(group);
         webSocketHandler.notifyChange("/groups", groupMapper.toEventDto(group), WebsocketEventType.UPDATED);
 
         return groupMapper.toDto(group);
