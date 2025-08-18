@@ -19,12 +19,14 @@ import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
-import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.*;
 
 @Service
 @Transactional
@@ -48,84 +50,64 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse create(UserCreateRequest userCreateRequest) {
         if(userRepo.existsByEmail(userCreateRequest.email())) {
-            throw new AppException(
-                    ErrorMessage.USER_ALREADY_EXISTS,
-                    HttpStatus.CONFLICT
-            );
+            throw new AppException(ErrorMessage.USER_ALREADY_EXISTS, HttpStatus.CONFLICT);
         }
 
         var role = roleRepo.findByName(userCreateRequest.role().name())
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.ROLE_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
         var user = userMapper.toEntity(userCreateRequest, role, passwordEncoder);
-        user = userRepo.save(user);
-        var resUserDto = userMapper.toDto(user);
-        webSocketHandler.notifyChange("/users", resUserDto, EventType.CREATED);
+        userRepo.save(user);
 
-        return resUserDto;
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), CREATED);
+
+        return userMapper.toDto(user);
     }
 
     @Override
     public UserResponse update(UUID id, UserEditRequest userEditRequest) {
         var user = userRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         UserResponse oldUserResponse = userMapper.toDto(user);
         var role = roleRepo.findByName(userEditRequest.role().name())
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.ROLE_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         userMapper.updateEntity(user, userEditRequest, role);
 
         if (!oldUserResponse.email().equals(user.getEmail())
-                || oldUserResponse.disabled() != user.isDisabled()
-        ) {
+                || oldUserResponse.disabled() != user.isDisabled()) {
             user.setTokenVersion(TokenGeneratorUtil.generateNumericToken(8));
             tokenService.deleteAll(user, TokenType.REFRESH);
         }
 
-        user = userRepo.save(user);
+        userRepo.save(user);
         var resUserDto = userMapper.toDto(user);
-        webSocketHandler.notifyChange("/users", resUserDto, EventType.UPDATED);
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), UPDATED);
 
         if (!Objects.equals(oldUserResponse, resUserDto)) {
-            webSocketHandler.notifyUser(id, "/account", resUserDto, EventType.UPDATED);
+            webSocketHandler.notifyUser(id, "/account", userMapper.toEvent(user), UPDATED);
         }
 
-        return resUserDto;
+        return userMapper.toDto(user);
     }
 
     @Override
     public UserResponse changePassword(UUID id, PasswordRequest passwordRequest) {
         var user = userRepo.findById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorMessage.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         userMapper.updatePassword(user, passwordRequest, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
 
-        var resUserDto = userMapper.toDto(user);
-        webSocketHandler.notifyChange("/users", resUserDto, EventType.DELETED);
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), DELETED);
 
-        return resUserDto;
+        return userMapper.toDto(user);
     }
 
     @Override
     public String getTokenVersionByUserId(UUID userId) {
         var user = userRepo.findById(userId)
-                .orElseThrow(() -> new AppException(
-                        "User not found with ID:" + userId,
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         return user.getTokenVersion();
     }
 }

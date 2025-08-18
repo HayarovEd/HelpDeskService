@@ -2,6 +2,7 @@ package ru.impuls.helpdeskservice.websocket;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,12 +18,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
+import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.dto.LogItemDto;
+import ru.impuls.helpdeskservice.websocket.event.UserEvent;
 
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
+
+@Slf4j
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(WebSocketHandler.class);
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
     private final ObjectMapper objectMapper;
     private final Map<UUID, WebSocketSession> userSessions = new ConcurrentHashMap<>();
@@ -77,7 +82,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         chatMessagesSubscribers.values().forEach(set -> set.remove(session));
     }
 
-    public <T> void notifyChange(String path, T data, EventType eventType) {
+    public <T> void notifyChange(String path, T data, WebsocketEventType eventType) {
         String message = createMessage(path, data, eventType);
 
         sessions.forEach(session -> {
@@ -93,7 +98,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         });
     }
 
-    private <T> String createMessage(String path, T data, EventType eventType) {
+    private <T> String createMessage(String path, T data, WebsocketEventType eventType) {
         try {
             return objectMapper.writeValueAsString(new WebSocketEvent<>(
                     path,
@@ -106,7 +111,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    public <T> void notifyUser(UUID userId, String path, T data, EventType eventType) {
+    public <T> void notifyUser(UUID userId, String path, T data, WebsocketEventType eventType) {
         WebSocketSession userSession = userSessions.get(userId);
         if (userSession != null && userSession.isOpen()) {
             try {
@@ -126,7 +131,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         if (data instanceof LogItemDto) {
             return "ADMIN".equals(userRole);
-        } else if (data instanceof UserResponse) {
+        } else if (data instanceof UserEvent) {
             return "ADMIN".equals(userRole);
         }
 
@@ -146,13 +151,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
     // Add new methods to notify specific chat subscribers
     public <T> void notifyChatConnections(UUID chatId, T data) {
         Set<WebSocketSession> subscribers = chatConnectionsSubscribers.getOrDefault(chatId, Collections.emptySet());
-        String message = createMessage("/chats/" + chatId + "/connections", data, EventType.UPDATED);
+        String message = createMessage("/chats/" + chatId + "/connections", data, UPDATED);
         sendToSessions(subscribers, message);
     }
 
     public <T> void notifyChatMessages(UUID chatId, T data) {
         Set<WebSocketSession> subscribers = chatMessagesSubscribers.getOrDefault(chatId, Collections.emptySet());
-        String message = createMessage("/chats/" + chatId + "/messages", data, EventType.UPDATED);
+        String message = createMessage("/chats/" + chatId + "/messages", data, UPDATED);
         sendToSessions(subscribers, message);
     }
 

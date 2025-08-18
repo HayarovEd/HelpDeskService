@@ -16,7 +16,7 @@ import ru.impuls.helpdeskservice.repository.GroupRepo;
 import ru.impuls.helpdeskservice.repository.SubgroupRepo;
 import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.service.SubgroupService;
-import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class SubgroupServiceImpl implements SubgroupService {
         var subgroup = subgroupMapper.toEntity(subgroupRequest, group);
         subgroup = subgroupRepo.save(subgroup);
 
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.CREATED);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.CREATED);
 
         return subgroupMapper.toDto(subgroup);
 
@@ -64,7 +64,7 @@ public class SubgroupServiceImpl implements SubgroupService {
         subgroupMapper.toEntity(subgroup, subgroupRequest);
         subgroup = subgroupRepo.save(subgroup);
 
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.UPDATED);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.UPDATED);
 
         return subgroupMapper.toDto(subgroup);
     }
@@ -75,7 +75,7 @@ public class SubgroupServiceImpl implements SubgroupService {
                 .orElseThrow(() -> new AppException(ErrorMessage.SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         subgroupRepo.delete(subgroup);
-        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), EventType.DELETED);
+        webSocketHandler.notifyChange("/subgroups", subgroupMapper.toEventDto(subgroup), WebsocketEventType.DELETED);
         logService.create(
                 LogActionType.DELETED,
                 LogEntityType.SUBGROUP,

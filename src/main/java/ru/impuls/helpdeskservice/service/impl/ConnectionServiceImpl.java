@@ -18,7 +18,7 @@ import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.ConnectionRepo;
 import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.service.ConnectionService;
-import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
@@ -91,10 +91,10 @@ public class ConnectionServiceImpl implements ConnectionService {
         ChatDto notifyChatDto = chatMapper.toDto(chat);
         ConnectionDto connectionDto = connectionMapper.toDto(connection);
         notifyChatDto.setConnections(Collections.singletonList(connectionDto));
-        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, EventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, WebsocketEventType.UPDATED);
 
         // Notify both general and chat-specific subscribers
-        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, EventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/connections", notifyChatDto, WebsocketEventType.UPDATED);
         webSocketHandler.notifyChatConnections(chat.getId(), notifyChatDto);
     }
 
@@ -138,10 +138,10 @@ public class ConnectionServiceImpl implements ConnectionService {
         connectionWithMessage.setMessages(Collections.singletonList(message));
         Chat notificationChat = chatMapper.toEntity(chat, Collections.singletonList(connectionWithMessage));
 
-        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), EventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), WebsocketEventType.UPDATED);
 
         // Notify both general and chat-specific subscribers
-        webSocketHandler.notifyChange("/chats/messages", notificationChat, EventType.UPDATED);
+        webSocketHandler.notifyChange("/chats/messages", notificationChat, WebsocketEventType.UPDATED);
         webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
     }
 

@@ -19,7 +19,7 @@ import ru.impuls.helpdeskservice.mapper.LogMapper;
 import ru.impuls.helpdeskservice.repository.LogRepo;
 import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
-import ru.impuls.helpdeskservice.websocket.EventType;
+import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
@@ -71,7 +71,7 @@ public class LogServiceImpl implements LogService {
         var log = logMapper.toEntity(message, user);
 
         log = logRepo.save(log);
-        webSocketHandler.notifyChange("/logs", logMapper.toDto(log), EventType.CREATED);
+        webSocketHandler.notifyChange("/logs", logMapper.toDto(log), WebsocketEventType.CREATED);
     }
 
     private String formatLogMessage(LogActionType action,
