@@ -40,7 +40,7 @@ public class ChatController {
         return chatService.create(subgroupId, chatRequest);
     }
 
-   /* @GetMapping("/{id}")
+    @GetMapping("/{id}")
     public ChatDto getById(
             @PathVariable UUID id,
             @RequestParam(required = false) Instant to,
@@ -85,5 +85,5 @@ public class ChatController {
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
         chatService.sendSupportMessage(id,messageCreateDto);
-    }*/
+    }
 }
