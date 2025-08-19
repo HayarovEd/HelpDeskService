@@ -45,4 +45,6 @@ public interface ChatMapper {
     @Mapping(target = "id", source = "chat.id")
     @Mapping(target = "connections", expression = "java(Collections.singletonList(connectionDto))")
     ChatDto toDto(Chat chat, ConnectionDto connectionDto);
+
+    ChatEvent toEvent(ChatDto newChat);
 }
