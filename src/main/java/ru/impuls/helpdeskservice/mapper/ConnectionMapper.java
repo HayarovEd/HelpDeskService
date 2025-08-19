@@ -4,12 +4,15 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
+import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
-import ru.impuls.helpdeskservice.entity.Message;
+
+import java.util.Collections;
 
 @Mapper(componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.ERROR)
+        unmappedTargetPolicy = ReportingPolicy.ERROR,
+        imports = Collections.class)
 public interface ConnectionMapper {
 
     @Mapping(target = "id", ignore = true)
@@ -24,4 +27,8 @@ public interface ConnectionMapper {
     Connection toEntity(Connection connection);
 
     ConnectionDto toDto(Connection connection);
+
+    @Mapping(target = "id", source = "connection.id")
+    @Mapping(target = "messages", expression = "java(Collections.singletonList(messageDto))")
+    ConnectionDto toDto(Connection connection, MessageDto messageDto);
 }
