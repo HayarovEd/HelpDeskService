@@ -44,4 +44,8 @@ public class ErrorMessage {
     public static final String USER_NOT_AUTHENTICATED = "User not authenticated";
 
     public static final String CHAT_IS_CLOSED = "Chat is closed";
+
+    public static final String CHAT_IS_WORKED_BY_ANOTHER_USER = "Chat is worked by another user";
+
+    public static final String CHAT_NOT_FOUND = "Chat not found";
 }
