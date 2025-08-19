@@ -1,9 +1,7 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -12,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
@@ -21,19 +20,21 @@ import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
+import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
 import ru.impuls.helpdeskservice.util.ChatSpecifications;
-import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
+import static ru.impuls.helpdeskservice.constant.ErrorMessage.CHAT_NOT_FOUND;
 import static ru.impuls.helpdeskservice.constant.ErrorMessage.SUBGROUP_NOT_FOUND;
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 @Service
 @Transactional
@@ -50,6 +51,7 @@ public class ChatServiceImpl implements ChatService {
     private final GroupRepo groupRepo;
     private final ConnectionRepo connectionRepo;
     private final UserRepo userRepo;
+    private final MessageMapper messageMapper;
 
     @Override
     public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
@@ -60,8 +62,7 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
 
         var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
-
-        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), WebsocketEventType.CREATED);
+        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
 
         return chatMapper.toDto(chat, connectionDto);
     }
@@ -87,10 +88,6 @@ public class ChatServiceImpl implements ChatService {
             if (remaining <= 0) {
                 break;
             }
-
-            /*if (to != null && connection.getStartDate().isBefore(to)) {
-                continue;
-            }*/
 
             List<Message> messages;
             if (to == null) {
@@ -125,29 +122,23 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void joinChat(UUID chatId) {
-        var userId = AuthUtil.getAuthenticatedUser().getId();
+        User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
-
-        if (!chat.isOpen()) {
-            throw new AppException(
-                    ErrorMessage.CHAT_IS_CLOSED,
-                    HttpStatus.BAD_REQUEST
-            );
-        }
-
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new AppException(
-                        "User not found",
-                        HttpStatus.NOT_FOUND
-                ));
+                .map(c -> {
+                    if (!c.isOpen()) {
+                        throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
+                    }
+                    if (c.isWork()) {
+                        throw new AppException(ErrorMessage.CHAT_IS_WORKED_BY_ANOTHER_USER, HttpStatus.BAD_REQUEST);
+                    }
+                    return c;
+                })
+                .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.closeCurrentConnection(chat);
-        connectionService.createSupportConnection(chat, user);
+        connectionService.createSupportConnection(chat, currentUser);
 
         chat.setWork(true);
         chatRepository.save(chat);
@@ -158,10 +149,7 @@ public class ChatServiceImpl implements ChatService {
         var userId = AuthUtil.getAuthenticatedUser().getId();
 
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.validateCurrentUserIsResponder(chat, userId);
         connectionService.closeCurrentConnection(chat);
@@ -174,10 +162,11 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void closeChat(UUID chatId) {
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        if (!chat.isOpen() && !chat.isWork()) {
+            throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
+        }
 
         connectionService.closeCurrentConnection(chat);
         chat.setOpen(false);
@@ -236,14 +225,15 @@ public class ChatServiceImpl implements ChatService {
         var pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
         var chatPage = chatRepository.findAll(spec, pageable);
         var chats = chatPage.getContent();
+        var newChatDtos = new ArrayList<ChatDto>();
 
         for (Chat chat : chats) {
-            loadLastConnectionAndMessage(chat);
+            var newChat = chatMapper.toDto(chat);
+            loadLastConnectionAndMessage(newChat);
+            newChatDtos.add(newChat);
         }
 
-        return chats.stream()
-                .map(chatMapper::toDto)
-                .toList();
+        return newChatDtos;
     }
 
     private Specification<Chat> buildSpecification(UUID groupId, UUID subgroupId,
@@ -261,28 +251,29 @@ public class ChatServiceImpl implements ChatService {
         );
     }
 
-    private void loadLastConnectionAndMessage(Chat chat) {
-        // Получаем последнее подключение для чата
-        Pageable connectionPageable = PageRequest.of(0, 1, Sort.by("startDate").descending());
-        Page<Connection> connections = connectionRepo.findByChatId(chat.getId(), connectionPageable);
+    private void loadLastConnectionAndMessage(ChatDto chatDto) {
+        var lastConnection = connectionRepo
+                .findLastByChatId(chatDto.getId())
+                .stream()
+                .findFirst()
+                .orElse(null);
 
-        if (!connections.isEmpty()) {
-            Connection lastConnection = connections.getContent().getFirst();
-
-            // Получаем последнее сообщение для подключения
-            Pageable messagePageable = PageRequest.of(0, 1, Sort.by("createdDate").descending());
-            Page<Message> messages = messageRepo.findByConnectionId(lastConnection.getId(), messagePageable);
-
-            if (!messages.isEmpty()) {
-                lastConnection.setMessages(Collections.singletonList(messages.getContent().getFirst()));
-            } else {
-                lastConnection.setMessages(Collections.emptyList());
-            }
-
-            chat.setConnections(Collections.singletonList(lastConnection));
-        } else {
-            chat.setConnections(Collections.emptyList());
+        if (lastConnection == null) {
+            chatDto.setConnections(Collections.emptyList());
+            return;
         }
+
+        var lastConnectionDto = messageRepo
+                .findLastByConnectionId(lastConnection.getId())
+                .stream()
+                .findFirst()
+                .map(message -> {
+                    MessageDto messageDto = messageMapper.toDto(message);
+                    return connectionMapper.toDto(lastConnection, messageDto);
+                })
+                .orElseGet(() -> connectionMapper.toDto(lastConnection, null));
+
+        chatDto.setConnections(List.of(lastConnectionDto));
     }
 
     private void validateParameters(int count, UUID groupId, UUID subgroupId) {
@@ -300,9 +291,9 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private void notifyChatUpdated(Chat chat) {
-        loadLastConnectionAndMessage(chat);
+        var chatDto = chatMapper.toDto(chat);
 
-        ChatDto chatDto = chatMapper.toDto(chat);
-        webSocketHandler.notifyChange("/chats", chatDto, WebsocketEventType.UPDATED);
+        loadLastConnectionAndMessage(chatDto);
+        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chatDto), UPDATED);
     }
 }
