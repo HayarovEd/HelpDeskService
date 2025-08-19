@@ -70,7 +70,6 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
 
         connectionRepository.save(connection);
-
         notifyInCreateConnection(chat, connection);
     }
 
@@ -82,16 +81,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
 
         connectionRepository.save(connection);
-
         notifyInCreateConnection(chat, connection);
-    }
-
-    private void notifyInCreateConnection(Chat chat, Connection connection) {
-        var connectionDto = connectionMapper.toDto(connection);
-        var chatEvent = chatMapper.toEvent(chat, connectionDto);
-
-        webSocketHandler.notifyChange("/chats/connections", chatEvent, UPDATED);
-        webSocketHandler.notifyChatConnections(chat.getId(), chatEvent);
     }
 
     @Override
@@ -127,20 +117,6 @@ public class ConnectionServiceImpl implements ConnectionService {
         saveMessageAndNotifyChange(chat, message, currentConnection);
     }
 
-    private void saveMessageAndNotifyChange(Chat chat, Message message, Connection currentConnection) {
-        messageRepository.save(message);
-
-        Connection connectionWithMessage = connectionMapper.toEntity(currentConnection);
-        connectionWithMessage.setMessages(Collections.singletonList(message));
-        Chat notificationChat = chatMapper.toEntity(chat, Collections.singletonList(connectionWithMessage));
-
-        webSocketHandler.notifyChange("/chats/messages", chatMapper.toDto(notificationChat), UPDATED);
-
-        // Notify both general and chat-specific subscribers
-        webSocketHandler.notifyChange("/chats/messages", notificationChat, UPDATED);
-        webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
-    }
-
     @Override
     public void addSupportMessage(Chat chat, UUID userId, String text) {
 
@@ -161,6 +137,25 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
 
         saveMessageAndNotifyChange(chat, message, currentConnection);
+    }
+
+    private void notifyInCreateConnection(Chat chat, Connection connection) {
+        var connectionDto = connectionMapper.toDto(connection);
+        var chatEvent = chatMapper.toEvent(chat, connectionDto);
+
+        webSocketHandler.notifyChange("/chats/connections", chatEvent, UPDATED);
+        webSocketHandler.notifyChatConnections(chat.getId(), chatEvent);
+    }
+
+    private void saveMessageAndNotifyChange(Chat chat, Message message, Connection connection) {
+        messageRepository.save(message);
+
+        var messageDto = messageMapper.toDto(message);
+        var connectionDto = connectionMapper.toDto(connection, messageDto);
+        var notificationChat = chatMapper.toEvent(chat, connectionDto);
+
+        webSocketHandler.notifyChange("/chats/messages", notificationChat, UPDATED);
+        webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
     }
 
     private Connection getCurrentConnection(Chat chat) {
