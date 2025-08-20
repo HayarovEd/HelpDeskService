@@ -2,6 +2,9 @@ package ru.impuls.helpdeskservice.mapper;
 
 import org.mapstruct.*;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
+import ru.impuls.helpdeskservice.dto.internal.MessageDto;
+import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
+import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.websocket.event.ChatEvent;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;

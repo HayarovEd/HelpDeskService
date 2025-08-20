@@ -22,9 +22,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .addInterceptors(new JwtHandshakeInterceptor(jwtService));
 
         registry.addHandler(webSocketHandler, "/ws/chats/{id}/connections")
-                .setAllowedOrigins("*");
+                .setAllowedOrigins("*")
+                .addInterceptors(new JwtHandshakeInterceptor(jwtService));
 
         registry.addHandler(webSocketHandler, "/ws/chats/{id}/messages")
-                .setAllowedOrigins("*");
+                .setAllowedOrigins("*")
+                .addInterceptors(new JwtHandshakeInterceptor(jwtService));
     }
 }

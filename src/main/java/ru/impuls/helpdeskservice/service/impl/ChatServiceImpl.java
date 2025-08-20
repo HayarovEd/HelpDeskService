@@ -180,10 +180,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto) {
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         boolean wasClosed = !chat.isOpen();
         connectionService.addClientMessage(chat, messageCreateDto.getText());
@@ -198,10 +195,7 @@ public class ChatServiceImpl implements ChatService {
         var userId = AuthUtil.getAuthenticatedUser().getId();
 
         Chat chat = chatRepository.findById(chatId)
-                .orElseThrow(() -> new AppException(
-                        "Chat not found",
-                        HttpStatus.NOT_FOUND
-                ));
+                .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
     }

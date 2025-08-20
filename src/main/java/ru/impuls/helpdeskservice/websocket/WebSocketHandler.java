@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.event.LogItemEvent;
@@ -47,18 +50,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
             userSessions.put(userId, session);
         }
 
-        // Check if this is a chat-specific subscription
         String path = Objects.requireNonNull(session.getUri()).getPath();
         if (path != null) {
             try {
-                if (path.contains("/chats/") && path.contains("/connections")) {
-                    UUID chatId = extractChatIdFromPath(path);
-                    chatConnectionsSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
-                            .add(session);
-                } else if (path.contains("/chats/") && path.contains("/messages")) {
-                    UUID chatId = extractChatIdFromPath(path);
-                    chatMessagesSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
-                            .add(session);
+                UUID chatId = extractChatIdFromPath(path);
+                if (chatId != null) {
+                    if (path.contains("/connections")) {
+                        chatConnectionsSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
+                                .add(session);
+                    } else if (path.contains("/messages")) {
+                        chatMessagesSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
+                                .add(session);
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error processing WebSocket connection for path: {}", path, e);
@@ -84,15 +87,44 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         sessions.forEach(session -> {
             try {
-                if (shouldSendMessage(session, data)) {
+                // Проверяем, должен ли этот клиент получать сообщения по этому пути
+                if (shouldReceiveMessage(session, path) && shouldSendMessage(session, data)) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(message));
                     }
                 }
             } catch (IOException e) {
-                // Логирование ошибки
+                log.error("Error sending WebSocket message", e);
             }
         });
+    }
+
+    private boolean shouldReceiveMessage(WebSocketSession session, String messagePath) {
+        String sessionPath = getSessionPath(session);
+
+        // Если клиент подключен к общему пути "/ws", он получает все сообщения
+        if ("/ws".equals(sessionPath)) {
+            return true;
+        }
+
+        // Если клиент подключен к конкретному чату, проверяем соответствие
+        if (sessionPath != null && sessionPath.contains("/chats/")) {
+            UUID sessionChatId = extractChatIdFromPath(sessionPath);
+            UUID messageChatId = extractChatIdFromPath(messagePath);
+
+            // Клиент получает сообщения только для своего чата
+            return sessionChatId != null && sessionChatId.equals(messageChatId);
+        }
+
+        return false;
+    }
+
+    private String getSessionPath(WebSocketSession session) {
+        try {
+            return Objects.requireNonNull(session.getUri()).getPath();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private <T> String createMessage(String path, T data, WebsocketEventType eventType) {
@@ -171,18 +203,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private UUID extractChatIdFromPath(String path) {
-        // Extract UUID from path like "/ws/chats/123e4567-e89b-12d3-a456-426614174000/connections"
-        String[] parts = path.split("/");
-        for (int i = 0; i < parts.length; i++) {
-            if (parts[i].equals("chats") && i + 1 < parts.length) {
-                try {
-                    return UUID.fromString(parts[i + 1]);
-                } catch (IllegalArgumentException e) {
-                    log.error("Invalid chat ID in path: {}", path);
-                    throw e;
-                }
+        if (path == null) return null;
+
+        Pattern pattern = Pattern.compile("/chats/([0-9a-fA-F-]{36})");
+        Matcher matcher = pattern.matcher(path);
+
+        if (matcher.find()) {
+            try {
+                return UUID.fromString(matcher.group(1));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid UUID format in path: {}", path);
             }
         }
-        throw new IllegalArgumentException("No chat ID found in path: " + path);
+        return null;
     }
 }

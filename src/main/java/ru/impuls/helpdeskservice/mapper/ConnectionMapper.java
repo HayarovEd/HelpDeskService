@@ -7,8 +7,10 @@ import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
+import ru.impuls.helpdeskservice.entity.Message;
 
 import java.util.Collections;
+import java.util.List;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.ERROR,
@@ -31,4 +33,13 @@ public interface ConnectionMapper {
     @Mapping(target = "id", source = "connection.id")
     @Mapping(target = "messages", expression = "java(Collections.singletonList(messageDto))")
     ConnectionDto toDto(Connection connection, MessageDto messageDto);
+
+    default List<MessageDto> mapMessages(List<Message> messages) {
+        return messages == null ? Collections.emptyList() :
+                messages.stream()
+                        .map(this::mapMessage)
+                        .toList();
+    }
+
+    MessageDto mapMessage(Message message);
 }
