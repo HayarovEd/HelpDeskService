@@ -90,9 +90,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         if (currentConnection == null
                 || currentConnection.getUser() == null
                 || !currentConnection.getUser().getId().equals(userId)) {
-            throw new AppException(
-                    "You are not the responder of this chat",
-                    HttpStatus.FORBIDDEN);
+            throw new AppException("You are not the responder of this chat", HttpStatus.FORBIDDEN);
         }
     }
 
@@ -121,10 +119,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     public void addSupportMessage(Chat chat, UUID userId, String text) {
 
         if (!chat.isOpen()) {
-            throw new AppException(
-                    ErrorMessage.CHAT_IS_CLOSED,
-                    HttpStatus.BAD_REQUEST
-            );
+            throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
         }
 
         Connection currentConnection = getCurrentConnection(chat);

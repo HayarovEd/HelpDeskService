@@ -32,7 +32,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final Map<UUID, WebSocketSession> userSessions = new ConcurrentHashMap<>();
 
-    // Add these new maps to track chat-specific subscriptions
     private final Map<UUID, Set<WebSocketSession>> chatConnectionsSubscribers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<WebSocketSession>> chatMessagesSubscribers = new ConcurrentHashMap<>();
 
@@ -77,7 +76,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
             userSessions.remove(userId);
         }
 
-        // Remove from chat-specific subscriptions
         chatConnectionsSubscribers.values().forEach(set -> set.remove(session));
         chatMessagesSubscribers.values().forEach(set -> set.remove(session));
     }
@@ -87,7 +85,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         sessions.forEach(session -> {
             try {
-                // Проверяем, должен ли этот клиент получать сообщения по этому пути
                 if (shouldReceiveMessage(session, path) && shouldSendMessage(session, data)) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(message));
@@ -123,6 +120,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             return Objects.requireNonNull(session.getUri()).getPath();
         } catch (Exception e) {
+            log.info(e.getMessage());
             return null;
         }
     }
@@ -147,7 +145,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 String message = createMessage(path, data, eventType);
                 userSession.sendMessage(new TextMessage(message));
             } catch (IOException e) {
-                // Логирование ошибки
+                log.info(e.getMessage());
             }
         }
     }
@@ -177,7 +175,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
         return null;
     }
 
-    // Add new methods to notify specific chat subscribers
     public <T> void notifyChatConnections(UUID chatId, T data) {
         Set<WebSocketSession> subscribers = chatConnectionsSubscribers.getOrDefault(chatId, Collections.emptySet());
         String message = createMessage("/chats/" + chatId + "/connections", data, UPDATED);

@@ -21,9 +21,9 @@ public interface ChatService {
             int count
     );
 
-    ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest);
-
     ChatDto getById(UUID id, Instant to, int count);
+
+    ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest);
 
     ChatDto delete(UUID id);
 

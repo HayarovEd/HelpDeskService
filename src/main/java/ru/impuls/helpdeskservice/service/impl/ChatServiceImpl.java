@@ -54,17 +54,33 @@ public class ChatServiceImpl implements ChatService {
     private final MessageMapper messageMapper;
 
     @Override
-    public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
-        var subgroup = subgroupRepo.findById(subgroupId)
-                .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+    @Transactional(readOnly = true)
+    public List<ChatDto> getAll(
+            UUID groupId,
+            UUID subgroupId,
+            Instant to,
+            String search,
+            Boolean isOpen,
+            Boolean isWork,
+            Boolean isMy,
+            int count) {
 
-        var chat = chatMapper.toEntity(chatRequest, subgroup);
-        chatRepository.save(chat);
+        validateParameters(count, groupId, subgroupId);
 
-        var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
-        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
+        var currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
+        var spec = buildSpecification(groupId, subgroupId, to, search, isOpen, isWork, currentUser);
+        var pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
+        var chatPage = chatRepository.findAll(spec, pageable);
+        var chats = chatPage.getContent();
+        var newChatDtos = new ArrayList<ChatDto>();
 
-        return chatMapper.toDto(chat, connectionDto);
+        for (Chat chat : chats) {
+            var newChat = chatMapper.toDto(chat);
+            loadLastConnectionAndMessage(newChat);
+            newChatDtos.add(newChat);
+        }
+
+        return newChatDtos;
     }
 
     @Override
@@ -108,6 +124,20 @@ public class ChatServiceImpl implements ChatService {
 
         Chat filteredChat = chatMapper.toEntity(chat, filteredConnections);
         return chatMapper.toDto(filteredChat);
+    }
+
+    @Override
+    public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
+        var subgroup = subgroupRepo.findById(subgroupId)
+                .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var chat = chatMapper.toEntity(chatRequest, subgroup);
+        chatRepository.save(chat);
+
+        var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
+        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
+
+        return chatMapper.toDto(chat, connectionDto);
     }
 
     @Override
@@ -198,36 +228,6 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ChatDto> getAll(
-            UUID groupId,
-            UUID subgroupId,
-            Instant to,
-            String search,
-            Boolean isOpen,
-            Boolean isWork,
-            Boolean isMy,
-            int count) {
-
-        validateParameters(count, groupId, subgroupId);
-
-        var currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
-        var spec = buildSpecification(groupId, subgroupId, to, search, isOpen, isWork, currentUser);
-        var pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
-        var chatPage = chatRepository.findAll(spec, pageable);
-        var chats = chatPage.getContent();
-        var newChatDtos = new ArrayList<ChatDto>();
-
-        for (Chat chat : chats) {
-            var newChat = chatMapper.toDto(chat);
-            loadLastConnectionAndMessage(newChat);
-            newChatDtos.add(newChat);
-        }
-
-        return newChatDtos;
     }
 
     private Specification<Chat> buildSpecification(UUID groupId, UUID subgroupId,
