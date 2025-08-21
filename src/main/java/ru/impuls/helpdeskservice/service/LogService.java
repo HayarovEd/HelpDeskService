@@ -8,6 +8,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 public interface LogService {
-    LogResponse findAllWithFilter(Instant to, int count);
-    void create(LogActionType action, LogEntityType entityType, String entityName, UUID entityId);
+    LogResponse getAll(Instant to, int count);
+
+    void create(LogActionType action,
+                LogEntityType entityType,
+                String entityName,
+                UUID entityId
+    );
 }

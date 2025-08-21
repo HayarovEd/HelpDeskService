@@ -40,7 +40,7 @@ public class LogServiceImpl implements LogService {
 
     @Override
     @Transactional(readOnly = true)
-    public LogResponse findAllWithFilter(Instant to, int count) {
+    public LogResponse getAll(Instant to, int count) {
         if (count < 0 || count > 1000) {
             throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
         }

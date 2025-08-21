@@ -2,6 +2,7 @@ package ru.impuls.helpdeskservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
@@ -20,6 +21,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
     public List<ChatDto> getAll(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
@@ -34,6 +36,7 @@ public class ChatController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ChatDto create(
             @RequestParam UUID subgroupId,
             @RequestBody @Valid ChatCreateRequest chatRequest) {
@@ -41,6 +44,7 @@ public class ChatController {
     }
 
     @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public ChatDto getById(
             @PathVariable UUID id,
             @RequestParam(required = false) Instant to,
@@ -50,29 +54,34 @@ public class ChatController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ADMIN')")
     public ChatDto delete(@PathVariable UUID id) {
         return chatService.delete(id);
     }
 
     @PostMapping("/{id}/join")
+    @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void join(@PathVariable UUID id) {
         chatService.join(id);
     }
 
     @PostMapping("/{id}/exit")
+    @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void exit(@PathVariable UUID id) {
         chatService.exit(id);
     }
 
     @PostMapping("/{id}/close")
+    @ResponseStatus(HttpStatus.OK)
     public void close(@PathVariable UUID id) {
         chatService.close(id);
     }
 
     @PostMapping("/{id}/message/client")
+    @ResponseStatus(HttpStatus.OK)
     public void sendClientMessage(
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
@@ -80,6 +89,7 @@ public class ChatController {
     }
 
     @PostMapping("/{id}/message/support")
+    @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void sendSupportMessage(
             @PathVariable UUID id,
