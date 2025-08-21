@@ -20,7 +20,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping
-    public List<ChatDto> getChats(
+    public List<ChatDto> getAll(
             @RequestParam(required = false) UUID groupId,
             @RequestParam(required = false) UUID subgroupId,
             @RequestParam(required = false) Instant to,
@@ -30,7 +30,7 @@ public class ChatController {
             @RequestParam(required = false) Boolean isWork,
             @RequestParam(required = false) Boolean isMy) {
 
-        return chatService.getChats(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
+        return chatService.getAll(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
     }
 
     @PostMapping
@@ -57,19 +57,19 @@ public class ChatController {
 
     @PostMapping("/{id}/join")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
-    public void joinChat(@PathVariable UUID id) {
-        chatService.joinChat(id);
+    public void join(@PathVariable UUID id) {
+        chatService.join(id);
     }
 
     @PostMapping("/{id}/exit")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
-    public void exitChat(@PathVariable UUID id) {
-        chatService.exitChat(id);
+    public void exit(@PathVariable UUID id) {
+        chatService.exit(id);
     }
 
     @PostMapping("/{id}/close")
-    public void closeChat(@PathVariable UUID id) {
-        chatService.closeChat(id);
+    public void close(@PathVariable UUID id) {
+        chatService.close(id);
     }
 
     @PostMapping("/{id}/message/client")

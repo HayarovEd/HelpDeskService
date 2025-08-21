@@ -121,7 +121,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void joinChat(UUID chatId) {
+    public void join(UUID chatId) {
         User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
@@ -145,7 +145,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void exitChat(UUID chatId) {
+    public void exit(UUID chatId) {
         var userId = AuthUtil.getAuthenticatedUser().getId();
 
         Chat chat = chatRepository.findById(chatId)
@@ -160,7 +160,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void closeChat(UUID chatId) {
+    public void close(UUID chatId) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
@@ -202,7 +202,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ChatDto> getChats(
+    public List<ChatDto> getAll(
             UUID groupId,
             UUID subgroupId,
             Instant to,

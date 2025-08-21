@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface ChatService {
 
-    List<ChatDto> getChats(
+    List<ChatDto> getAll(
             UUID groupId,
             UUID subgroupId,
             Instant to,
@@ -27,11 +27,11 @@ public interface ChatService {
 
     ChatDto delete(UUID id);
 
-    void joinChat(UUID chatId);
+    void join(UUID chatId);
 
-    void exitChat(UUID chatId);
+    void exit(UUID chatId);
 
-    void closeChat(UUID chatId);
+    void close(UUID chatId);
 
     void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
 
