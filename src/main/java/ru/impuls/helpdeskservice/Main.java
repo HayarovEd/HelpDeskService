@@ -10,11 +10,28 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class Main {
 
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.configure().directory("./.env").load();
-        dotenv.entries().forEach(entry ->
-                System.setProperty(entry.getKey(), entry.getValue()));
+        try {
+            System.out.println("Текущая директория: " + System.getProperty("user.dir"));
+            System.out.println("Пытаюсь загрузить .env из: ./");
 
-        SpringApplication.run(Main.class, args);
+            Dotenv dotenv = Dotenv.configure()
+                    .directory(".")
+                    .filename(".env")
+                    .load();
+
+            System.out.println(".env успешно загружен!");
+
+            dotenv.entries().forEach(entry -> {
+                System.setProperty(entry.getKey(), entry.getValue());
+                System.out.println("Установлено свойство: " + entry.getKey());
+            });
+
+            SpringApplication.run(Main.class, args);
+
+        } catch (Exception e) {
+            System.err.println("ОШИБКА при загрузке .env: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 }
