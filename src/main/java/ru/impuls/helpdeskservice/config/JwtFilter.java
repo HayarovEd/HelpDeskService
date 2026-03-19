@@ -117,6 +117,21 @@ public class JwtFilter extends OncePerRequestFilter {
         }
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/swagger-ui") ||
+                path.equals("/swagger-ui.html") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-resources") ||
+                path.startsWith("/webjars") ||
+                path.startsWith("/ws") ||
+                path.startsWith("/api/ws") ||
+                path.startsWith("/websocket") ||
+                path.startsWith("/api/auth");
+    }
+
+
     private boolean isWebSocketPath(String path) {
         return path.startsWith("/ws") ||
                 path.startsWith("/api/ws") ||

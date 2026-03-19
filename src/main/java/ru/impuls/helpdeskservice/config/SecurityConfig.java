@@ -39,10 +39,19 @@ public class SecurityConfig {
                         String path = endpoint.getPath();
                         auth.requestMatchers(method, path).permitAll();
                     }
-                     auth.requestMatchers("/ws/**").permitAll()
+
+                    auth.requestMatchers("/ws/**").permitAll()
                             .requestMatchers("/api/ws/**").permitAll()  // Добавьте это
                             .requestMatchers("/websocket/**").permitAll()
-                            .requestMatchers("/api/auth/**").permitAll();
+                            .requestMatchers("/api/auth/**").permitAll()
+                            .requestMatchers(
+                                    "/swagger-ui.html",
+                                    "/swagger-ui/**",
+                                    "/v3/api-docs/**",
+                                    "/v3/api-docs",
+                                    "/swagger-resources/**",
+                                    "/webjars/**"
+                            ).permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
