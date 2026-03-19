@@ -35,7 +35,44 @@ spring:
     enabled: true
 
 logging:
-  config: classpath:logging/logback-master.xml
+ # config: classpath:logging/logback-master.xml
+  level:
+      org.springframework: DEBUG
+      org.springframework.web: DEBUG
+      org.springframework.web.socket: TRACE
+      org.springframework.messaging: TRACE
+      org.springframework.web.socket.messaging: TRACE
+      org.springframework.web.socket.config: DEBUG
+      org.springframework.web.socket.server: TRACE
+      org.springframework.web.socket.handler: TRACE
+
+      # Spring Security
+      org.springframework.security: TRACE
+      org.springframework.security.web: TRACE
+      org.springframework.security.web.access: TRACE
+      org.springframework.security.web.authentication: TRACE
+      org.springframework.security.web.csrf: TRACE
+      org.springframework.security.web.session: TRACE
+      org.springframework.security.web.context: TRACE
+      org.springframework.security.web.firewall: TRACE
+      org.springframework.security.web.util: TRACE
+
+      # Spring MVC
+      org.springframework.web.servlet: DEBUG
+      org.springframework.web.servlet.mvc: DEBUG
+      org.springframework.web.servlet.handler: DEBUG
+
+      # Spring Context
+      org.springframework.context: DEBUG
+      org.springframework.beans: DEBUG
+
+      # WebSocket и STOMP
+      org.springframework.messaging.simp: TRACE
+      org.springframework.messaging.simp.stomp: TRACE
+      org.springframework.messaging.simp.broker: TRACE
+      org.springframework.messaging.simp.user: TRACE
+      org.springframework.messaging.support: TRACE
+      org.springframework.messaging.handler: TRACE
 
 application:
   security:
@@ -93,3 +130,4 @@ application:
         path: /swagger-ui/**
       - method: GET
         path: /webjars/**
+

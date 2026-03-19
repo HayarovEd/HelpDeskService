@@ -39,6 +39,10 @@ public class SecurityConfig {
                         String path = endpoint.getPath();
                         auth.requestMatchers(method, path).permitAll();
                     }
+                     auth.requestMatchers("/ws/**").permitAll()
+                            .requestMatchers("/api/ws/**").permitAll()  // Добавьте это
+                            .requestMatchers("/websocket/**").permitAll()
+                            .requestMatchers("/api/auth/**").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
