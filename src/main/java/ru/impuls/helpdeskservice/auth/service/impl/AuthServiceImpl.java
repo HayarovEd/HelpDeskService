@@ -43,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
     /************************ login ***************************/
     @Override
     public TokenResponse login(LoginRequest loginRequest, HttpServletResponse servletResponse) {
-        var user = userRepo.findByName(loginRequest.username())
+        var user = userRepo.findByUsername(loginRequest.username())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         validateUserForLogin(user, loginRequest);

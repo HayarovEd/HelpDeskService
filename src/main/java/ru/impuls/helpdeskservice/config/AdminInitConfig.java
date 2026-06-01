@@ -30,9 +30,10 @@ public class AdminInitConfig implements CommandLineRunner {
                                 .build()
                 ));
 
-        if (!userRepository.existsByEmail("admin@mail.ru")) {
+        if (!userRepository.existsByUsername("Admin")) {
             var admin = User.builder()
                     .name("Admin")
+                    .username("Admin")
                     .email("admin@mail.ru")
                     .password(passwordEncoder.encode(adminPassword))
                     .disabled(false)

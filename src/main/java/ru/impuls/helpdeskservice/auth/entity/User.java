@@ -24,6 +24,7 @@ import java.util.Objects;
 @Table(name = "users")
 public class User extends BaseEntity implements UserDetails {
     String name;
+    String username;
     String email;
     String password;
     String tokenVersion;
@@ -52,7 +53,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override
@@ -66,12 +67,12 @@ public class User extends BaseEntity implements UserDetails {
         if (!(o instanceof User user)) return false;
         if (!super.equals(o)) return false;
         return disabled == user.disabled &&
-                Objects.equals(email, user.email) &&
+                Objects.equals(username, user.username) &&
                 Objects.equals(tokenVersion, user.tokenVersion);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), email, disabled, tokenVersion);
+        return Objects.hash(super.hashCode(), username, disabled, tokenVersion);
     }
 }

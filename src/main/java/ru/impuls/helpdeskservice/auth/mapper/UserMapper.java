@@ -35,6 +35,7 @@ public interface UserMapper {
     @Mapping(target = "tokenVersion", ignore = true)
     @Mapping(target = "authorities", ignore = true)
     @Mapping(target = "name", source = "userEditRequest.name")
+    @Mapping(target = "username", source = "userEditRequest.username")
     @Mapping(target = "email", source = "userEditRequest.email")
     @Mapping(target = "disabled", source = "userEditRequest.disabled")
     @Mapping(target = "role", source = "role")
@@ -47,6 +48,7 @@ public interface UserMapper {
     @Mapping(target = "disabled", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "authorities", ignore = true)
+    @Mapping(target = "username", ignore = true)
     @Mapping(target = "password", expression = "java(passwordEncoder.encode(passwordRequest.password()))")
     @Mapping(target = "tokenVersion", expression = "java(TokenGeneratorUtil.generateNumericToken(8))")
     void updatePassword(@MappingTarget User user, PasswordRequest passwordRequest, @Context PasswordEncoder passwordEncoder);

@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ru.impuls.helpdeskservice.auth.dto.request.PasswordRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingResponse;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 
@@ -40,9 +40,16 @@ public class UserController {
         return userService.update(id, userEditRequest);
     }
 
-    @PatchMapping("/{id}/password")
+    /*@PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.OK)
     public UserResponse changePassword(@PathVariable UUID id, @RequestBody @Valid PasswordRequest passwordRequest) {
         return userService.changePassword(id, passwordRequest);
+    }*/
+
+    @PutMapping("/sync")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
+    @ResponseStatus(HttpStatus.OK)
+    public List<UserResponse> syncUsers(@Valid @RequestBody List<UserBillingResponse> userResponses) {
+        return userService.updateUsersFromList(userResponses);
     }
 }
