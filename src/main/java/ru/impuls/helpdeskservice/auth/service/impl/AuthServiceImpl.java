@@ -43,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
     /************************ login ***************************/
     @Override
     public TokenResponse login(LoginRequest loginRequest, HttpServletResponse servletResponse) {
-        var user = userRepo.findByEmail(loginRequest.email())
+        var user = userRepo.findByName(loginRequest.username())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         validateUserForLogin(user, loginRequest);
@@ -133,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.email(),
+                            loginRequest.username(),
                             loginRequest.password()
                     ));
         } catch (BadCredentialsException e) {

@@ -57,7 +57,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return !Boolean.TRUE.equals(disabled);
+        return !disabled;
     }
 
     @Override

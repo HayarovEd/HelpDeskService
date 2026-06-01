@@ -18,8 +18,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserRepo userRepo;
 
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        return userRepo.findByEmail(email)
+    public UserDetails loadUserByUsername(String name) {
+        return userRepo.findByName(name)
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 }

@@ -1,5 +1,6 @@
 debug: true
 
+
 server:
   port: 9092
  # ssl:
@@ -83,8 +84,8 @@ application:
         length: 32
         expiration: 14400 #minute -> 10 day
       keys:
-        public: ./src/main/resources/static/security/public_key.pem
-        private: ./src/main/resources/static/security/private_key.pem
+        public: ${JWT_PUBLIC_KEY_PATH:./src/main/resources/static/security/public_key.pem}
+        private: ${JWT_PRIVATE_KEY_PATH:./src/main/resources/static/security/private_key.pem}
 
     admin:
       password: ${ADMIN_PASSWORD}
