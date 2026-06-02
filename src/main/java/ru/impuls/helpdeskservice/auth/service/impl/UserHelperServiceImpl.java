@@ -39,8 +39,9 @@ public class UserHelperServiceImpl implements UserHelperService {
         if (response.password() != null && !response.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(response.password()));
         }
-        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), UPDATED);
-        return userRepo.save(user);
+        User updatedUser = userRepo.save(user);
+        webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(updatedUser), UPDATED);
+        return updatedUser;
     }
 
     @Override
@@ -54,8 +55,10 @@ public class UserHelperServiceImpl implements UserHelperService {
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getDefaultRole())
                 .build();
-        webSocketHandler.notifyChange("/users", userMapper.toEvent(newUser), CREATED);
-        return userRepo.save(newUser);
+
+        User savedUser = userRepo.save(newUser);
+        webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
+        return savedUser;
     }
 
     private Role getDefaultRole() {

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -20,7 +22,6 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.event.LogItemEvent;
-import ru.impuls.helpdeskservice.websocket.event.UserEvent;
 
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
@@ -80,6 +81,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
         chatMessagesSubscribers.values().forEach(set -> set.remove(session));
     }
 
+    public <T> void notifyChangeAfterCommit(String path, T data, WebsocketEventType eventType) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                notifyChange(path, data, eventType);
+            }
+        });
+    }
+
     public <T> void notifyChange(String path, T data, WebsocketEventType eventType) {
         String message = createMessage(path, data, eventType);
 
@@ -98,21 +108,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private boolean shouldReceiveMessage(WebSocketSession session, String messagePath) {
         String sessionPath = getSessionPath(session);
-
-        // Если клиент подключен к общему пути "/ws", он получает все сообщения
         if ("/ws".equals(sessionPath)) {
             return true;
         }
-
-        // Если клиент подключен к конкретному чату, проверяем соответствие
         if (sessionPath != null && sessionPath.contains("/chats/")) {
             UUID sessionChatId = extractChatIdFromPath(sessionPath);
             UUID messageChatId = extractChatIdFromPath(messagePath);
-
-            // Клиент получает сообщения только для своего чата
             return sessionChatId != null && sessionChatId.equals(messageChatId);
         }
-
         return false;
     }
 
@@ -153,16 +156,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private record WebSocketEvent<T>(String path, String event, T data) {}
 
     private <T> boolean shouldSendMessage(WebSocketSession session, T data) {
-
         String userRole = (String) session.getAttributes().get("role");
-
         if (data instanceof LogItemEvent) {
             return "ADMIN".equals(userRole);
-        } else if (data instanceof UserEvent) {
-            return "ADMIN".equals(userRole);
         }
-
-        // Для других типов данных отправляем всем
         return true;
     }
 
@@ -201,10 +198,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private UUID extractChatIdFromPath(String path) {
         if (path == null) return null;
-
         Pattern pattern = Pattern.compile("/chats/([0-9a-fA-F-]{36})");
         Matcher matcher = pattern.matcher(path);
-
         if (matcher.find()) {
             try {
                 return UUID.fromString(matcher.group(1));

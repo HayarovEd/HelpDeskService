@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
-    <!-- WebSocket Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <!-- WebSocket libraries are NOT needed for native API -->
     <style>
         body { font-family: sans-serif; margin: 0; }
         #header {
@@ -82,21 +80,51 @@
     <div id="subgroupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="subgroupModalTitle"></h3><form id="subgroupForm"><input type="hidden" id="subgroupId"><input type="hidden" id="parentGroupId"><input type="text" id="subgroupName" placeholder="Название подгруппы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
         const token = localStorage.getItem('accessToken');
         if (!token) { window.location.href = '/login.html'; return; }
 
-        // --- WEBSOCKET SETUP ---
+        // --- WEBSOCKET SETUP (Native API) ---
         function connectWebSocket() {
-            const socket = new SockJS('/ws');
-            const stompClient = Stomp.over(socket);
-            stompClient.connect({}, function (frame) {
-                console.log('Connected: ' + frame);
-                stompClient.subscribe('/topic/users', function (message) {
-                    console.log('Received user update message:', message.body);
-                    fetchAndRenderUsers();
-                });
-            });
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = function() {
+                console.log("WebSocket connection established.");
+            };
+
+            socket.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('Received WebSocket message:', message);
+                    if (message.path === '/users') {
+                        console.log('User list update received. Refreshing...');
+                        fetchAndRenderUsers();
+                    }
+                } catch (e) {
+                    console.error('Error parsing WebSocket message:', e);
+                }
+            };
+
+            socket.onclose = function(event) {
+                console.log("WebSocket connection closed. Attempting to reconnect...", event);
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            socket.onerror = function(error) {
+                console.error("WebSocket error:", error);
+            };
+        }
+
+        let availableRoles = [];
+        try {
+            const response = await fetch('/api/roles', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!response.ok) throw new Error('Could not fetch roles');
+            availableRoles = await response.json();
+        } catch (error) {
+            console.error(error);
+            document.getElementById('user-error').textContent = 'Failed to load roles. User management is disabled.';
         }
 
         // --- LOGOUT ---
@@ -107,13 +135,6 @@
                 window.location.href = '/login.html';
             });
         });
-
-        // --- ROLES (Replace with actual IDs from your DB) ---
-        const availableRoles = [
-            {id: "a1b2c3d4-e5f6-7890-1234-567890abcdef", name: "ADMIN"},
-            {id: "b2c3d4e5-f6a7-8901-2345-67890abcdef1", name: "USER"},
-            {id: "c3d4e5f6-a7b8-9012-3456-7890abcdef12", name: "SUPPORT"}
-        ];
 
         const userList = document.getElementById('user-list');
         const groupList = document.getElementById('group-list');
@@ -141,7 +162,7 @@
             if (openBtn) openBtn.onclick = () => modal.style.display = 'block';
             modal.querySelector(closeBtnClass).onclick = () => modal.style.display = 'none';
             window.addEventListener('click', (event) => {
-                if (event.target === modal) modal.style.display = 'none';
+                if (event.target == modal) modal.style.display = 'none';
             });
         }
         setupModal(userModal, document.getElementById('add-user-btn'), '.close-btn');
