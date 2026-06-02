@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        #loginForm {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        div {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required/>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required/>
+            </div>
+            <div>
+                <button type="submit">Log In</button>
+            </div>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: username, password: password })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Login failed!');
+            })
+            .then(data => {
+                messageDiv.textContent = 'Login successful!';
+                // Store the token from the "token" field
+                localStorage.setItem('accessToken', data.token);
+                console.log('Access Token:', data.token);
+                // Redirect to home page
+                window.location.href = '/home.html';
+            })
+            .catch(error => {
+                messageDiv.textContent = error.message;
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

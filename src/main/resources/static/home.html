@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; }
+        .container { display: flex; }
+        #side-panel { width: 250px; border-right: 1px solid #ccc; padding: 20px; height: calc(100vh - 100px); }
+        #main-content-wrapper { width: 100%; }
+        #main-content { text-align: center; padding: 20px; border-bottom: 1px solid #ccc; }
+        .collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+        .add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
+        ul { list-style-type: none; padding: 0; }
+        li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .actions span { cursor: pointer; margin-left: 8px; }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="main-content-wrapper">
+        <div id="main-content">
+            <h1>Служба поддержки</h1>
+            <p>Система управления</p>
+        </div>
+    </div>
+    <div class="container">
+        <div id="side-panel">
+            <div id="users-header" class="collapsible-header">
+                <h2>Пользователи</h2>
+            </div>
+            <ul id="user-list" style="display: none;"></ul>
+            <div id="user-error" style="color: red;"></div>
+
+            <div id="groups-header" class="collapsible-header">
+                <h2>Группы</h2>
+                <span class="add-btn" id="add-group-btn">+</span>
+            </div>
+            <ul id="group-list" style="display: none;"></ul>
+            <div id="group-error" style="color: red;"></div>
+        </div>
+    </div>
+
+    <div id="groupModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="modalTitle"></h3>
+            <form id="groupForm">
+                <input type="hidden" id="groupId">
+                <input type="text" id="groupName" placeholder="Название группы" required>
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const modal = document.getElementById('groupModal');
+            const closeBtn = modal.querySelector('.close-btn');
+            const modalTitle = document.getElementById('modalTitle');
+            const groupForm = document.getElementById('groupForm');
+            const groupIdInput = document.getElementById('groupId');
+            const groupNameInput = document.getElementById('groupName');
+            const groupList = document.getElementById('group-list');
+
+            const openModal = (title, id = '', name = '') => {
+                modalTitle.textContent = title;
+                groupIdInput.value = id;
+                groupNameInput.value = name;
+                modal.style.display = 'block';
+            };
+
+            const closeModal = () => {
+                modal.style.display = 'none';
+            };
+
+            closeBtn.onclick = closeModal;
+            window.onclick = (event) => {
+                if (event.target == modal) closeModal();
+            };
+
+            document.getElementById('add-group-btn').onclick = () => openModal('Новая группа');
+
+            groupForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const id = groupIdInput.value;
+                const name = groupNameInput.value;
+                const url = id ? `/api/groups/${id}` : '/api/groups';
+                const method = id ? 'PUT' : 'POST';
+
+                fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Failed to ${id ? 'update' : 'create'} group`);
+                    return response.json();
+                })
+                .then(() => {
+                    fetchGroups(); // Re-fetch the list to show changes
+                    closeModal();
+                })
+                .catch(error => alert('Error: ' + error.message));
+            });
+
+            function renderGroups(groups) {
+                groupList.innerHTML = '';
+                groups.forEach(group => {
+                    const listItem = document.createElement('li');
+                    listItem.setAttribute('data-id', group.id);
+                    listItem.innerHTML = `
+                        <span>${group.name}</span>
+                        <div class="actions">
+                            <span class="edit-btn">✏️</span>
+                            <span class="delete-btn">🗑️</span>
+                        </div>
+                    `;
+                    groupList.appendChild(listItem);
+                });
+            }
+
+            function fetchGroups() {
+                fetch('/api/groups', { headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Status: ' + response.status);
+                        return response.json();
+                    })
+                    .then(renderGroups)
+                    .catch(error => {
+                        document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message;
+                    });
+            }
+
+            groupList.addEventListener('click', function(event) {
+                const target = event.target;
+                const listItem = target.closest('li');
+                if (!listItem) return;
+
+                const id = listItem.dataset.id;
+                const name = listItem.querySelector('span').textContent;
+
+                if (target.classList.contains('edit-btn')) {
+                    openModal('Изменить группу', id, name);
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    if (confirm(`Вы уверены, что хотите удалить группу "${name}"?`)) {
+                        fetch(`/api/groups/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Failed to delete group');
+                            fetchGroups(); // Re-fetch to update list
+                        })
+                        .catch(error => alert('Error: ' + error.message));
+                    }
+                }
+            });
+
+            // Initial data fetch
+            fetchGroups();
+
+            // Collapsible logic
+            document.getElementById('groups-header').addEventListener('click', (e) => {
+                if (e.target.tagName !== 'SPAN') {
+                    groupList.style.display = groupList.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+
+            // ... (user fetching logic remains the same)
+            const usersHeader = document.getElementById('users-header');
+            const userList = document.getElementById('user-list');
+            const userErrorDiv = document.getElementById('user-error');
+
+            usersHeader.addEventListener('click', () => {
+                userList.style.display = userList.style.display === 'none' ? 'block' : 'none';
+            });
+
+            fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(response => {
+                    if (response.status === 403) throw new Error('Access Denied.');
+                    if (!response.ok) throw new Error('Status: ' + response.status);
+                    return response.json();
+                })
+                .then(users => {
+                    userList.innerHTML = '';
+                    users.forEach(user => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = user.name + ' (' + user.username + ')';
+                        userList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    userErrorDiv.textContent = 'Error fetching users: ' + error.message;
+                });
+        });
+    </script>
+</body>
+</html>

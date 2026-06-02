@@ -114,6 +114,12 @@ application:
       - method: POST
         path: /api/chats/{id}/close
       - method: GET
+        path: /login.html
+      - method: GET
+        path: /home.html
+      - method: GET
+        path: /login
+      - method: GET
 
       # websocket
         path: /ws/**
