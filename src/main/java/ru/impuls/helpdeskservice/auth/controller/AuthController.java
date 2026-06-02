@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.auth.dto.request.LoginRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.service.AuthService;
 
 @RestController
@@ -21,6 +22,12 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public TokenResponse login(@RequestBody @Valid LoginRequest loginRequest, HttpServletResponse servletResponse) {
         return authService.login(loginRequest, servletResponse);
+    }
+
+    @PostMapping("/login_from_app")
+    @ResponseStatus(HttpStatus.OK)
+    public TokenResponse loginUserByOutApp(@RequestBody @Valid UserBillingRequest userBillingRequest, HttpServletResponse servletResponse) {
+        return authService.loginUserByOutApp(userBillingRequest, servletResponse);
     }
 
     @PostMapping("logout")

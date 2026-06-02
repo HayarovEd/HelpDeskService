@@ -7,7 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
-import ru.impuls.helpdeskservice.auth.dto.response.UserBillingResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 
@@ -49,7 +49,7 @@ public class UserController {
     @PutMapping("/sync")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     @ResponseStatus(HttpStatus.OK)
-    public List<UserResponse> syncUsers(@Valid @RequestBody List<UserBillingResponse> userResponses) {
+    public List<UserResponse> syncUsers(@Valid @RequestBody List<UserBillingRequest> userResponses) {
         return userService.updateUsersFromList(userResponses);
     }
 }

@@ -3,7 +3,7 @@ package ru.impuls.helpdeskservice.auth.service;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
-import ru.impuls.helpdeskservice.auth.dto.response.UserBillingResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
 
 import java.util.List;
@@ -21,5 +21,5 @@ public interface UserService {
 
     String getTokenVersionByUserId(UUID userId);
 
-    List<UserResponse> updateUsersFromList(List<UserBillingResponse> userResponses);
+    List<UserResponse> updateUsersFromList(List<UserBillingRequest> userResponses);
 }

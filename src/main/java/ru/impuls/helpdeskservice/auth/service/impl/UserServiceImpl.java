@@ -9,14 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.PasswordRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserCreateRequest;
 import ru.impuls.helpdeskservice.auth.dto.request.UserEditRequest;
-import ru.impuls.helpdeskservice.auth.dto.response.UserBillingResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.UserResponse;
-import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.TokenService;
+import ru.impuls.helpdeskservice.auth.service.UserHelperService;
 import ru.impuls.helpdeskservice.auth.service.UserService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.TokenType;
@@ -40,6 +40,7 @@ public class UserServiceImpl implements UserService {
     private final WebSocketHandler webSocketHandler;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+    private final UserHelperService userHelperService;
 
     @Override
     public List<UserResponse> getAll() {
@@ -113,14 +114,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> updateUsersFromList(List<UserBillingResponse> userResponses) {
+    public List<UserResponse> updateUsersFromList(List<UserBillingRequest> userResponses) {
         if (userResponses == null || userResponses.isEmpty()) {
             return Collections.emptyList();
         }
 
         // Извлекаем все username из списка
         Set<String> usernamesFromRequest = userResponses.stream()
-                .map(UserBillingResponse::username)
+                .map(UserBillingRequest::username)
                 .collect(Collectors.toSet());
 
         // Находим существующих пользователей по username из запроса
@@ -131,16 +132,16 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toMap(User::getUsername, user -> user));
 
         // Обрабатываем каждый элемент из списка
-        for (UserBillingResponse response : userResponses) {
+        for (UserBillingRequest response : userResponses) {
             String username = response.username();
 
             if (existingUserMap.containsKey(username)) {
                 // Случай 1: пользователь существует → обновляем
                 User existingUser = existingUserMap.get(username);
-                updateExistingUser(existingUser, response);
+                userHelperService.updateExistingUser(existingUser, response);
             } else {
                 // Случай 2: пользователь не существует → создаём нового
-                createNewUser(response);
+                userHelperService.createNewUser(response);
             }
         }
 
@@ -149,39 +150,5 @@ public class UserServiceImpl implements UserService {
         return userRepo.findAll(Sort.by(Sort.Direction.ASC, "email")).stream()
                 .map(userMapper::toDto)
                 .toList();
-    }
-
-    private void updateExistingUser(User user, UserBillingResponse response) {
-        // Обновляем только те поля, которые могут измениться
-        user.setName(response.name());
-        user.setEmail(response.email());
-
-        // Обновляем пароль только если он указан и не пустой
-        if (response.password() != null && !response.password().isBlank()) {
-            user.setPassword(passwordEncoder.encode(response.password()));
-        }
-        // Если нужно обновить роль - можно добавить логику
-        // user.setRole(roleRepository.findByName(response.role()));
-        userRepo.save(user);
-    }
-
-    private void createNewUser(UserBillingResponse response) {
-        User newUser = User.builder()
-                .name(response.name())
-                .username(response.username())
-                .email(response.email())
-                .password(passwordEncoder.encode(response.password()))
-                .disabled(false)
-                .tokenVersion("0")
-                .role(getDefaultRole())
-                .build();
-
-        userRepo.save(newUser);
-    }
-
-    private Role getDefaultRole() {
-        // Получаем роль по умолчанию (например, USER)
-        return roleRepo.findByName("USER")
-                .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 }

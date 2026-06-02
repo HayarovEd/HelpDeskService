@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.LoginRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.TokenRepo;
@@ -18,6 +19,7 @@ import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.AuthService;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
 import ru.impuls.helpdeskservice.auth.service.TokenService;
+import ru.impuls.helpdeskservice.auth.service.UserHelperService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final CookieUtil cookieUtil;
     private final TokenService tokenService;
     private final TokenRepo tokenRepo;
+    private final UserHelperService userHelperService;
 
     /************************ login ***************************/
     @Override
@@ -48,13 +51,19 @@ public class AuthServiceImpl implements AuthService {
 
         validateUserForLogin(user, loginRequest);
 
-        var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateRefreshToken();
+       return generateToken(user, servletResponse);
+    }
 
-        tokenService.save(user, refreshToken, TokenType.REFRESH);
-        cookieUtil.addRefreshTokenToCookie(servletResponse, refreshToken);
-
-        return new TokenResponse(accessToken);
+    @Override
+    public TokenResponse loginUserByOutApp(UserBillingRequest userBillingRequest, HttpServletResponse servletResponse) {
+        var user = userRepo.findByUsername(userBillingRequest.username());
+        if (user.isPresent()) {
+            var newUser = userHelperService.updateExistingUser(user.get(), userBillingRequest);
+            return generateToken(newUser, servletResponse);
+        } else {
+            var newUser =  userHelperService.createNewUser(userBillingRequest);
+            return generateToken(newUser, servletResponse);
+        }
     }
 
     /************************ logout ***************************/
@@ -153,5 +162,14 @@ public class AuthServiceImpl implements AuthService {
         if (Instant.now().isAfter(token.getExpiresAt())) {
             throw new AppException("Refresh token expired. Please login again", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    private TokenResponse generateToken (User user, HttpServletResponse servletResponse) {
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefreshToken();
+
+        tokenService.save(user, refreshToken, TokenType.REFRESH);
+        cookieUtil.addRefreshTokenToCookie(servletResponse, refreshToken);
+        return new TokenResponse(accessToken);
     }
 }
