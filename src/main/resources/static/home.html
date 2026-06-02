@@ -1,210 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
     <style>
         body { font-family: sans-serif; margin: 0; }
         .container { display: flex; }
-        #side-panel { width: 250px; border-right: 1px solid #ccc; padding: 20px; height: calc(100vh - 100px); }
+        #side-panel { width: 300px; border-right: 1px solid #ccc; padding: 20px; height: calc(100vh - 100px); overflow-y: auto; }
         #main-content-wrapper { width: 100%; }
         #main-content { text-align: center; padding: 20px; border-bottom: 1px solid #ccc; }
         .collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
         .add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
         ul { list-style-type: none; padding: 0; }
-        li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .actions span { cursor: pointer; margin-left: 8px; }
+        li { margin-bottom: 5px; }
+        .group-item-container, .user-item { padding: 4px 0; }
+        .group-item, .subgroup-item, .user-item { display: flex; justify-content: space-between; align-items: center; }
+        .group-name, .user-name { cursor: pointer; }
+        .actions { margin-left: auto; white-space: nowrap; }
+        .actions span { cursor: pointer; margin-left: 8px; font-size: 16px; }
+        .subgroup-list { display: none; padding-left: 20px; margin-top: 5px; }
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 400px; }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
         .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
+        .form-row { margin-bottom: 10px; }
+        .form-row label { display: block; margin-bottom: 5px; }
+        .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row select { width: 95%; padding: 8px; }
     </style>
 </head>
 <body>
     <div id="main-content-wrapper">
-        <div id="main-content">
-            <h1>Служба поддержки</h1>
-            <p>Система управления</p>
-        </div>
+        <div id="main-content"><h1>Служба поддержки</h1><p>Система управления</p></div>
     </div>
     <div class="container">
         <div id="side-panel">
-            <div id="users-header" class="collapsible-header">
-                <h2>Пользователи</h2>
-            </div>
+            <div id="users-header" class="collapsible-header"><h2>Пользователи</h2><span class="add-btn" id="add-user-btn">+</span></div>
             <ul id="user-list" style="display: none;"></ul>
             <div id="user-error" style="color: red;"></div>
 
-            <div id="groups-header" class="collapsible-header">
-                <h2>Группы</h2>
-                <span class="add-btn" id="add-group-btn">+</span>
-            </div>
+            <div id="groups-header" class="collapsible-header"><h2>Группы</h2><span class="add-btn" id="add-group-btn">+</span></div>
             <ul id="group-list" style="display: none;"></ul>
             <div id="group-error" style="color: red;"></div>
         </div>
     </div>
 
-    <div id="groupModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h3 id="modalTitle"></h3>
-            <form id="groupForm">
-                <input type="hidden" id="groupId">
-                <input type="text" id="groupName" placeholder="Название группы" required>
-                <button type="submit">Сохранить</button>
-            </form>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div id="userModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="userModalTitle"></h3><form id="userForm"><input type="hidden" id="userId"><div class="form-row"><label>Username: <input type="text" id="username" required></label></div><div class="form-row" id="password-row"><label>Password: <input type="password" id="password"></label></div><div class="form-row"><label>Name: <input type="text" id="name" required></label></div><div class="form-row"><label>Email: <input type="email" id="email"></label></div><div class="form-row"><label>Role: <select id="role"></select></label></div><div class="form-row"><label><input type="checkbox" id="isDisabled"> Disabled</label></div><button type="submit">Сохранить</button></form></div></div>
+    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><input type="text" id="groupName" placeholder="Название группы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
+    <div id="subgroupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="subgroupModalTitle"></h3><form id="subgroupForm"><input type="hidden" id="subgroupId"><input type="hidden" id="parentGroupId"><input type="text" id="subgroupName" placeholder="Название подгруппы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('accessToken');
+        if (!token) { window.location.href = '/login.html'; return; }
+
+        // --- ROLES (Replace with actual IDs from your DB) ---
+        const availableRoles = [
+            {id: "a1b2c3d4-e5f6-7890-1234-567890abcdef", name: "ADMIN"},
+            {id: "b2c3d4e5-f6a7-8901-2345-67890abcdef1", name: "USER"},
+            {id: "c3d4e5f6-a7b8-9012-3456-7890abcdef12", name: "SUPPORT"}
+        ];
+
+        // --- DOM Elements ---
+        const userList = document.getElementById('user-list');
+        const groupList = document.getElementById('group-list');
+        const userModal = document.getElementById('userModal');
+        const userForm = document.getElementById('userForm');
+        const groupModal = document.getElementById('groupModal');
+        const groupForm = document.getElementById('groupForm');
+        const subgroupModal = document.getElementById('subgroupModal');
+        const subgroupForm = document.getElementById('subgroupForm');
+
+        // --- COLLAPSIBLE HEADERS ---
+        document.getElementById('users-header').addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() !== 'span') {
+                userList.style.display = userList.style.display === 'none' ? 'block' : 'none';
             }
+        });
+        document.getElementById('groups-header').addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() !== 'span') {
+                groupList.style.display = groupList.style.display === 'none' ? 'block' : 'none';
+            }
+        });
 
-            const modal = document.getElementById('groupModal');
-            const closeBtn = modal.querySelector('.close-btn');
-            const modalTitle = document.getElementById('modalTitle');
-            const groupForm = document.getElementById('groupForm');
-            const groupIdInput = document.getElementById('groupId');
-            const groupNameInput = document.getElementById('groupName');
-            const groupList = document.getElementById('group-list');
-
-            const openModal = (title, id = '', name = '') => {
-                modalTitle.textContent = title;
-                groupIdInput.value = id;
-                groupNameInput.value = name;
-                modal.style.display = 'block';
-            };
-
-            const closeModal = () => {
-                modal.style.display = 'none';
-            };
-
-            closeBtn.onclick = closeModal;
-            window.onclick = (event) => {
-                if (event.target == modal) closeModal();
-            };
-
-            document.getElementById('add-group-btn').onclick = () => openModal('Новая группа');
-
-            groupForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                const id = groupIdInput.value;
-                const name = groupNameInput.value;
-                const url = id ? `/api/groups/${id}` : '/api/groups';
-                const method = id ? 'PUT' : 'POST';
-
-                fetch(url, {
-                    method: method,
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name })
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error(`Failed to ${id ? 'update' : 'create'} group`);
-                    return response.json();
-                })
-                .then(() => {
-                    fetchGroups(); // Re-fetch the list to show changes
-                    closeModal();
-                })
-                .catch(error => alert('Error: ' + error.message));
+        // --- MODAL HANDLING ---
+        function setupModal(modal, openBtn, closeBtnClass) {
+            if (openBtn) openBtn.onclick = () => modal.style.display = 'block';
+            modal.querySelector(closeBtnClass).onclick = () => modal.style.display = 'none';
+            window.addEventListener('click', (event) => {
+                if (event.target == modal) modal.style.display = 'none';
             });
+        }
+        setupModal(userModal, document.getElementById('add-user-btn'), '.close-btn');
+        setupModal(groupModal, document.getElementById('add-group-btn'), '.close-btn');
+        setupModal(subgroupModal, null, '.close-btn');
 
-            function renderGroups(groups) {
-                groupList.innerHTML = '';
-                groups.forEach(group => {
-                    const listItem = document.createElement('li');
-                    listItem.setAttribute('data-id', group.id);
-                    listItem.innerHTML = `
-                        <span>${group.name}</span>
-                        <div class="actions">
-                            <span class="edit-btn">✏️</span>
-                            <span class="delete-btn">🗑️</span>
-                        </div>
-                    `;
-                    groupList.appendChild(listItem);
-                });
+        // --- USER LOGIC ---
+        function openUserModal(title, user = {}) {
+            userModal.querySelector('#userModalTitle').textContent = title;
+            userForm.userId.value = user.id || '';
+            userForm.username.value = user.username || '';
+            userForm.name.value = user.name || '';
+            userForm.email.value = user.email || '';
+            userForm.isDisabled.checked = user.disabled || false;
+            const roleSelect = userForm.role;
+            roleSelect.innerHTML = '';
+            availableRoles.forEach(role => {
+                const option = new Option(role.name, role.id);
+                option.selected = user.role && user.role.id === role.id;
+                roleSelect.add(option);
+            });
+            const passwordRow = document.getElementById('password-row');
+            if (user.id) {
+                passwordRow.style.display = 'none';
+                userForm.password.required = false;
+            } else {
+                passwordRow.style.display = 'block';
+                userForm.password.required = true;
             }
+            userModal.style.display = 'block';
+        }
 
-            function fetchGroups() {
-                fetch('/api/groups', { headers: { 'Authorization': 'Bearer ' + token } })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Status: ' + response.status);
-                        return response.json();
-                    })
-                    .then(renderGroups)
-                    .catch(error => {
-                        document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message;
+        userForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const id = userForm.userId.value;
+            const selectedRole = availableRoles.find(r => r.id === userForm.role.value);
+            const userData = { name: userForm.name.value, username: userForm.username.value, email: userForm.email.value, disabled: userForm.isDisabled.checked, role: selectedRole };
+            const url = id ? `/api/users/${id}` : '/api/users';
+            const method = id ? 'PUT' : 'POST';
+            if (!id) userData.password = userForm.password.value;
+            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(userData) })
+            .then(res => { if (!res.ok) throw new Error(`User ${id ? 'update' : 'create'} failed`); return res.json(); })
+            .then(() => { fetchAndRenderUsers(); userModal.style.display = 'none'; })
+            .catch(error => alert('Error: ' + error.message));
+        });
+
+        userList.addEventListener('click', function(event) {
+            if (event.target.classList.contains('edit-user-btn')) {
+                const userId = event.target.closest('li').dataset.id;
+                fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(res => res.json()).then(users => {
+                        const userToEdit = users.find(u => u.id === userId);
+                        if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
                     });
             }
+        });
 
-            groupList.addEventListener('click', function(event) {
-                const target = event.target;
-                const listItem = target.closest('li');
-                if (!listItem) return;
+        // --- GROUP LOGIC ---
+        function openGroupModal(title, id = '', name = '') {
+            groupModal.querySelector('#groupModalTitle').textContent = title;
+            groupForm.groupId.value = id;
+            groupForm.groupName.value = name;
+            groupModal.style.display = 'block';
+        }
 
-                const id = listItem.dataset.id;
-                const name = listItem.querySelector('span').textContent;
+        groupForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const id = groupForm.groupId.value;
+            const name = groupForm.groupName.value;
+            const url = id ? `/api/groups/${id}` : '/api/groups';
+            const method = id ? 'PUT' : 'POST';
+            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+            .then(res => { if (!res.ok) throw new Error(`Group ${id ? 'update' : 'create'} failed`); return res.json(); })
+            .then(() => { fetchAndRenderGroups(); groupModal.style.display = 'none'; })
+            .catch(error => alert('Error: ' + error.message));
+        });
 
-                if (target.classList.contains('edit-btn')) {
-                    openModal('Изменить группу', id, name);
+        // --- SUBGROUP LOGIC ---
+        function openSubgroupModal(title, parentGroupId, subgroupId = '', subgroupName = '') {
+            subgroupModal.querySelector('#subgroupModalTitle').textContent = title;
+            subgroupForm.parentGroupId.value = parentGroupId;
+            subgroupForm.subgroupId.value = subgroupId;
+            subgroupForm.subgroupName.value = subgroupName;
+            subgroupModal.style.display = 'block';
+        }
+
+        subgroupForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const parentGroupId = subgroupForm.parentGroupId.value;
+            const subgroupId = subgroupForm.subgroupId.value;
+            const name = subgroupForm.subgroupName.value;
+            const isEditing = !!subgroupId;
+            const url = isEditing ? `/api/subgroups/${subgroupId}` : `/api/subgroups?groupId=${parentGroupId}`;
+            const method = isEditing ? 'PUT' : 'POST';
+            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+            .then(res => { if (!res.ok) throw new Error('Subgroup operation failed'); return res.json(); })
+            .then(() => { subgroupModal.style.display = 'none'; fetchAndRenderGroups(); })
+            .catch(error => alert('Error: ' + error.message));
+        });
+
+        // --- LIST EVENT DELEGATION (Groups & Subgroups) ---
+        groupList.addEventListener('click', function(event) {
+            const target = event.target;
+            const groupContainer = target.closest('.group-item-container');
+            if (!groupContainer) return;
+            const groupId = groupContainer.dataset.groupId;
+            const groupName = groupContainer.querySelector('.group-name').textContent.trim();
+
+            if (target.classList.contains('group-name')) {
+                const subgroupList = groupContainer.querySelector('.subgroup-list');
+                if (subgroupList) subgroupList.style.display = subgroupList.style.display === 'none' ? 'block' : 'none';
+            }
+            if (target.classList.contains('add-subgroup-btn')) openSubgroupModal('Новая подгруппа', groupId);
+            if (target.classList.contains('edit-group-btn')) openGroupModal('Изменить группу', groupId, groupName);
+            if (target.classList.contains('delete-group-btn')) {
+                if (confirm(`Удалить группу "${groupName}"?`)) {
+                    fetch(`/api/groups/${groupId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(res => { if (!res.ok) throw new Error('Delete failed'); fetchAndRenderGroups(); })
+                    .catch(error => alert('Error: ' + error.message));
                 }
+            }
 
-                if (target.classList.contains('delete-btn')) {
-                    if (confirm(`Вы уверены, что хотите удалить группу "${name}"?`)) {
-                        fetch(`/api/groups/${id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error('Failed to delete group');
-                            fetchGroups(); // Re-fetch to update list
-                        })
-                        .catch(error => alert('Error: ' + error.message));
+            const subgroupItem = target.closest('.subgroup-item');
+            if (subgroupItem) {
+                const subgroupId = subgroupItem.dataset.subgroupId;
+                const subgroupName = subgroupItem.querySelector('span').textContent.trim();
+                if (target.classList.contains('edit-subgroup-btn')) openSubgroupModal('Изменить подгруппу', groupId, subgroupId, subgroupName);
+                if (target.classList.contains('delete-subgroup-btn')) {
+                    if (confirm(`Удалить подгруппу "${subgroupName}"?`)) {
+                        fetch(`/api/subgroups/${subgroupId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+                            .then(res => { if (!res.ok) throw new Error('Delete failed'); fetchAndRenderGroups(); })
+                            .catch(error => alert('Error: ' + error.message));
                     }
                 }
-            });
+            }
+        });
 
-            // Initial data fetch
-            fetchGroups();
-
-            // Collapsible logic
-            document.getElementById('groups-header').addEventListener('click', (e) => {
-                if (e.target.tagName !== 'SPAN') {
-                    groupList.style.display = groupList.style.display === 'none' ? 'block' : 'none';
-                }
-            });
-
-            // ... (user fetching logic remains the same)
-            const usersHeader = document.getElementById('users-header');
-            const userList = document.getElementById('user-list');
-            const userErrorDiv = document.getElementById('user-error');
-
-            usersHeader.addEventListener('click', () => {
-                userList.style.display = userList.style.display === 'none' ? 'block' : 'none';
-            });
-
+        // --- DATA FETCHING & RENDERING ---
+        function fetchAndRenderUsers() {
             fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
-                .then(response => {
-                    if (response.status === 403) throw new Error('Access Denied.');
-                    if (!response.ok) throw new Error('Status: ' + response.status);
-                    return response.json();
-                })
+                .then(res => res.ok ? res.json() : Promise.reject(new Error(res.statusText)))
                 .then(users => {
                     userList.innerHTML = '';
                     users.forEach(user => {
                         const listItem = document.createElement('li');
-                        listItem.textContent = user.name + ' (' + user.username + ')';
+                        listItem.className = 'user-item';
+                        listItem.setAttribute('data-id', user.id);
+                        listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div><div class="actions"><span class="edit-user-btn">✏️</span></div>`;
                         userList.appendChild(listItem);
                     });
                 })
-                .catch(error => {
-                    userErrorDiv.textContent = 'Error fetching users: ' + error.message;
-                });
-        });
+                .catch(error => { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; });
+        }
+
+        function fetchAndRenderGroups() {
+            fetch('/api/groups', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(res => res.ok ? res.json() : Promise.reject(new Error(res.statusText)))
+                .then(groups => {
+                    groupList.innerHTML = '';
+                    groups.forEach(group => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'group-item-container';
+                        listItem.setAttribute('data-group-id', group.id);
+                        let subgroupsHtml = '';
+                        if (group.subgroups && group.subgroups.length > 0) {
+                            subgroupsHtml = '<ul class="subgroup-list">';
+                            group.subgroups.forEach(subgroup => {
+                                subgroupsHtml += `<li class="subgroup-item" data-subgroup-id="${subgroup.id}"><span>${subgroup.name}</span><div class="actions"><span class="edit-subgroup-btn">✏️</span><span class="delete-subgroup-btn">🗑️</span></div></li>`;
+                            });
+                            subgroupsHtml += '</ul>';
+                        }
+                        listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div><div class="actions"><span class="add-subgroup-btn">+</span><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div></div>${subgroupsHtml}`;
+                        groupList.appendChild(listItem);
+                    });
+                })
+                .catch(error => { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; });
+        }
+
+        // --- INITIAL LOAD ---
+        fetchAndRenderUsers();
+        fetchAndRenderGroups();
+    });
     </script>
 </body>
 </html>
