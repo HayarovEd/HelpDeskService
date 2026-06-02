@@ -8,12 +8,17 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.auth.mapper.UserMapper;
 import ru.impuls.helpdeskservice.auth.repository.RoleRepo;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.UserHelperService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
+import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
+
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 
 @Service
@@ -24,19 +29,17 @@ public class UserHelperServiceImpl implements UserHelperService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepo userRepo;
     private final RoleRepo roleRepo;
+    private final WebSocketHandler webSocketHandler;
+    private final UserMapper userMapper;
 
     @Override
     public User updateExistingUser(User user, UserBillingRequest response) {
-        // Обновляем только те поля, которые могут измениться
         user.setName(response.name());
         user.setEmail(response.email());
-
-        // Обновляем пароль только если он указан и не пустой
         if (response.password() != null && !response.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(response.password()));
         }
-        // Если нужно обновить роль - можно добавить логику
-        // user.setRole(roleRepository.findByName(response.role()));
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), UPDATED);
         return userRepo.save(user);
     }
 
@@ -51,7 +54,7 @@ public class UserHelperServiceImpl implements UserHelperService {
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getDefaultRole())
                 .build();
-
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(newUser), CREATED);
         return userRepo.save(newUser);
     }
 

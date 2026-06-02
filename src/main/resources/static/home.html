@@ -3,19 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
+    <!-- WebSocket Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; }
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid #ccc;
+            height: 70px;
+            box-sizing: border-box;
+        }
+        #header-title {
+            flex-grow: 1;
+            text-align: center;
+        }
+        #header-title h1, #header-title p {
+            margin: 0;
+        }
+        #logout-btn {
+            width: 85px; /* Fixed width to match spacer */
+            padding: 8px 12px;
+            cursor: pointer;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .header-spacer {
+            width: 85px; /* Match button width */
+            flex-shrink: 0;
+        }
         .container { display: flex; }
-        #side-panel { width: 300px; border-right: 1px solid #ccc; padding: 20px; height: calc(100vh - 100px); overflow-y: auto; }
-        #main-content-wrapper { width: 100%; }
-        #main-content { text-align: center; padding: 20px; border-bottom: 1px solid #ccc; }
+        #side-panel { width: 300px; border-right: 1px solid #ccc; padding: 20px; height: calc(100vh - 70px); box-sizing: border-box; overflow-y: auto; }
         .collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
         .add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
         ul { list-style-type: none; padding: 0; }
         li { margin-bottom: 5px; }
         .group-item-container, .user-item { padding: 4px 0; }
         .group-item, .subgroup-item, .user-item { display: flex; justify-content: space-between; align-items: center; }
-        .group-name, .user-name { cursor: pointer; }
+        .group-name, .user-name { cursor: pointer; flex-grow: 1; }
         .actions { margin-left: auto; white-space: nowrap; }
         .actions span { cursor: pointer; margin-left: 8px; font-size: 16px; }
         .subgroup-list { display: none; padding-left: 20px; margin-top: 5px; }
@@ -29,8 +59,10 @@
     </style>
 </head>
 <body>
-    <div id="main-content-wrapper">
-        <div id="main-content"><h1>Служба поддержки</h1><p>Система управления</p></div>
+    <div id="header">
+        <div class="header-spacer"></div>
+        <div id="header-title"><h1>Служба поддержки</h1><p style="margin:0;">Система управления</p></div>
+        <button id="logout-btn">Выход</button>
     </div>
     <div class="container">
         <div id="side-panel">
@@ -54,6 +86,28 @@
         const token = localStorage.getItem('accessToken');
         if (!token) { window.location.href = '/login.html'; return; }
 
+        // --- WEBSOCKET SETUP ---
+        function connectWebSocket() {
+            const socket = new SockJS('/ws');
+            const stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/users', function (message) {
+                    console.log('Received user update message:', message.body);
+                    fetchAndRenderUsers();
+                });
+            });
+        }
+
+        // --- LOGOUT ---
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
+            .finally(() => {
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login.html';
+            });
+        });
+
         // --- ROLES (Replace with actual IDs from your DB) ---
         const availableRoles = [
             {id: "a1b2c3d4-e5f6-7890-1234-567890abcdef", name: "ADMIN"},
@@ -61,7 +115,6 @@
             {id: "c3d4e5f6-a7b8-9012-3456-7890abcdef12", name: "SUPPORT"}
         ];
 
-        // --- DOM Elements ---
         const userList = document.getElementById('user-list');
         const groupList = document.getElementById('group-list');
         const userModal = document.getElementById('userModal');
@@ -88,7 +141,7 @@
             if (openBtn) openBtn.onclick = () => modal.style.display = 'block';
             modal.querySelector(closeBtnClass).onclick = () => modal.style.display = 'none';
             window.addEventListener('click', (event) => {
-                if (event.target == modal) modal.style.display = 'none';
+                if (event.target === modal) modal.style.display = 'none';
             });
         }
         setupModal(userModal, document.getElementById('add-user-btn'), '.close-btn');
@@ -270,6 +323,7 @@
         // --- INITIAL LOAD ---
         fetchAndRenderUsers();
         fetchAndRenderGroups();
+        connectWebSocket();
     });
     </script>
 </body>

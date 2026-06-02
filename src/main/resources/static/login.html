@@ -12,10 +12,11 @@
             margin: 0;
             font-family: sans-serif;
         }
-        #loginForm {
+        #login-container {
             border: 1px solid #ccc;
             padding: 20px;
             border-radius: 5px;
+            text-align: center;
         }
         div {
             margin-bottom: 10px;
@@ -38,16 +39,31 @@
                 <button type="submit">Log In</button>
             </div>
         </form>
-        <div id="message"></div>
+        <div id="message" style="color: red;"></div>
     </div>
 
     <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error("Invalid token:", e);
+                return null;
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('message');
+            messageDiv.textContent = ''; // Clear previous messages
 
             fetch('/api/auth/login', {
                 method: 'POST',
@@ -60,14 +76,20 @@
                 if (response.ok) {
                     return response.json();
                 }
-                throw new Error('Login failed!');
+                throw new Error('Login failed! Check username or password.');
             })
             .then(data => {
+                const token = data.token;
+                const decodedToken = parseJwt(token);
+
+                if (decodedToken && decodedToken.roles && decodedToken.roles.includes('USER')) {
+                    messageDiv.textContent = 'Access Denied: Users with the USER role are not permitted.';
+                    return; // Stop the login process
+                }
+
+                // If role is not USER or roles are not defined, proceed
                 messageDiv.textContent = 'Login successful!';
-                // Store the token from the "token" field
-                localStorage.setItem('accessToken', data.token);
-                console.log('Access Token:', data.token);
-                // Redirect to home page
+                localStorage.setItem('accessToken', token);
                 window.location.href = '/home.html';
             })
             .catch(error => {
