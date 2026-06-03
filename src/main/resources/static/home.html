@@ -18,7 +18,7 @@
         #chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; position: relative; }
         #chat-title { font-size: 1.2em; font-weight: bold; }
         #chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
-        #join-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
+        #join-chat-btn, #exit-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
         #message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
         .message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
@@ -77,6 +77,7 @@
                     <div id="chat-title"></div>
                     <div id="chat-participants"></div>
                     <button id="join-chat-btn" style="display: none;">Взять в работу</button>
+                    <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
                 </div>
                 <div id="message-container"></div>
                 <div id="message-input-container">
@@ -152,6 +153,7 @@
         }
 
         let currentChatId = null;
+        const currentUserId = parseJwt(localStorage.getItem('accessToken')).sub;
 
         // --- WEBSOCKET SETUP ---
         function connectWebSocket() {
@@ -202,6 +204,7 @@
         const chatTitle = document.getElementById('chat-title');
         const chatParticipants = document.getElementById('chat-participants');
         const joinChatBtn = document.getElementById('join-chat-btn');
+        const exitChatBtn = document.getElementById('exit-chat-btn');
         const messageContainer = document.getElementById('message-container');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
@@ -258,20 +261,26 @@
             chatView.style.display = 'flex';
 
             chatTitle.textContent = chat.name;
-            const participants = new Set();
-            if (chat.connections) {
-                chat.connections.forEach(conn => {
-                    if (conn.user && conn.user.name) {
-                        participants.add(conn.user.name);
-                    }
-                });
-            }
-            chatParticipants.textContent = participants.size > 0 ? `Участники: ${[...participants].join(', ')}` : '';
 
-            if (chat.isOpen && !chat.isWork) { // CORRECTED HERE
+            // CORRECTED PARTICIPANT LOGIC
+            const participants = new Set();
+            const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
+            if (activeSupportConnection) {
+                participants.add(activeSupportConnection.user.name);
+            }
+            chatParticipants.textContent = participants.size > 0 ? `В работе у: ${[...participants].join(', ')}` : 'Ожидает ответа';
+
+            const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+
+            if (chat.isOpen && !chat.isWork) {
                 joinChatBtn.style.display = 'block';
+                exitChatBtn.style.display = 'none';
+            } else if (chat.isWork && isCurrentUserResponder) {
+                joinChatBtn.style.display = 'none';
+                exitChatBtn.style.display = 'block';
             } else {
                 joinChatBtn.style.display = 'none';
+                exitChatBtn.style.display = 'none';
             }
 
             messageContainer.innerHTML = '';
@@ -318,6 +327,17 @@
             } catch (error) {
                 console.error('Error joining chat:', error);
                 alert('Could not join chat.');
+            }
+        });
+
+        exitChatBtn.addEventListener('click', async () => {
+            if (!currentChatId) return;
+            try {
+                const response = await fetchWithAuth(`/api/chats/${currentChatId}/exit`, { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to exit chat');
+            } catch (error) {
+                console.error('Error exiting chat:', error);
+                alert('Could not exit chat.');
             }
         });
 

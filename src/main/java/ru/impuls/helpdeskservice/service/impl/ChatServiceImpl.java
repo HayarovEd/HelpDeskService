@@ -181,13 +181,15 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void exit(UUID chatId) {
-        var userId = AuthUtil.getAuthenticatedUser().getId();
+        User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        connectionService.validateCurrentUserIsResponder(chat, userId);
+        connectionService.validateCurrentUserIsResponder(chat, currentUser.getId());
         connectionService.closeCurrentConnection(chat);
+        connectionService.addSystemMessage(chat, "Из чата вышел " + currentUser.getName());
         connectionService.createClientConnection(chat);
 
         chat.setWork(false);
