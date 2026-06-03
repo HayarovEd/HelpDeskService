@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
-    <!-- WebSocket libraries are NOT needed for native API -->
     <style>
         body { font-family: sans-serif; margin: 0; }
         #header {
@@ -80,46 +79,57 @@
     <div id="subgroupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="subgroupModalTitle"></h3><form id="subgroupForm"><input type="hidden" id="subgroupId"><input type="hidden" id="parentGroupId"><input type="text" id="subgroupName" placeholder="Название подгруппы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
 
     <script>
+    // --- AUTH & FETCH WRAPPER ---
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) { return null; }
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        let token = localStorage.getItem('accessToken');
+        if (!token) {
+            window.location.href = '/login.html';
+            throw new Error('No token found');
+        }
+
+        const decodedToken = parseJwt(token);
+        if (decodedToken && decodedToken.exp * 1000 < Date.now() + 30000) { // 30-second buffer
+            console.log('Access token expired, refreshing...');
+            try {
+                const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+                if (!refreshResponse.ok) throw new Error('Refresh failed');
+
+                const newTokenData = await refreshResponse.json();
+                token = newTokenData.token;
+                localStorage.setItem('accessToken', token);
+                console.log('Token refreshed successfully.');
+            } catch (error) {
+                console.error('Session expired, redirecting to login.', error);
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login.html';
+                throw new Error('Session expired');
+            }
+        }
+
+        const newOptions = { ...options };
+        newOptions.headers = { ...newOptions.headers, 'Authorization': 'Bearer ' + token };
+
+        return fetch(url, newOptions);
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
-        const token = localStorage.getItem('accessToken');
-        if (!token) { window.location.href = '/login.html'; return; }
-
-        // --- WEBSOCKET SETUP (Native API) ---
-        function connectWebSocket() {
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
-            const socket = new WebSocket(wsUrl);
-
-            socket.onopen = function() {
-                console.log("WebSocket connection established.");
-            };
-
-            socket.onmessage = function(event) {
-                try {
-                    const message = JSON.parse(event.data);
-                    console.log('Received WebSocket message:', message);
-                    if (message.path === '/users') {
-                        console.log('User list update received. Refreshing...');
-                        fetchAndRenderUsers();
-                    }
-                } catch (e) {
-                    console.error('Error parsing WebSocket message:', e);
-                }
-            };
-
-            socket.onclose = function(event) {
-                console.log("WebSocket connection closed. Attempting to reconnect...", event);
-                setTimeout(connectWebSocket, 5000);
-            };
-
-            socket.onerror = function(error) {
-                console.error("WebSocket error:", error);
-            };
+        if (!localStorage.getItem('accessToken')) {
+            window.location.href = '/login.html';
+            return;
         }
 
         let availableRoles = [];
         try {
-            const response = await fetch('/api/roles', { headers: { 'Authorization': 'Bearer ' + token } });
+            const response = await fetchWithAuth('/api/roles');
             if (!response.ok) throw new Error('Could not fetch roles');
             availableRoles = await response.json();
         } catch (error) {
@@ -127,13 +137,35 @@
             document.getElementById('user-error').textContent = 'Failed to load roles. User management is disabled.';
         }
 
+        // --- WEBSOCKET SETUP ---
+        function connectWebSocket() {
+            const token = localStorage.getItem('accessToken');
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => console.log("WebSocket connection established.");
+            socket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.path === '/users') {
+                        console.log('User list update received. Refreshing...');
+                        fetchAndRenderUsers();
+                    }
+                } catch (e) { console.error('Error parsing WebSocket message:', e); }
+            };
+            socket.onclose = () => setTimeout(connectWebSocket, 5000);
+            socket.onerror = (error) => console.error("WebSocket error:", error);
+        }
+
         // --- LOGOUT ---
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } })
-            .finally(() => {
+        document.getElementById('logout-btn').addEventListener('click', async function() {
+            try {
+                await fetchWithAuth('/api/auth/logout', { method: 'POST' });
+            } finally {
                 localStorage.removeItem('accessToken');
                 window.location.href = '/login.html';
-            });
+            }
         });
 
         const userList = document.getElementById('user-list');
@@ -195,7 +227,7 @@
             userModal.style.display = 'block';
         }
 
-        userForm.addEventListener('submit', function(event) {
+        userForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const id = userForm.userId.value;
             const selectedRole = availableRoles.find(r => r.id === userForm.role.value);
@@ -203,20 +235,24 @@
             const url = id ? `/api/users/${id}` : '/api/users';
             const method = id ? 'PUT' : 'POST';
             if (!id) userData.password = userForm.password.value;
-            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(userData) })
-            .then(res => { if (!res.ok) throw new Error(`User ${id ? 'update' : 'create'} failed`); return res.json(); })
-            .then(() => { fetchAndRenderUsers(); userModal.style.display = 'none'; })
-            .catch(error => alert('Error: ' + error.message));
+            try {
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(userData) });
+                if (!response.ok) throw new Error('User operation failed');
+                fetchAndRenderUsers();
+                userModal.style.display = 'none';
+            } catch (error) { alert('Error: ' + error.message); }
         });
 
-        userList.addEventListener('click', function(event) {
+        userList.addEventListener('click', async function(event) {
             if (event.target.classList.contains('edit-user-btn')) {
                 const userId = event.target.closest('li').dataset.id;
-                fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
-                    .then(res => res.json()).then(users => {
-                        const userToEdit = users.find(u => u.id === userId);
-                        if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
-                    });
+                try {
+                    const response = await fetchWithAuth(`/api/users`); // Inefficient, but works for now
+                    if (!response.ok) throw new Error('Could not fetch users');
+                    const users = await response.json();
+                    const userToEdit = users.find(u => u.id === userId);
+                    if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
+                } catch (error) { alert('Error: ' + error.message); }
             }
         });
 
@@ -228,16 +264,18 @@
             groupModal.style.display = 'block';
         }
 
-        groupForm.addEventListener('submit', function(event) {
+        groupForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const id = groupForm.groupId.value;
             const name = groupForm.groupName.value;
             const url = id ? `/api/groups/${id}` : '/api/groups';
             const method = id ? 'PUT' : 'POST';
-            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
-            .then(res => { if (!res.ok) throw new Error(`Group ${id ? 'update' : 'create'} failed`); return res.json(); })
-            .then(() => { fetchAndRenderGroups(); groupModal.style.display = 'none'; })
-            .catch(error => alert('Error: ' + error.message));
+            try {
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) });
+                if (!response.ok) throw new Error('Group operation failed');
+                fetchAndRenderGroups();
+                groupModal.style.display = 'none';
+            } catch (error) { alert('Error: ' + error.message); }
         });
 
         // --- SUBGROUP LOGIC ---
@@ -249,7 +287,7 @@
             subgroupModal.style.display = 'block';
         }
 
-        subgroupForm.addEventListener('submit', function(event) {
+        subgroupForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const parentGroupId = subgroupForm.parentGroupId.value;
             const subgroupId = subgroupForm.subgroupId.value;
@@ -257,14 +295,16 @@
             const isEditing = !!subgroupId;
             const url = isEditing ? `/api/subgroups/${subgroupId}` : `/api/subgroups?groupId=${parentGroupId}`;
             const method = isEditing ? 'PUT' : 'POST';
-            fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
-            .then(res => { if (!res.ok) throw new Error('Subgroup operation failed'); return res.json(); })
-            .then(() => { subgroupModal.style.display = 'none'; fetchAndRenderGroups(); })
-            .catch(error => alert('Error: ' + error.message));
+            try {
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) });
+                if (!response.ok) throw new Error('Subgroup operation failed');
+                fetchAndRenderGroups();
+                subgroupModal.style.display = 'none';
+            } catch (error) { alert('Error: ' + error.message); }
         });
 
         // --- LIST EVENT DELEGATION (Groups & Subgroups) ---
-        groupList.addEventListener('click', function(event) {
+        groupList.addEventListener('click', async function(event) {
             const target = event.target;
             const groupContainer = target.closest('.group-item-container');
             if (!groupContainer) return;
@@ -279,9 +319,11 @@
             if (target.classList.contains('edit-group-btn')) openGroupModal('Изменить группу', groupId, groupName);
             if (target.classList.contains('delete-group-btn')) {
                 if (confirm(`Удалить группу "${groupName}"?`)) {
-                    fetch(`/api/groups/${groupId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
-                    .then(res => { if (!res.ok) throw new Error('Delete failed'); fetchAndRenderGroups(); })
-                    .catch(error => alert('Error: ' + error.message));
+                    try {
+                        const response = await fetchWithAuth(`/api/groups/${groupId}`, { method: 'DELETE' });
+                        if (!response.ok) throw new Error('Delete failed');
+                        fetchAndRenderGroups();
+                    } catch (error) { alert('Error: ' + error.message); }
                 }
             }
 
@@ -292,53 +334,55 @@
                 if (target.classList.contains('edit-subgroup-btn')) openSubgroupModal('Изменить подгруппу', groupId, subgroupId, subgroupName);
                 if (target.classList.contains('delete-subgroup-btn')) {
                     if (confirm(`Удалить подгруппу "${subgroupName}"?`)) {
-                        fetch(`/api/subgroups/${subgroupId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
-                            .then(res => { if (!res.ok) throw new Error('Delete failed'); fetchAndRenderGroups(); })
-                            .catch(error => alert('Error: ' + error.message));
+                        try {
+                            const response = await fetchWithAuth(`/api/subgroups/${subgroupId}`, { method: 'DELETE' });
+                            if (!response.ok) throw new Error('Delete failed');
+                            fetchAndRenderGroups();
+                        } catch (error) { alert('Error: ' + error.message); }
                     }
                 }
             }
         });
 
         // --- DATA FETCHING & RENDERING ---
-        function fetchAndRenderUsers() {
-            fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
-                .then(res => res.ok ? res.json() : Promise.reject(new Error(res.statusText)))
-                .then(users => {
-                    userList.innerHTML = '';
-                    users.forEach(user => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'user-item';
-                        listItem.setAttribute('data-id', user.id);
-                        listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div><div class="actions"><span class="edit-user-btn">✏️</span></div>`;
-                        userList.appendChild(listItem);
-                    });
-                })
-                .catch(error => { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; });
+        async function fetchAndRenderUsers() {
+            try {
+                const response = await fetchWithAuth('/api/users');
+                if (!response.ok) throw new Error(response.statusText);
+                const users = await response.json();
+                userList.innerHTML = '';
+                users.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'user-item';
+                    listItem.setAttribute('data-id', user.id);
+                    listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div><div class="actions"><span class="edit-user-btn">✏️</span></div>`;
+                    userList.appendChild(listItem);
+                });
+            } catch (error) { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; }
         }
 
-        function fetchAndRenderGroups() {
-            fetch('/api/groups', { headers: { 'Authorization': 'Bearer ' + token } })
-                .then(res => res.ok ? res.json() : Promise.reject(new Error(res.statusText)))
-                .then(groups => {
-                    groupList.innerHTML = '';
-                    groups.forEach(group => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'group-item-container';
-                        listItem.setAttribute('data-group-id', group.id);
-                        let subgroupsHtml = '';
-                        if (group.subgroups && group.subgroups.length > 0) {
-                            subgroupsHtml = '<ul class="subgroup-list">';
-                            group.subgroups.forEach(subgroup => {
-                                subgroupsHtml += `<li class="subgroup-item" data-subgroup-id="${subgroup.id}"><span>${subgroup.name}</span><div class="actions"><span class="edit-subgroup-btn">✏️</span><span class="delete-subgroup-btn">🗑️</span></div></li>`;
-                            });
-                            subgroupsHtml += '</ul>';
-                        }
-                        listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div><div class="actions"><span class="add-subgroup-btn">+</span><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div></div>${subgroupsHtml}`;
-                        groupList.appendChild(listItem);
-                    });
-                })
-                .catch(error => { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; });
+        async function fetchAndRenderGroups() {
+            try {
+                const response = await fetchWithAuth('/api/groups');
+                if (!response.ok) throw new Error(response.statusText);
+                const groups = await response.json();
+                groupList.innerHTML = '';
+                groups.forEach(group => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'group-item-container';
+                    listItem.setAttribute('data-group-id', group.id);
+                    let subgroupsHtml = '';
+                    if (group.subgroups && group.subgroups.length > 0) {
+                        subgroupsHtml = '<ul class="subgroup-list">';
+                        group.subgroups.forEach(subgroup => {
+                            subgroupsHtml += `<li class="subgroup-item" data-subgroup-id="${subgroup.id}"><span>${subgroup.name}</span><div class="actions"><span class="edit-subgroup-btn">✏️</span><span class="delete-subgroup-btn">🗑️</span></div></li>`;
+                        });
+                        subgroupsHtml += '</ul>';
+                    }
+                    listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div><div class="actions"><span class="add-subgroup-btn">+</span><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div></div>${subgroupsHtml}`;
+                    groupList.appendChild(listItem);
+                });
+            } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
         }
 
         // --- INITIAL LOAD ---
