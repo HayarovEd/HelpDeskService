@@ -135,7 +135,7 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
 
         var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
-        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
+        webSocketHandler.notifyChangeAfterCommit("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
 
         return chatMapper.toDto(chat, connectionDto);
     }
@@ -288,6 +288,6 @@ public class ChatServiceImpl implements ChatService {
         var chatDto = chatMapper.toDto(chat);
 
         loadLastConnectionAndMessage(chatDto);
-        webSocketHandler.notifyChange("/chats", chatMapper.toEvent(chatDto), UPDATED);
+        webSocketHandler.notifyChangeAfterCommit("/chats", chatMapper.toEvent(chatDto), UPDATED);
     }
 }
