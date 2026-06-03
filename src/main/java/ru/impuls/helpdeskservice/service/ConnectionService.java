@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface ConnectionService {
 
-    ConnectionDto createInitialConnection(Chat chat, String messageText);
+    ConnectionDto createInitialConnection(Chat chat, String messageText, User user);
 
     void closeCurrentConnection(Chat chat);
 
@@ -18,7 +18,7 @@ public interface ConnectionService {
 
     void validateCurrentUserIsResponder(Chat chat, UUID userId);
 
-    void addClientMessage(Chat chat, String text);
+    void addClientMessage(Chat chat, String text, User user);
 
     void addSupportMessage(Chat chat, UUID userId, String text);
 

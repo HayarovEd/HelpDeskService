@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.SignatureException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import ru.impuls.helpdeskservice.auth.dto.internal.TokenClaimDto;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
+import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -28,7 +30,10 @@ import java.util.*;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
+
+    private final UserRepo userRepo; // Injected UserRepo
 
     @Value("${application.security.jwt.access-token.expiration}")
     private int accessTokenExpiration;
@@ -161,17 +166,13 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public UsernamePasswordAuthenticationToken getAuthentication(String jwt) {
         var userId = this.extractId(jwt);
-        var role = this.extractRole(jwt);
-        var userEmail = this.extractEmail(jwt);
         var authorities = this.extractAuthorities(jwt);
-        var authenticatedUser = User.builder()
-                .id(UUID.fromString(userId))
-                .email(userEmail)
-                .role(role)
-                .build();
+        
+        User authenticatedUser = userRepo.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED));
 
         return new UsernamePasswordAuthenticationToken(
-                authenticatedUser,
+                authenticatedUser, // Now this is the full User object from the database
                 null,
                 authorities
         );

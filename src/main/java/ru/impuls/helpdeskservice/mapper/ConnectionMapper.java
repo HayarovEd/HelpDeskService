@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.entity.Chat;
@@ -18,12 +19,12 @@ import java.util.List;
 public interface ConnectionMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "user", source = "user")
     @Mapping(target = "endDate", ignore = true)
     @Mapping(target = "messages", ignore = true)
     @Mapping(target = "chat", source = "chat")
     @Mapping(target = "startDate", source = "chat.createdDate")
-    Connection toEntity(Chat chat);
+    Connection toEntity(Chat chat, User user);
 
     @Mapping(target = "messages", ignore = true)
     Connection toEntity(Connection connection);

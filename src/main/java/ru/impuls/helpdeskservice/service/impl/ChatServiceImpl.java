@@ -130,11 +130,13 @@ public class ChatServiceImpl implements ChatService {
     public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
         var subgroup = subgroupRepo.findById(subgroupId)
                 .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+        User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
+                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         var chat = chatMapper.toEntity(chatRequest, subgroup);
         chatRepository.save(chat);
 
-        var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message());
+        var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message(), currentUser);
         webSocketHandler.notifyChangeAfterCommit("/chats", chatMapper.toEvent(chat, connectionDto), CREATED);
 
         return chatMapper.toDto(chat, connectionDto);
@@ -212,8 +214,9 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
+        var user = AuthUtil.getAuthenticatedUser();
         boolean wasClosed = !chat.isOpen();
-        connectionService.addClientMessage(chat, messageCreateDto.getText());
+        connectionService.addClientMessage(chat, messageCreateDto.getText(), user);
 
         if (wasClosed && chat.isOpen()) {
             notifyChatUpdated(chat);

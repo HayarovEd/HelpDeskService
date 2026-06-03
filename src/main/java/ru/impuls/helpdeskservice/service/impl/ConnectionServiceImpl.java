@@ -38,9 +38,9 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final ChatMapper chatMapper;
 
     @Override
-    public ConnectionDto createInitialConnection(Chat chat, String messageText) {
+    public ConnectionDto createInitialConnection(Chat chat, String messageText, User user) {
 
-        var connection = connectionMapper.toEntity(chat);
+        var connection = connectionMapper.toEntity(chat, user);
         connectionRepository.save(connection);
 
         var message = messageMapper.toEntity(connection, messageText, false);
@@ -95,11 +95,11 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
     @Override
-    public void addClientMessage(Chat chat, String text) {
+    public void addClientMessage(Chat chat, String text, User user) {
         Connection currentConnection;
 
         if (!chat.isOpen()) {
-            createInitialConnection(chat, text);
+            createInitialConnection(chat, text, user);
             chat.setOpen(true);
             return;
         }

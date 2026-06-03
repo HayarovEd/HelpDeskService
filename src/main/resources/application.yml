@@ -104,13 +104,9 @@ application:
       - method: GET
         path: /api/chats/*
       - method: POST
-        path: /api/chats
-      - method: POST
         path: /api/chats/{id}/messages
       - method: POST
         path: /api/chats/{id}/connections
-      - method: POST
-        path: /api/chats/{id}/message/client
       - method: POST
         path: /api/chats/{id}/close
       - method: GET

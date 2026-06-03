@@ -64,10 +64,15 @@ public class ChatSpecifications {
             Subquery<UUID> subquery = query.subquery(UUID.class);
             Root<Connection> connectionRoot = subquery.from(Connection.class);
 
+            // Find chats where the given user is part of a connection
             subquery.select(connectionRoot.get("chat").get("id"))
                     .where(cb.equal(connectionRoot.get("user"), user));
 
-            return cb.in(root.get("id")).value(subquery);
+            // The chat must be in the list from the subquery AND must be marked as "in work"
+            return cb.and(
+                cb.in(root.get("id")).value(subquery),
+                cb.isTrue(root.get("work"))
+            );
         };
     }
 }
