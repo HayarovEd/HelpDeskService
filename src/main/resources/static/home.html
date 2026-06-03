@@ -262,14 +262,18 @@
 
             chatTitle.textContent = chat.name;
 
-            // CORRECTED PARTICIPANT LOGIC
-            const participants = new Set();
-            const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
-            if (activeSupportConnection) {
-                participants.add(activeSupportConnection.user.name);
+            // CORRECTED PARTICIPANT AND BUTTON LOGIC
+            const activeParticipants = new Set();
+            if (chat.connections) {
+                chat.connections.forEach(conn => {
+                    if (conn.user && conn.user.name && conn.end === null) {
+                        activeParticipants.add(conn.user.name);
+                    }
+                });
             }
-            chatParticipants.textContent = participants.size > 0 ? `В работе у: ${[...participants].join(', ')}` : 'Ожидает ответа';
+            chatParticipants.textContent = activeParticipants.size > 0 ? `В работе у: ${[...activeParticipants].join(', ')}` : 'Ожидает ответа';
 
+            const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
             const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
 
             if (chat.isOpen && !chat.isWork) {
