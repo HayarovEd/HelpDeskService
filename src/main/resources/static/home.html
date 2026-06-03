@@ -19,6 +19,7 @@
         #chat-title { font-size: 1.2em; font-weight: bold; }
         #chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
         #join-chat-btn, #exit-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
+        #close-chat-btn { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); padding: 5px 10px; background-color: #f44336; color: white; border: 1px solid #d32f2f; border-radius: 4px; }
         #message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
         .message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
@@ -76,6 +77,7 @@
                 <div id="chat-header">
                     <div id="chat-title"></div>
                     <div id="chat-participants"></div>
+                    <button id="close-chat-btn" style="display: none;">Закрыть чат</button>
                     <button id="join-chat-btn" style="display: none;">Взять в работу</button>
                     <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
                 </div>
@@ -205,6 +207,7 @@
         const chatParticipants = document.getElementById('chat-participants');
         const joinChatBtn = document.getElementById('join-chat-btn');
         const exitChatBtn = document.getElementById('exit-chat-btn');
+        const closeChatBtn = document.getElementById('close-chat-btn');
         const messageContainer = document.getElementById('message-container');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
@@ -262,19 +265,24 @@
 
             chatTitle.textContent = chat.name;
 
-            // CORRECTED PARTICIPANT AND BUTTON LOGIC
-            const activeParticipants = new Set();
+            const participants = new Set();
             if (chat.connections) {
                 chat.connections.forEach(conn => {
-                    if (conn.user && conn.user.name && conn.end === null) {
-                        activeParticipants.add(conn.user.name);
+                    if (conn.user && conn.user.name) {
+                        participants.add(conn.user.name);
                     }
                 });
             }
-            chatParticipants.textContent = activeParticipants.size > 0 ? `В работе у: ${[...activeParticipants].join(', ')}` : 'Ожидает ответа';
+            chatParticipants.textContent = participants.size > 0 ? `Участники: ${[...participants].join(', ')}` : '';
 
             const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
             const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+
+            if (chat.isOpen) {
+                closeChatBtn.style.display = 'block';
+            } else {
+                closeChatBtn.style.display = 'none';
+            }
 
             if (chat.isOpen && !chat.isWork) {
                 joinChatBtn.style.display = 'block';
@@ -342,6 +350,19 @@
             } catch (error) {
                 console.error('Error exiting chat:', error);
                 alert('Could not exit chat.');
+            }
+        });
+
+        closeChatBtn.addEventListener('click', async () => {
+            if (!currentChatId) return;
+            if (confirm('Вы уверены, что хотите закрыть этот чат? Это действие необратимо.')) {
+                try {
+                    const response = await fetchWithAuth(`/api/chats/${currentChatId}/close`, { method: 'POST' });
+                    if (!response.ok) throw new Error('Failed to close chat');
+                } catch (error) {
+                    console.error('Error closing chat:', error);
+                    alert('Could not close chat.');
+                }
             }
         });
 
