@@ -7,7 +7,6 @@ import ru.impuls.helpdeskservice.entity.Chat;
 import java.util.UUID;
 
 public interface ConnectionService {
-
     ConnectionDto createInitialConnection(Chat chat, String messageText, User user);
 
     void closeCurrentConnection(Chat chat);
@@ -22,5 +21,5 @@ public interface ConnectionService {
 
     void addSupportMessage(Chat chat, UUID userId, String text);
 
-
+    void addSystemMessage(Chat chat, String text);
 }

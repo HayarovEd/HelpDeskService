@@ -11,19 +11,15 @@ import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
-import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.ConnectionRepo;
 import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.service.ConnectionService;
-import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.Collections;
 import java.util.UUID;
-
-import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 @Service
 @Transactional
@@ -34,20 +30,15 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final MessageRepo messageRepository;
     private final ConnectionMapper connectionMapper;
     private final MessageMapper messageMapper;
-    private final WebSocketHandler webSocketHandler;
-    private final ChatMapper chatMapper;
 
     @Override
     public ConnectionDto createInitialConnection(Chat chat, String messageText, User user) {
-
         var connection = connectionMapper.toEntity(chat, user);
         connectionRepository.save(connection);
 
         var message = messageMapper.toEntity(connection, messageText, false);
         messageRepository.save(message);
         connection.setMessages(Collections.singletonList(message));
-
-        notifyInCreateConnection(chat, connection);
 
         return connectionMapper.toDto(connection);
     }
@@ -68,9 +59,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .user(user)
                 .startDate(Instant.now())
                 .build();
-
         connectionRepository.save(connection);
-        notifyInCreateConnection(chat, connection);
     }
 
     @Override
@@ -79,9 +68,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .chat(chat)
                 .startDate(Instant.now())
                 .build();
-
         connectionRepository.save(connection);
-        notifyInCreateConnection(chat, connection);
     }
 
     @Override
@@ -111,13 +98,11 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .isSupport(false)
                 .createdDate(Instant.now())
                 .build();
-
-        saveMessageAndNotifyChange(chat, message, currentConnection);
+        messageRepository.save(message);
     }
 
     @Override
     public void addSupportMessage(Chat chat, UUID userId, String text) {
-
         if (!chat.isOpen()) {
             throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
         }
@@ -130,27 +115,21 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .isSupport(true)
                 .createdDate(Instant.now())
                 .build();
-
-        saveMessageAndNotifyChange(chat, message, currentConnection);
-    }
-
-    private void notifyInCreateConnection(Chat chat, Connection connection) {
-        var connectionDto = connectionMapper.toDto(connection);
-        var chatEvent = chatMapper.toEvent(chat, connectionDto);
-
-        webSocketHandler.notifyChange("/chats/connections", chatEvent, UPDATED);
-        webSocketHandler.notifyChatConnections(chat.getId(), chatEvent);
-    }
-
-    private void saveMessageAndNotifyChange(Chat chat, Message message, Connection connection) {
         messageRepository.save(message);
+    }
+    
+    @Override
+    public void addSystemMessage(Chat chat, String text) {
+        Connection currentConnection = getCurrentConnection(chat);
+        if (currentConnection == null) return;
 
-        var messageDto = messageMapper.toDto(message);
-        var connectionDto = connectionMapper.toDto(connection, messageDto);
-        var notificationChat = chatMapper.toEvent(chat, connectionDto);
-
-        webSocketHandler.notifyChange("/chats/messages", notificationChat, UPDATED);
-        webSocketHandler.notifyChatMessages(chat.getId(), notificationChat);
+        Message message = Message.builder()
+                .connection(currentConnection)
+                .text(text)
+                .isSupport(true) // Treat system messages as support messages for styling
+                .createdDate(Instant.now())
+                .build();
+        messageRepository.save(message);
     }
 
     private Connection getCurrentConnection(Chat chat) {

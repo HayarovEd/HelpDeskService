@@ -15,9 +15,10 @@
         #main-panel { flex-grow: 1; display: flex; flex-direction: column; }
         #main-content-placeholder { text-align: center; padding: 20px; }
         #chat-view { display: none; flex-direction: column; height: 100%; }
-        #chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; }
+        #chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; position: relative; }
         #chat-title { font-size: 1.2em; font-weight: bold; }
         #chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
+        #join-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
         #message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
         .message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
@@ -75,6 +76,7 @@
                 <div id="chat-header">
                     <div id="chat-title"></div>
                     <div id="chat-participants"></div>
+                    <button id="join-chat-btn" style="display: none;">Взять в работу</button>
                 </div>
                 <div id="message-container"></div>
                 <div id="message-input-container">
@@ -199,6 +201,7 @@
         const chatHeader = document.getElementById('chat-header');
         const chatTitle = document.getElementById('chat-title');
         const chatParticipants = document.getElementById('chat-participants');
+        const joinChatBtn = document.getElementById('join-chat-btn');
         const messageContainer = document.getElementById('message-container');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
@@ -265,6 +268,12 @@
             }
             chatParticipants.textContent = participants.size > 0 ? `Участники: ${[...participants].join(', ')}` : '';
 
+            if (chat.isOpen && !chat.isWork) { // CORRECTED HERE
+                joinChatBtn.style.display = 'block';
+            } else {
+                joinChatBtn.style.display = 'none';
+            }
+
             messageContainer.innerHTML = '';
             let allMessages = [];
             if (chat.connections) {
@@ -286,11 +295,7 @@
                 const msgDiv = document.createElement('div');
                 msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'}`;
                 const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                msgDiv.innerHTML = `
-                    <div class="message-header">${msg.senderName}</div>
-                    <div class="message-text">${msg.text}</div>
-                    <div class="message-time">${time}</div>
-                `;
+                msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div><div class="message-text">${msg.text}</div><div class="message-time">${time}</div>`;
                 messageContainer.appendChild(msgDiv);
             });
 
@@ -302,6 +307,17 @@
             if (chatItem) {
                 const chatId = chatItem.dataset.id;
                 fetchAndRenderChatDetails(chatId);
+            }
+        });
+
+        joinChatBtn.addEventListener('click', async () => {
+            if (!currentChatId) return;
+            try {
+                const response = await fetchWithAuth(`/api/chats/${currentChatId}/join`, { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to join chat');
+            } catch (error) {
+                console.error('Error joining chat:', error);
+                alert('Could not join chat.');
             }
         });
 

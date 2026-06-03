@@ -171,9 +171,12 @@ public class ChatServiceImpl implements ChatService {
 
         connectionService.closeCurrentConnection(chat);
         connectionService.createSupportConnection(chat, currentUser);
+        connectionService.addSystemMessage(chat, "К чату подключился " + currentUser.getName());
 
         chat.setWork(true);
-        chatRepository.save(chat);
+        Chat updatedChat = chatRepository.save(chat);
+        
+        notifyChatUpdated(updatedChat);
     }
 
     @Override
@@ -188,7 +191,8 @@ public class ChatServiceImpl implements ChatService {
         connectionService.createClientConnection(chat);
 
         chat.setWork(false);
-        chatRepository.save(chat);
+        Chat updatedChat = chatRepository.save(chat);
+        notifyChatUpdated(updatedChat);
     }
 
     @Override
@@ -204,9 +208,8 @@ public class ChatServiceImpl implements ChatService {
         chat.setOpen(false);
         chat.setWork(false);
 
-        chatRepository.save(chat);
-
-        notifyChatUpdated(chat);
+        Chat updatedChat = chatRepository.save(chat);
+        notifyChatUpdated(updatedChat);
     }
 
     @Override
@@ -220,6 +223,8 @@ public class ChatServiceImpl implements ChatService {
 
         if (wasClosed && chat.isOpen()) {
             notifyChatUpdated(chat);
+        } else {
+            notifyChatUpdated(chat);
         }
     }
 
@@ -231,6 +236,7 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
+        notifyChatUpdated(chat);
     }
 
     private Specification<Chat> buildSpecification(UUID groupId, UUID subgroupId,
