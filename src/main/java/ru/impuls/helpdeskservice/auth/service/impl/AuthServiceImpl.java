@@ -57,13 +57,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenResponse loginUserByOutApp(UserBillingRequest userBillingRequest, HttpServletResponse servletResponse) {
         var user = userRepo.findByUsername(userBillingRequest.username());
+        User newUser;
         if (user.isPresent()) {
-            var newUser = userHelperService.updateExistingUser(user.get(), userBillingRequest);
-            return generateToken(newUser, servletResponse);
+            newUser = userHelperService.updateExistingUser(user.get(), userBillingRequest);
         } else {
-            var newUser =  userHelperService.createNewUser(userBillingRequest);
-            return generateToken(newUser, servletResponse);
+            newUser = userHelperService.createNewUser(userBillingRequest);
         }
+        return generateToken(newUser, servletResponse);
     }
 
     /************************ logout ***************************/

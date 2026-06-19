@@ -31,6 +31,12 @@ public class GroupController {
         return groupService.getById(id);
     }
 
+    @GetMapping("/")
+    @ResponseStatus(HttpStatus.OK)
+    public GroupResponse getByName(@RequestParam(name = "name") String name) {
+        return groupService.getByName(name);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public GroupResponse create(@RequestBody @Valid GroupCreateRequest groupRequest) {

@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
 import ru.impuls.helpdeskservice.dto.response.GroupResponse;
@@ -12,6 +13,9 @@ public interface GroupService {
     List<GroupResponse> getAll();
 
     GroupResponse getById(UUID id);
+
+    @Transactional(readOnly = true)
+    GroupResponse getByName(String name);
 
     GroupResponse create(GroupCreateRequest groupRequest);
 

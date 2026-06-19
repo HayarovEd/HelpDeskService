@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import ru.impuls.helpdeskservice.entity.Group;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface GroupRepo extends JpaRepository<Group, UUID> {
@@ -13,4 +14,6 @@ public interface GroupRepo extends JpaRepository<Group, UUID> {
     @EntityGraph(attributePaths = "subgroups")
     List<Group> findAll();
     boolean existsByName(String name);
+
+    Optional<Group> findByName(String name);
 }

@@ -3,6 +3,7 @@ debug: true
 
 server:
   port: 9092
+  address: 10.222.222.174
  # ssl:
   #  key-store: classpath:static/security/keystore.p12
   #  key-store-password: mypassword

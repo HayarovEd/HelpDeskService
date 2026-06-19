@@ -22,7 +22,7 @@ info:
     email: support@impuls.ru
 
 servers:
-  - url: https://localhost:9092/api
+  - url: https://10.222.222.174:9092/api
     description: Локальный сервер разработки
   - url: https://api.helpdesk.impuls.ru
     description: Продакшн сервер

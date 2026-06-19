@@ -47,10 +47,19 @@ public class GroupServiceImpl implements GroupService {
                 .toList();
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public GroupResponse getById(UUID id) {
         return groupRepo.findById(id)
+                .map(groupMapper::toDto)
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public GroupResponse getByName(String name) {
+        return groupRepo.findByName(name)
                 .map(groupMapper::toDto)
                 .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
