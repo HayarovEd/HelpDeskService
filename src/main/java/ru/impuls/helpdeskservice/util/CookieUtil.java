@@ -6,6 +6,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 @Component
 public class CookieUtil {
 
@@ -23,14 +26,13 @@ public class CookieUtil {
     }
 
     public String extractRefreshTokenFromCookies(HttpServletRequest request) {
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("refreshToken".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
+        return Optional.ofNullable(request.getCookies())
+                .stream()
+                .flatMap(Arrays::stream)
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
 

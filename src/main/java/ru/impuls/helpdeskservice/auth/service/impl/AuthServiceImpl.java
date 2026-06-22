@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
 
         validateUserForLogin(user, loginRequest);
 
-       return generateToken(user, servletResponse);
+        return generateToken(user, servletResponse);
     }
 
     @Override
@@ -125,13 +125,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        var newAccessToken = jwtService.generateAccessToken(user);
-        var newRefreshToken = jwtService.generateRefreshToken();
-
-        tokenService.save(user, newRefreshToken, TokenType.REFRESH);
-        cookieUtil.addRefreshTokenToCookie(response, newRefreshToken);
-
-        return new TokenResponse(newAccessToken);
+        return generateToken(user, response);
     }
 
     private void validateUserForLogin(User user, LoginRequest loginRequest) {
@@ -164,7 +158,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private TokenResponse generateToken (User user, HttpServletResponse servletResponse) {
+    private TokenResponse generateToken(User user, HttpServletResponse servletResponse) {
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken();
 
