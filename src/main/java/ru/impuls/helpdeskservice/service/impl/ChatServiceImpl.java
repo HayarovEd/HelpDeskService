@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
+import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
@@ -112,6 +113,7 @@ public class ChatServiceImpl implements ChatService {
                 messages = messageRepo.findTopNByConnectionIdAndCreatedDate(connection.getId(), to, remaining);
             }
 
+
             Connection connWithMessages = connectionMapper.toEntity(connection);
             if (!messages.isEmpty()) {
                 connWithMessages.setMessages(messages);
@@ -175,7 +177,7 @@ public class ChatServiceImpl implements ChatService {
 
         chat.setWork(true);
         Chat updatedChat = chatRepository.save(chat);
-        
+
         notifyChatUpdated(updatedChat);
     }
 
@@ -276,7 +278,18 @@ public class ChatServiceImpl implements ChatService {
                     MessageDto messageDto = messageMapper.toDto(message);
                     return connectionMapper.toDto(lastConnection, messageDto);
                 })
-                .orElseGet(() -> connectionMapper.toDto(lastConnection, null));
+                .orElseGet(
+                        () -> {
+                            ConnectionDto dto = connectionMapper.toDto(lastConnection);
+                            return new ConnectionDto(
+                                    dto.id(),
+                                    dto.startDate(),
+                                    dto.endDate(),
+                                    dto.user(),
+                                    Collections.emptyList()
+                            );
+                        }/*connectionMapper.toDto(lastConnection, null)*/
+                );
 
         chatDto.setConnections(List.of(lastConnectionDto));
     }
