@@ -300,5 +300,6 @@ public class ChatServiceImpl implements ChatService {
 
         loadLastConnectionAndMessage(chatDto);
         webSocketHandler.notifyChangeAfterCommit("/chats", chatMapper.toEvent(chatDto), UPDATED);
+        webSocketHandler.notifyChatMessages(chat.getId(), chatMapper.toEvent(chatDto));
     }
 }

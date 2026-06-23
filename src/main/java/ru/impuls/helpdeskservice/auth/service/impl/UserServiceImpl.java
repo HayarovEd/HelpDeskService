@@ -100,7 +100,7 @@ public class UserServiceImpl implements UserService {
         userMapper.updatePassword(user, passwordRequest, passwordEncoder);
         userRepo.save(user);
         tokenService.deleteAll(user, TokenType.REFRESH);
-        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), DELETED);
+        webSocketHandler.notifyChange("/users", userMapper.toEvent(user), UPDATED);
 
         return userMapper.toDto(user);
     }
