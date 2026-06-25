@@ -1,14 +1,11 @@
-debug: true
-
-
-server:
-  port: 9092
-  address: 10.222.222.174
- # ssl:
-  #  key-store: classpath:static/security/keystore.p12
-  #  key-store-password: mypassword
- #   key-password: mypassword
- #   key-alias: mykey
+# ===================================================================
+# COMMON PROPERTIES (active for all profiles)
+# ===================================================================
+spring:
+  application:
+    name: help-desk-service
+  profiles:
+    active: dev # The 'dev' profile is active by default
 
 springdoc:
   swagger-ui:
@@ -17,64 +14,6 @@ springdoc:
     tags-sorter: alpha
   api-docs:
     enabled: true
-
-
-spring:
-  application:
-    name: help-desk-service
-
-  datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-
-  liquibase:
-    change-log: classpath:/db/changelog/master.yml
-    enabled: true
-
-logging:
- # config: classpath:logging/logback-master.xml
-  level:
-      org.springframework: DEBUG
-      org.springframework.web: DEBUG
-      org.springframework.web.socket: TRACE
-      org.springframework.messaging: TRACE
-      org.springframework.web.socket.messaging: TRACE
-      org.springframework.web.socket.config: DEBUG
-      org.springframework.web.socket.server: TRACE
-      org.springframework.web.socket.handler: TRACE
-
-      # Spring Security
-      org.springframework.security: TRACE
-      org.springframework.security.web: TRACE
-      org.springframework.security.web.access: TRACE
-      org.springframework.security.web.authentication: TRACE
-      org.springframework.security.web.csrf: TRACE
-      org.springframework.security.web.session: TRACE
-      org.springframework.security.web.context: TRACE
-      org.springframework.security.web.firewall: TRACE
-      org.springframework.security.web.util: TRACE
-
-      # Spring MVC
-      org.springframework.web.servlet: DEBUG
-      org.springframework.web.servlet.mvc: DEBUG
-      org.springframework.web.servlet.handler: DEBUG
-
-      # Spring Context
-      org.springframework.context: DEBUG
-      org.springframework.beans: DEBUG
-
-      # WebSocket и STOMP
-      org.springframework.messaging.simp: TRACE
-      org.springframework.messaging.simp.stomp: TRACE
-      org.springframework.messaging.simp.broker: TRACE
-      org.springframework.messaging.simp.user: TRACE
-      org.springframework.messaging.support: TRACE
-      org.springframework.messaging.handler: TRACE
 
 application:
   security:
@@ -87,10 +26,8 @@ application:
       keys:
         public: ${JWT_PUBLIC_KEY_PATH:./src/main/resources/static/security/public_key.pem}
         private: ${JWT_PRIVATE_KEY_PATH:./src/main/resources/static/security/private_key.pem}
-
     admin:
       password: ${ADMIN_PASSWORD}
-
     cors-allowed-origins:
       - "http://localhost:3000"
       - "https://localhost:3000"
@@ -116,13 +53,11 @@ application:
         path: /home.html
       - method: GET
         path: /login
-      - method: GET
-
       # websocket
-        path: /ws/**
       - method: GET
-
+        path: /ws/**
       # swagger
+      - method: GET
         path: /v2/api-docs
       - method: GET
         path: /v3/api-docs/**
@@ -135,3 +70,62 @@ application:
       - method: GET
         path: /webjars/**
 
+---
+# ===================================================================
+# DEVELOPMENT PROFILE
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${SPRING_DATASOURCE_URL_DEV:jdbc:postgresql://localhost:5432/helpdesk_dev}
+    username: ${SPRING_DATASOURCE_USERNAME_DEV:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD_DEV:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  liquibase:
+    change-log: classpath:/db/changelog/master.yml
+    enabled: true
+
+debug: true
+
+server:
+  port: 9092
+  address: 10.222.222.174
+
+logging:
+  level:
+    org.springframework: DEBUG
+    ru.impuls.helpdeskservice: DEBUG
+
+---
+# ===================================================================
+# PRODUCTION PROFILE
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${SPRING_DATASOURCE_URL_PROD}
+    username: ${SPRING_DATASOURCE_USERNAME_PROD}
+    password: ${SPRING_DATASOURCE_PASSWORD_PROD}
+  jpa:
+    hibernate:
+      ddl-auto: validate # Safer for production
+  liquibase:
+    change-log: classpath:/db/changelog/master.yml
+    enabled: false # Often disabled or handled by CI/CD in prod
+
+debug: false
+
+server:
+  port: 9092
+  address: 10.222.220.80 # Listen on all interfaces in production
+
+logging:
+  level:
+    org.springframework: INFO
+    ru.impuls.helpdeskservice: INFO
