@@ -33,6 +33,9 @@ public class Chat extends BaseEntity {
     @Column(name = "is_work")
     boolean work;
 
+    @Column(name = "is_active")
+    boolean active;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     Group group;

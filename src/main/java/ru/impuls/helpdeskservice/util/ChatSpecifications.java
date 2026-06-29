@@ -31,7 +31,7 @@ public class ChatSpecifications {
             Root<Connection> connectionRoot = subquery.from(Connection.class);
             Join<Connection, Message> messageJoin = connectionRoot.join("messages");
 
-            subquery.select(cb.greatest(messageJoin.get("createdDate")))
+            subquery.select(cb.greatest(messageJoin.get("createdDate").as(Instant.class)))
                     .where(cb.equal(connectionRoot.get("chat"), root));
 
             return cb.lessThan(subquery, to);

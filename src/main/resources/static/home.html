@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         #header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid #ccc; height: 70px; box-sizing: border-box; flex-shrink: 0; }
@@ -18,8 +21,8 @@
         #chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; position: relative; }
         #chat-title { font-size: 1.2em; font-weight: bold; }
         #chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
-        #join-chat-btn, #exit-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
-        #close-chat-btn { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); padding: 5px 10px; background-color: #f44336; color: white; border: 1px solid #d32f2f; border-radius: 4px; }
+        #join-chat-btn, #exit-chat-btn, #close-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
+        #close-chat-btn { right: 120px; background-color: #dc3545; border-color: #dc3545; color: white; border-radius: 4px; }
         #message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
         .message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
@@ -27,6 +30,8 @@
         .message-time { font-size: 0.75em; color: #888; position: absolute; bottom: 5px; right: 10px; }
         .message.support { background-color: #dcf8c6; align-self: flex-end; }
         .message.client { background-color: #f1f0f0; align-self: flex-start; }
+        .message.unread { border-left: 3px solid #007bff; }
+        .message-read-icon { font-size: 0.8em; color: #007bff; position: absolute; bottom: 5px; left: 10px; }
         #message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; }
         #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         #send-btn { width: 100px; padding: 10px; margin-left: 10px; }
@@ -156,6 +161,75 @@
 
         let currentChatId = null;
         const currentUserId = parseJwt(localStorage.getItem('accessToken')).sub;
+        let messageObserver;
+
+        function setupMessageObserver() {
+            if (messageObserver) {
+                messageObserver.disconnect();
+            }
+            const options = {
+                root: document.getElementById('message-container'),
+                rootMargin: '0px',
+                threshold: 1.0
+            };
+            messageObserver = new IntersectionObserver(handleMessageIntersection, options);
+        }
+
+        async function handleMessageIntersection(entries, observer) {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    const messageId = entry.target.dataset.unreadMessageId;
+                    console.log(`Message ${messageId} is visible. Marking as read.`);
+                    try {
+                        await fetchWithAuth(`/api/messages/${messageId}/read`, { method: 'POST' });
+                        observer.unobserve(entry.target);
+                        entry.target.removeAttribute('data-unread-message-id');
+                        entry.target.classList.remove('unread');
+                    } catch (error) {
+                        console.error(`Failed to mark message ${messageId} as read:`, error);
+                    }
+                }
+            }
+        }
+
+        // --- FIREBASE & FCM SETUP ---
+        function initializeFirebase() {
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_AUTH_DOMAIN",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_STORAGE_BUCKET",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const messaging = firebase.messaging();
+            messaging.requestPermission()
+                .then(() => messaging.getToken())
+                .then(fcmToken => {
+                    if (fcmToken) {
+                        sendFcmTokenToServer(fcmToken);
+                    }
+                })
+                .catch((err) => console.log('Unable to get permission to notify.', err));
+            messaging.onMessage((payload) => console.log('Message received. ', payload));
+        }
+
+        async function sendFcmTokenToServer(fcmToken) {
+            try {
+                await fetchWithAuth('/api/users/me/fcm-token', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fcmToken: fcmToken })
+                });
+                console.log('FCM token sent to server successfully.');
+            } catch (error) {
+                console.error('Failed to send FCM token to server:', error);
+            }
+        }
 
         // --- WEBSOCKET SETUP ---
         function connectWebSocket() {
@@ -170,15 +244,25 @@
                     const message = JSON.parse(event.data);
                     console.log('Received WebSocket message:', message);
                     if (message.path === '/users') {
-                        console.log('User list update received. Refreshing...');
                         fetchAndRenderUsers();
                     }
                     if (message.path && message.path.startsWith('/chats')) {
-                        console.log('Chat update received. Refreshing chat list...');
                         fetchAndRenderChats();
                         if (currentChatId) {
-                            console.log(`Refreshing currently open chat: ${currentChatId}`);
                             fetchAndRenderChatDetails(currentChatId);
+                        }
+                    }
+                    if (message.path === '/messages/read') {
+                        const messageId = message.data.id;
+                        const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
+                        if (messageElement) {
+                            messageElement.classList.remove('unread');
+                            const readIcon = document.createElement('span');
+                            readIcon.className = 'message-read-icon';
+                            readIcon.textContent = '✓✓';
+                            if (!messageElement.querySelector('.message-read-icon')) {
+                                messageElement.appendChild(readIcon);
+                            }
                         }
                     }
                 } catch (e) { console.error('Error parsing WebSocket message:', e); }
@@ -295,6 +379,7 @@
                 exitChatBtn.style.display = 'none';
             }
 
+            setupMessageObserver();
             messageContainer.innerHTML = '';
             let allMessages = [];
             if (chat.connections) {
@@ -314,10 +399,29 @@
 
             allMessages.forEach(msg => {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'}`;
+                msgDiv.setAttribute('data-message-id', msg.id);
+                const isUnreadClientMessage = !msg.isSupport && !msg.isRead;
+                msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'} ${isUnreadClientMessage ? 'unread' : ''}`;
+
+                if (isUnreadClientMessage) {
+                    msgDiv.setAttribute('data-unread-message-id', msg.id);
+                }
+
                 const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div><div class="message-text">${msg.text}</div><div class="message-time">${time}</div>`;
+
+                if (msg.isRead) {
+                    const readIcon = document.createElement('span');
+                    readIcon.className = 'message-read-icon';
+                    readIcon.textContent = '✓✓';
+                    msgDiv.appendChild(readIcon);
+                }
+
                 messageContainer.appendChild(msgDiv);
+
+                if (isUnreadClientMessage) {
+                    messageObserver.observe(msgDiv);
+                }
             });
 
             messageContainer.scrollTop = messageContainer.scrollHeight;
@@ -589,6 +693,7 @@
         fetchAndRenderUsers();
         fetchAndRenderGroups();
         connectWebSocket();
+        initializeFirebase();
     });
     </script>
 </body>

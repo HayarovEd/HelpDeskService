@@ -14,7 +14,7 @@ public interface MessageMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdDate", source = "connection.startDate")
     @Mapping(target = "connection", source = "connection")
-    Message toEntity(Connection connection, String text, boolean isSupport);
+    Message toEntity(Connection connection, String text, boolean isSupport, boolean isRead);
 
     MessageDto toDto(Message message);
 }

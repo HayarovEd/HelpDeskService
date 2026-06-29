@@ -36,7 +36,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         var connection = connectionMapper.toEntity(chat, user);
         connectionRepository.save(connection);
 
-        var message = messageMapper.toEntity(connection, messageText, false);
+        var message = messageMapper.toEntity(connection, messageText, false, false);
         messageRepository.save(message);
         connection.setMessages(Collections.singletonList(message));
 

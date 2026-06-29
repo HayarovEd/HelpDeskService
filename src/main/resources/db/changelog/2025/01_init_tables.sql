@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS tokens
     token      VARCHAR(255),
     created_at TIMESTAMP,
     expires_at TIMESTAMP,
-    position   VARCHAR(255), -- Added this line
+    position   VARCHAR(255),
     token_type VARCHAR(255),
     user_id    UUID,
 
@@ -60,10 +60,11 @@ CREATE TABLE IF NOT EXISTS chats
     phone        VARCHAR(255),
     is_open      BOOLEAN,
     is_work      BOOLEAN,
-    subgroup_id  UUID,
+    is_active      BOOLEAN,
+    group_id  UUID,
     created_date TIMESTAMP,
 
-    FOREIGN KEY (subgroup_id) REFERENCES subgroups (id)
+    FOREIGN KEY (group_id) REFERENCES groups (id)
 );
 
 -- Создание таблицы connections
@@ -96,6 +97,7 @@ CREATE TABLE IF NOT EXISTS messages
     id            UUID PRIMARY KEY,
     text          VARCHAR(255),
     is_support    BOOLEAN,
+    is_read       BOOLEAN,
     created_date  TIMESTAMP,
     connection_id UUID,
 

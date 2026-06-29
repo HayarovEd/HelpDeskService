@@ -21,12 +21,16 @@ public class ChatDto extends BaseDto {
     String email;
     String phone;
 
-    @JsonProperty("isOpen")
+    @JsonProperty("is_open")
     boolean open;
 
-    @JsonProperty("isWork")
+    @JsonProperty("is_work")
     boolean work;
 
+    @JsonProperty("is_active")
+    boolean active;
+
+    @JsonProperty("created_date")
     Instant createdDate;
     GroupResponse group;
     List<ConnectionDto> connections;
