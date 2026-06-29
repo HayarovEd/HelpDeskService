@@ -24,6 +24,7 @@ public class Log extends BaseEntity {
     String text;
 
     @CreatedDate
+    @Column(name = "created_date")
     Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY)

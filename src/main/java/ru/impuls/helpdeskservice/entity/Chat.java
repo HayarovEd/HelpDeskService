@@ -42,5 +42,6 @@ public class Chat extends BaseEntity {
     List<Connection> connections;
 
     @CreatedDate
+    @Column(name = "created_date")
     Instant createdDate;
 }

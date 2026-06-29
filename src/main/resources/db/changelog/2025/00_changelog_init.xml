@@ -5,12 +5,19 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet author="Abdulloev Bakhtovar" id="100720251218">
+    <changeSet author="Abdulloev Bakhtovar" id="100720251218-fix-tokens">
+        <!-- Preconditions removed to ensure this runs on a clean DB after clearing old logs -->
         <sqlFile path="01_init_tables.sql"
                  relativeToChangelogFile="true"
                  splitStatements="false"/>
     </changeSet>
+
     <changeSet author="Abdulloev Bakhtovar" id="100720251220">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM roles WHERE name = 'ADMIN'
+            </sqlCheck>
+        </preConditions>
         <sqlFile path="02_add_roles.sql"
                  relativeToChangelogFile="true"
                  splitStatements="false"/>

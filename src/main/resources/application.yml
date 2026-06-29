@@ -5,7 +5,7 @@ spring:
   application:
     name: help-desk-service
   profiles:
-    active: dev # The 'dev' profile is active by default
+    active: prod # The 'dev' profile is active by default
 
 springdoc:
   swagger-ui:
@@ -35,6 +35,8 @@ application:
       - "https://localhost:9090"
       - "http://localhost:9092"
       - "https://localhost:9092"
+      - "https://helpdesk.impuls-perm.ru"
+      - "http://helpdesk.impuls-perm.ru"
     public-endpoints:
       # api
       - method: POST
@@ -117,13 +119,13 @@ spring:
       ddl-auto: validate # Safer for production
   liquibase:
     change-log: classpath:/db/changelog/master.yml
-    enabled: false # Often disabled or handled by CI/CD in prod
+    enabled: true # Enabled for production
 
 debug: false
 
 server:
   port: 9092
-  address: 10.222.220.80 # Listen on all interfaces in production
+  #address: 10.222.222.43 # Listen on all interfaces in production
 
 logging:
   level:

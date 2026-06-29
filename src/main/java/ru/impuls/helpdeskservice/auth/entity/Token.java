@@ -21,7 +21,9 @@ import java.time.Instant;
 public class Token extends BaseEntity {
 
     String token;
+    @Column(name = "created_at")
     Instant createdAt;
+    @Column(name = "expires_at")
     Instant expiresAt;
 
     @Enumerated(EnumType.STRING)
@@ -29,6 +31,7 @@ public class Token extends BaseEntity {
     RefreshTokenPosition position;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "token_type")
     TokenType tokenType;
 
     @ManyToOne(fetch = FetchType.LAZY)

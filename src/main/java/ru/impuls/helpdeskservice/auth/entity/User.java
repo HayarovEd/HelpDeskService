@@ -27,9 +27,10 @@ public class User extends BaseEntity implements UserDetails {
     String username;
     String email;
     String password;
+    @Column(name = "token_version")
     String tokenVersion;
 
-    @Column(name = "\"disabled\"")
+    @Column(name = "is_disabled")
     boolean disabled;
 
     @ManyToOne

@@ -23,7 +23,10 @@ import java.time.LocalDateTime;
 public class Message extends BaseEntity {
 
     String text;
+    @Column(name = "is_support")
     boolean isSupport;
+
+    @Column(name = "created_date")
     Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
