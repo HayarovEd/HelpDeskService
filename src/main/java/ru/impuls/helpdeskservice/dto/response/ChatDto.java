@@ -28,6 +28,6 @@ public class ChatDto extends BaseDto {
     boolean work;
 
     Instant createdDate;
-    SubgroupResponse subgroup;
+    GroupResponse group;
     List<ConnectionDto> connections;
 }

@@ -12,7 +12,7 @@ public interface ChatService {
 
     List<ChatDto> getAll(
             UUID groupId,
-            UUID subgroupId,
+           // UUID subgroupId,
             Instant to,
             String search,
             Boolean isOpen,
@@ -23,7 +23,7 @@ public interface ChatService {
 
     ChatDto getById(UUID id, Instant to, int count);
 
-    ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest);
+    ChatDto create(UUID groupId, ChatCreateRequest chatRequest);
 
     ChatDto delete(UUID id);
 

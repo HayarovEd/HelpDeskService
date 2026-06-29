@@ -34,8 +34,8 @@ public class Chat extends BaseEntity {
     boolean work;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subgroup_id")
-    Subgroup subgroup;
+    @JoinColumn(name = "group_id")
+    Group group;
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     @OnDelete(action = OnDeleteAction.CASCADE)

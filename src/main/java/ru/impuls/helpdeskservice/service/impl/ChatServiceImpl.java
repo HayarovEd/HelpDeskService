@@ -43,7 +43,7 @@ import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepo chatRepository;
-    private final SubgroupRepo subgroupRepo;
+   // private final SubgroupRepo subgroupRepo;
     private final MessageRepo messageRepo;
     private final ChatMapper chatMapper;
     private final ConnectionService connectionService;
@@ -58,7 +58,7 @@ public class ChatServiceImpl implements ChatService {
     @Transactional(readOnly = true)
     public List<ChatDto> getAll(
             UUID groupId,
-            UUID subgroupId,
+          //  UUID subgroupId,
             Instant to,
             String search,
             Boolean isOpen,
@@ -66,10 +66,10 @@ public class ChatServiceImpl implements ChatService {
             Boolean isMy,
             int count) {
 
-        validateParameters(count, groupId, subgroupId);
+        validateParameters(count, groupId);
 
         var currentUser = (isMy != null && isMy) ? AuthUtil.getAuthenticatedUser() : null;
-        var spec = buildSpecification(groupId, subgroupId, to, search, isOpen, isWork, currentUser);
+        var spec = buildSpecification(groupId, to, search, isOpen, isWork, currentUser);
         var pageable = PageRequest.of(0, count, Sort.by("createdDate").descending());
         var chatPage = chatRepository.findAll(spec, pageable);
         var chats = chatPage.getContent();
@@ -129,13 +129,13 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatDto create(UUID subgroupId, ChatCreateRequest chatRequest) {
-        var subgroup = subgroupRepo.findById(subgroupId)
+    public ChatDto create(UUID groupId, ChatCreateRequest chatRequest) {
+        var group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
         User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        var chat = chatMapper.toEntity(chatRequest, subgroup);
+        var chat = chatMapper.toEntity(chatRequest, group);
         chatRepository.save(chat);
 
         var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message(), currentUser);
@@ -243,13 +243,13 @@ public class ChatServiceImpl implements ChatService {
         notifyChatUpdated(chat);
     }
 
-    private Specification<Chat> buildSpecification(UUID groupId, UUID subgroupId,
+    private Specification<Chat> buildSpecification(UUID groupId,
                                                    Instant to, String search,
                                                    Boolean isOpen, Boolean isWork,
                                                    User currentUser) {
         return Specification.allOf(
-                subgroupId != null ? ChatSpecifications.hasSubgroupId(subgroupId) : null,
-                subgroupId == null && groupId != null ? ChatSpecifications.hasGroupId(groupId) : null,
+           //  subgroupId != null ? ChatSpecifications.hasSubgroupId(subgroupId) : null,
+                /*subgroupId == null && */groupId != null ? ChatSpecifications.hasGroupId(groupId) : null,
                 to != null ? ChatSpecifications.hasLastMessageBefore(to) : null,
                 search != null && !search.isEmpty() ? ChatSpecifications.matchesSearch(search) : null,
                 isOpen != null ? ChatSpecifications.isOpen(isOpen) : null,
@@ -294,14 +294,14 @@ public class ChatServiceImpl implements ChatService {
         chatDto.setConnections(List.of(lastConnectionDto));
     }
 
-    private void validateParameters(int count, UUID groupId, UUID subgroupId) {
+    private void validateParameters(int count, UUID groupId) {
         if (count < 0 || count > 1000) {
             throw new AppException("Count must be between 0 and 1000", HttpStatus.BAD_REQUEST);
         }
 
-        if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
+       /* if (subgroupId != null && !subgroupRepo.existsById(subgroupId)) {
             throw new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
+        }*/
 
         if (groupId != null && !groupRepo.existsById(groupId)) {
             throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
