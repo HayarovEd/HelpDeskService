@@ -23,6 +23,7 @@ public interface ChatMapper {
     @Mapping(target = "group", source = "group")
     @Mapping(target = "open", expression = "java(true)")
     @Mapping(target = "work", expression = "java(false)")
+    @Mapping(target = "active", expression = "java(true)")
     Chat toEntity(ChatCreateRequest chatRequest, Group group);
 
     ChatDto toDto(Chat chat);

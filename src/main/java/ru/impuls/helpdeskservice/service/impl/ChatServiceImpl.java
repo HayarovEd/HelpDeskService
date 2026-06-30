@@ -223,8 +223,8 @@ public class ChatServiceImpl implements ChatService {
 
         var user = AuthUtil.getAuthenticatedUser();
         boolean wasClosed = !chat.isOpen();
+        setActiveChat(chat);
         connectionService.addClientMessage(chat, messageCreateDto.getText(), user);
-
         if (wasClosed && chat.isOpen()) {
             notifyChatUpdated(chat);
         } else {
@@ -238,7 +238,7 @@ public class ChatServiceImpl implements ChatService {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
-
+        setActiveChat(chat);
         connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
         notifyChatUpdated(chat);
     }
@@ -306,6 +306,11 @@ public class ChatServiceImpl implements ChatService {
         if (groupId != null && !groupRepo.existsById(groupId)) {
             throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
+    }
+
+    private void setActiveChat(Chat chat) {
+        chat.setActive(true);
+        chatRepository.save(chat);
     }
 
     private void notifyChatUpdated(Chat chat) {
