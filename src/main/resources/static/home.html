@@ -607,7 +607,13 @@
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     listItem.setAttribute('data-id', user.id);
-                    listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div><div class="actions"><span class="edit-user-btn">✏️</span></div>`;
+
+                    let actionsHtml = '';
+                    if (isAdmin) {
+                        actionsHtml = '<div class="actions"><span class="edit-user-btn">✏️</span></div>';
+                    }
+
+                    listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div>${actionsHtml}`;
                     userList.appendChild(listItem);
                 });
             } catch (error) { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; }
@@ -623,12 +629,19 @@
                     const listItem = document.createElement('li');
                     listItem.className = 'group-item-container';
                     listItem.setAttribute('data-group-id', group.id);
+
+                    let actionsHtml = '';
+                    if (isAdmin) {
+                        actionsHtml = '<div class="actions"><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div>';
+                    }
+
                     const chatsHtml = '<ul class="chat-list-nested"></ul>';
-                    listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div><div class="actions"><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div></div>${chatsHtml}`;
+                    listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div>${actionsHtml}</div>${chatsHtml}`;
                     groupList.appendChild(listItem);
                 });
             } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
         }
+
 
         // --- INITIAL LOAD ---
         fetchAndRenderUsers();
