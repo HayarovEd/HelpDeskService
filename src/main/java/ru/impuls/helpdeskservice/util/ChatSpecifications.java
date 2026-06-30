@@ -14,14 +14,9 @@ import java.util.UUID;
 
 public class ChatSpecifications {
 
-   /* public static Specification<Chat> hasSubgroupId(UUID subgroupId) {
-        return (root, query, cb) ->
-                cb.equal(root.get("group").get("id"), subgroupId);
-    }*/
-
     public static Specification<Chat> hasGroupId(UUID groupId) {
         return (root, query, cb) ->
-                cb.equal(root.get("group").get("group").get("id"), groupId);
+                cb.equal(root.get("group").get("id"), groupId);
     }
 
     public static Specification<Chat> hasLastMessageBefore(Instant to) {
