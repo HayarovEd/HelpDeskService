@@ -96,6 +96,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .connection(currentConnection)
                 .text(text)
                 .isSupport(false)
+                .isRead(false)
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);
@@ -113,6 +114,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .connection(currentConnection)
                 .text(text)
                 .isSupport(true)
+                .isRead(false)
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);

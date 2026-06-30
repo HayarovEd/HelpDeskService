@@ -48,6 +48,7 @@
         .chat-list-nested { padding-left: 20px; display: none; }
         .chat-item-nested { padding-left: 10px; cursor: pointer; }
         .subgroup-item > span { cursor: pointer; flex-grow: 1; }
+        .chat-list-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #333; }
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
@@ -342,13 +343,13 @@
             const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
             const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
 
-            if (chat.is_open && isAdmin) {
+            if (chat.is_active && isAdmin) {
                 closeChatBtn.style.display = 'block';
             } else {
                 closeChatBtn.style.display = 'none';
             }
 
-            if (chat.is_open && !chat.is_work) {
+            if (chat.is_active && !chat.is_work) {
                 joinChatBtn.style.display = 'block';
                 exitChatBtn.style.display = 'none';
             } else if (chat.is_work && isCurrentUserResponder) {
@@ -432,14 +433,28 @@
                         const response = await fetchWithAuth(`/api/chats?groupId=${groupId}`);
                         if (!response.ok) throw new Error('Failed to fetch chats for group');
                         const chats = await response.json();
+                        console.log(JSON.stringify(chats, null, 2)); // Log the received chat data
 
-                        if (chats.length > 0) {
-                            chatListContainer.innerHTML = chats.map(chat =>
-                                `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`
-                            ).join('');
-                        } else {
-                            chatListContainer.innerHTML = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
+                        const activeChats = chats.filter(chat => chat.is_active);
+                        const inactiveChats = chats.filter(chat => !chat.is_active);
+
+                        let html = '';
+                        if (activeChats.length > 0) {
+                            html += '<div class="chat-list-header">Активные</div>';
+                            html += activeChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
                         }
+
+                        if (inactiveChats.length > 0) {
+                            html += '<div class="chat-list-header">Неактивные</div>';
+                            html += inactiveChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
+                        }
+
+                        if (html === '') {
+                            html = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
+                        }
+
+                        chatListContainer.innerHTML = html;
+
                     } catch (error) {
                         console.error(error);
                         chatListContainer.innerHTML = `<li><span style="color: red;">Ошибка</span></li>`;

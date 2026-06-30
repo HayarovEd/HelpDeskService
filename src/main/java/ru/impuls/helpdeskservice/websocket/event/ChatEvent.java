@@ -15,6 +15,7 @@ public record ChatEvent (
         String phone,
         @JsonProperty("isOpen") boolean open,
         @JsonProperty("isWork") boolean work,
+        @JsonProperty("is_active") boolean active,
         Instant createdDate,
         GroupForSubDto group,
         List<ConnectionDto> connections

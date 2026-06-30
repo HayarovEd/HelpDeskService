@@ -26,7 +26,7 @@ public class ChatDeactivationService {
     private final ChatMapper chatMapper;
 
     // Run every 30 minutes
-    @Scheduled(fixedRate = 30 * 60 * 1000)
+    @Scheduled(fixedRate = 3 * 1000)
     @Transactional
     public void deactivateInactiveChats() {
         log.info("Running scheduled task to deactivate inactive chats...");
