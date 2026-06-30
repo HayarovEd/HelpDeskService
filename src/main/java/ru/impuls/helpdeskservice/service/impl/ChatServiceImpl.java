@@ -32,8 +32,7 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 import java.time.Instant;
 import java.util.*;
 
-import static ru.impuls.helpdeskservice.constant.ErrorMessage.CHAT_NOT_FOUND;
-import static ru.impuls.helpdeskservice.constant.ErrorMessage.SUBGROUP_NOT_FOUND;
+import static ru.impuls.helpdeskservice.constant.ErrorMessage.*;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
@@ -131,7 +130,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public ChatDto create(UUID groupId, ChatCreateRequest chatRequest) {
         var group = groupRepo.findById(groupId)
-                .orElseThrow(() -> new AppException(SUBGROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException(GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
         User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
@@ -304,7 +303,7 @@ public class ChatServiceImpl implements ChatService {
         }*/
 
         if (groupId != null && !groupRepo.existsById(groupId)) {
-            throw new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
+            throw new AppException(GROUP_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
     }
 
