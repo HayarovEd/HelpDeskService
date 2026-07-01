@@ -30,6 +30,9 @@ public class ChatDto extends BaseDto {
     @JsonProperty("is_active")
     boolean active;
 
+    @JsonProperty("unread_messages_count")
+    long unreadMessagesCount;
+
     @JsonProperty("created_date")
     Instant createdDate;
     GroupResponse group;

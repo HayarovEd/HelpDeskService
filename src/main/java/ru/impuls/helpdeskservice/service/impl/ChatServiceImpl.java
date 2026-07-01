@@ -175,6 +175,7 @@ public class ChatServiceImpl implements ChatService {
         connectionService.addSystemMessage(chat, "К чату подключился " + currentUser.getName());
 
         chat.setWork(true);
+        messageRepo.markAllAsReadByChatId(chatId);
         Chat updatedChat = chatRepository.save(chat);
 
         notifyChatUpdated(updatedChat);

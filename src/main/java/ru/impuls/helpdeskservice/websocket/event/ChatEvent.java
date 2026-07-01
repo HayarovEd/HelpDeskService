@@ -16,6 +16,7 @@ public record ChatEvent (
         @JsonProperty("isOpen") boolean open,
         @JsonProperty("isWork") boolean work,
         @JsonProperty("is_active") boolean active,
+        @JsonProperty("unread_messages_count") long unreadMessagesCount,
         Instant createdDate,
         GroupForSubDto group,
         List<ConnectionDto> connections
