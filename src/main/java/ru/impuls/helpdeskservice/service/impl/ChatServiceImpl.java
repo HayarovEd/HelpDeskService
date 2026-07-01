@@ -243,6 +243,20 @@ public class ChatServiceImpl implements ChatService {
         notifyChatUpdated(chat);
     }
 
+    @Override
+    public List<ChatDto> getByUserLogin(String login) {
+        var chats = chatRepository.findOpenChatsByName(login);
+        var newChatDtos = new ArrayList<ChatDto>();
+
+        for (Chat chat : chats) {
+            var newChat = chatMapper.toDto(chat);
+            loadLastConnectionAndMessage(newChat);
+            newChatDtos.add(newChat);
+        }
+
+        return newChatDtos;
+    }
+
     private Specification<Chat> buildSpecification(UUID groupId,
                                                    Instant to, String search,
                                                    Boolean isOpen, Boolean isWork,

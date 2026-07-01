@@ -52,7 +52,12 @@ public class ChatController {
         return chatService.getById(id, to, count);
     }
 
-
+    @GetMapping("/user_chats")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ChatDto> getByUserLogin(
+            @RequestParam(name = "login") String login) {
+        return chatService.getByUserLogin(login);
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)

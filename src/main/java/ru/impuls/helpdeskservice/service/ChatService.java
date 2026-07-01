@@ -36,4 +36,6 @@ public interface ChatService {
     void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
 
     void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto);
+
+    List<ChatDto> getByUserLogin(String login);
 }
