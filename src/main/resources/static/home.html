@@ -56,6 +56,14 @@
         .form-row { margin-bottom: 10px; }
         .form-row label { display: block; margin-bottom: 5px; }
         .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row select { width: 95%; padding: 8px; }
+        #chat-in-work-by-other-user-notification {
+            display: none;
+            padding: 10px;
+            background-color: #ffc107;
+            color: #333;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
@@ -86,6 +94,7 @@
                     <button id="join-chat-btn" style="display: none;">Взять в работу</button>
                     <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
                 </div>
+                <div id="chat-in-work-by-other-user-notification"></div>
                 <div id="message-container"></div>
                 <div id="message-input-container">
                     <input type="text" id="message-input" placeholder="Введите сообщение...">
@@ -349,6 +358,14 @@
 
             const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
             const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+            const notificationBlock = document.getElementById('chat-in-work-by-other-user-notification');
+
+            if (chat.is_work && !isCurrentUserResponder && activeSupportConnection) {
+                notificationBlock.textContent = `Чат в работе у пользователя: ${activeSupportConnection.user.name}`;
+                notificationBlock.style.display = 'block';
+            } else {
+                notificationBlock.style.display = 'none';
+            }
 
             if (chat.is_active && isAdmin) {
                 closeChatBtn.style.display = 'block';
