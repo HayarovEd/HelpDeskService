@@ -159,7 +159,7 @@
             document.getElementById('user-error').textContent = 'Failed to load roles. User management is disabled.';
         }
 
-        let currentChatId = null;
+        let currentChat = null;
         const tokenPayload = parseJwt(localStorage.getItem('accessToken'));
         const currentUserId = tokenPayload.sub;
         const currentUserRole = tokenPayload.role;
@@ -185,6 +185,13 @@
         }
 
         async function handleMessageIntersection(entries, observer) {
+            if (!currentChat || !currentChat.is_work) return;
+
+            const activeSupportConnection = currentChat.connections?.find(c => c.user && c.end === null);
+            const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+
+            if (!isCurrentUserResponder) return;
+
             for (const entry of entries) {
                 if (entry.isIntersecting) {
                     const messageId = entry.target.dataset.unreadMessageId;
@@ -227,8 +234,8 @@
                     }
                     if (message.path && message.path.startsWith('/chats')) {
                         fetchAndRenderGroups(); // Refresh groups to update chat lists
-                        if (currentChatId) {
-                            fetchAndRenderChatDetails(currentChatId);
+                        if (currentChat) {
+                            fetchAndRenderChatDetails(currentChat.id);
                         }
                     }
                     if (message.path === '/messages/read') {
@@ -324,7 +331,7 @@
         }
 
         function renderChatDetails(chat) {
-            currentChatId = chat.id;
+            currentChat = chat;
             mainContentPlaceholder.style.display = 'none';
             chatView.style.display = 'flex';
 
@@ -482,9 +489,9 @@
         });
 
         joinChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/join`, { method: 'POST' });
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/join`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to join chat');
             } catch (error) {
                 console.error('Error joining chat:', error);
@@ -493,9 +500,9 @@
         });
 
         exitChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/exit`, { method: 'POST' });
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/exit`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to exit chat');
             } catch (error) {
                 console.error('Error exiting chat:', error);
@@ -504,10 +511,10 @@
         });
 
         closeChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             if (confirm('Вы уверены, что хотите закрыть этот чат? Это действие необратимо.')) {
                 try {
-                    const response = await fetchWithAuth(`/api/chats/${currentChatId}/close`, { method: 'POST' });
+                    const response = await fetchWithAuth(`/api/chats/${currentChat.id}/close`, { method: 'POST' });
                     if (!response.ok) throw new Error('Failed to close chat');
                 } catch (error) {
                     console.error('Error closing chat:', error);
@@ -518,10 +525,10 @@
 
         sendBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
-            if (!messageText || !currentChatId) return;
+            if (!messageText || !currentChat) return;
 
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/message/support`, {
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/message/support`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: messageText })
