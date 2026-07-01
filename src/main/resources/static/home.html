@@ -416,6 +416,39 @@
         }
 
         // --- EVENT LISTENERS ---
+        async function loadAndDisplayChats(groupId, chatListContainer) {
+            try {
+                const response = await fetchWithAuth(`/api/chats?groupId=${groupId}`);
+                if (!response.ok) throw new Error('Failed to fetch chats for group');
+                const chats = await response.json();
+
+                const activeChats = chats.filter(chat => chat.is_active);
+                const inactiveChats = chats.filter(chat => !chat.is_active);
+
+                let html = '';
+                if (activeChats.length > 0) {
+                    html += '<div class="chat-list-header">Активные</div>';
+                    html += activeChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
+                }
+
+                if (inactiveChats.length > 0) {
+                    html += '<div class="chat-list-header">Неактивные</div>';
+                    html += inactiveChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
+                }
+
+                if (html === '') {
+                    html = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
+                }
+
+                chatListContainer.innerHTML = html;
+                return true;
+            } catch (error) {
+                console.error(error);
+                chatListContainer.innerHTML = `<li><span style="color: red;">Ошибка</span></li>`;
+                return false;
+            }
+        }
+
         groupList.addEventListener('click', async function(event) {
             const target = event.target;
 
@@ -436,36 +469,7 @@
                 const isVisible = chatListContainer.style.display === 'block';
 
                 if (!isVisible && chatListContainer.innerHTML === '') {
-                    try {
-                        const response = await fetchWithAuth(`/api/chats?groupId=${groupId}`);
-                        if (!response.ok) throw new Error('Failed to fetch chats for group');
-                        const chats = await response.json();
-                        console.log(JSON.stringify(chats, null, 2)); // Log the received chat data
-
-                        const activeChats = chats.filter(chat => chat.is_active);
-                        const inactiveChats = chats.filter(chat => !chat.is_active);
-
-                        let html = '';
-                        if (activeChats.length > 0) {
-                            html += '<div class="chat-list-header">Активные</div>';
-                            html += activeChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
-                        }
-
-                        if (inactiveChats.length > 0) {
-                            html += '<div class="chat-list-header">Неактивные</div>';
-                            html += inactiveChats.map(chat => `<li class="chat-item-nested" data-id="${chat.id}"><div class="chat-name">${chat.name}</div></li>`).join('');
-                        }
-
-                        if (html === '') {
-                            html = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
-                        }
-
-                        chatListContainer.innerHTML = html;
-
-                    } catch (error) {
-                        console.error(error);
-                        chatListContainer.innerHTML = `<li><span style="color: red;">Ошибка</span></li>`;
-                    }
+                    await loadAndDisplayChats(groupId, chatListContainer);
                 }
                 chatListContainer.style.display = isVisible ? 'none' : 'block';
             } else if (target.classList.contains('edit-group-btn')) {
@@ -642,6 +646,14 @@
         }
 
         async function fetchAndRenderGroups() {
+            const expandedGroupIds = [];
+            document.querySelectorAll('#group-list .group-item-container').forEach(container => {
+                const chatList = container.querySelector('.chat-list-nested');
+                if (chatList && chatList.style.display === 'block') {
+                    expandedGroupIds.push(container.dataset.groupId);
+                }
+            });
+
             try {
                 const response = await fetchWithAuth('/api/groups');
                 if (!response.ok) throw new Error(response.statusText);
@@ -661,6 +673,18 @@
                     listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div>${actionsHtml}</div>${chatsHtml}`;
                     groupList.appendChild(listItem);
                 });
+
+                for (const groupId of expandedGroupIds) {
+                    const groupContainer = groupList.querySelector(`[data-group-id='${groupId}']`);
+                    if (groupContainer) {
+                        const chatListContainer = groupContainer.querySelector('.chat-list-nested');
+                        if (chatListContainer) {
+                            await loadAndDisplayChats(groupId, chatListContainer);
+                            chatListContainer.style.display = 'block';
+                        }
+                    }
+                }
+
             } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
         }
 
