@@ -27,6 +27,7 @@ public abstract class ChatMapper {
     @Mapping(target = "connections", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "name", source = "chatRequest.name")
+    @Mapping(target = "login", source = "chatRequest.login")
     @Mapping(target = "group", source = "group")
     @Mapping(target = "open", expression = "java(true)")
     @Mapping(target = "work", expression = "java(false)")
@@ -39,6 +40,7 @@ public abstract class ChatMapper {
 
     @Mapping(target = "id", source = "chat.id")
     @Mapping(target = "name", source = "chat.name")
+    @Mapping(target = "login", source = "chat.login")
     @Mapping(target = "email", source = "chat.email")
     @Mapping(target = "phone", source = "chat.phone")
     @Mapping(target = "group", source = "chat.group")

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS roles
 CREATE TABLE IF NOT EXISTS groups
 (
     id   UUID PRIMARY KEY,
+    oper_id BIGINT,
     name VARCHAR(255)
 );
 
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS tokens
 CREATE TABLE IF NOT EXISTS chats
 (
     id           UUID PRIMARY KEY,
+    login         VARCHAR(255),
     name         VARCHAR(255),
     email        VARCHAR(255),
     phone        VARCHAR(255),

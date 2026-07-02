@@ -18,6 +18,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatDto extends BaseDto {
     String name;
+    String login;
     String email;
     String phone;
 

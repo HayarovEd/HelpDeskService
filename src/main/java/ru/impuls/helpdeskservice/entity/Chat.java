@@ -24,6 +24,7 @@ import java.util.List;
 public class Chat extends BaseEntity {
 
     String name;
+    String login;
     String email;
     String phone;
 
