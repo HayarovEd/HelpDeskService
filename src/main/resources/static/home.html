@@ -66,7 +66,7 @@
         .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
         .form-row { margin-bottom: 10px; }
         .form-row label { display: block; margin-bottom: 5px; }
-        .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row select { width: 95%; padding: 8px; }
+        .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row input[type="number"], .form-row select { width: 95%; padding: 8px; }
         #chat-in-work-by-other-user-notification {
             display: none;
             padding: 10px;
@@ -117,7 +117,7 @@
 
     <!-- Modals -->
     <div id="userModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="userModalTitle"></h3><form id="userForm"><input type="hidden" id="userId"><div class="form-row"><label>Username: <input type="text" id="username" required></label></div><div class="form-row" id="password-row"><label>Password: <input type="password" id="password"></label></div><div class="form-row"><label>Name: <input type="text" id="name" required></label></div><div class="form-row"><label>Email: <input type="email" id="email"></label></div><div class="form-row"><label>Role: <select id="role"></select></label></div><div class="form-row"><label><input type="checkbox" id="isDisabled"> Disabled</label></div><button type="submit">Сохранить</button></form></div></div>
-    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><input type="text" id="groupName" placeholder="Название группы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
+    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><div class="form-row"><label>Название группы: <input type="text" id="groupName" required style="width: 95%; padding: 8px;"></label></div><div class="form-row"><label>Внутренний номер: <input type="number" id="groupOperId" required style="width: 95%; padding: 8px;"></label></div><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
     <div id="passwordModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>Смена пароля</h3><form id="passwordForm"><input type="hidden" id="passwordUserId"><div class="form-row"><label>Новый пароль: <input type="password" id="newPassword" required></label></div><button type="submit">Сохранить</button></form></div></div>
 
     <script>
@@ -185,6 +185,7 @@
         const currentUserRole = tokenPayload.role;
         const isAdmin = currentUserRole === 'ADMIN';
         let messageObserver;
+        let allUsers = [];
 
         // --- UI Permissions ---
         if (!isAdmin) {
@@ -508,7 +509,9 @@
                 chatListContainer.style.display = isVisible ? 'none' : 'block';
             } else if (target.classList.contains('edit-group-btn')) {
                 const groupName = groupContainer.querySelector('.group-name').textContent;
-                openGroupModal('Изменить группу', groupId, groupName);
+                const groupResponse = await fetchWithAuth(`/api/groups/${groupId}`);
+                const groupData = await groupResponse.json();
+                openGroupModal('Изменить группу', groupId, groupName, groupData.operId);
             } else if (target.classList.contains('delete-group-btn')) {
                 if (confirm('Вы уверены, что хотите удалить эту группу?')) {
                     try {
@@ -635,10 +638,11 @@
         });
 
         // --- GROUP LOGIC ---
-        function openGroupModal(title, id = '', name = '') {
+        function openGroupModal(title, id = '', name = '', operId = null) {
             groupModal.querySelector('#groupModalTitle').textContent = title;
             groupForm.groupId.value = id;
             groupForm.groupName.value = name;
+            groupForm.groupOperId.value = operId || '';
             groupModal.style.display = 'block';
         }
 
@@ -646,11 +650,16 @@
             event.preventDefault();
             const id = groupForm.groupId.value;
             const name = groupForm.groupName.value;
+            const operId = groupForm.groupOperId.value;
             const url = id ? `/api/groups/${id}` : '/api/groups';
             const method = id ? 'PUT' : 'POST';
             try {
-                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) });
-                if (!response.ok) throw new Error('Group operation failed');
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, operId: operId }) });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert('Ошибка: ' + errorData.message);
+                    return;
+                }
                 fetchAndRenderGroups();
                 groupModal.style.display = 'none';
             } catch (error) { alert('Error: ' + error.message); }
@@ -661,9 +670,9 @@
             try {
                 const response = await fetchWithAuth('/api/users');
                 if (!response.ok) throw new Error(response.statusText);
-                const users = await response.json();
+                allUsers = await response.json();
                 userList.innerHTML = '';
-                users.forEach(user => {
+                allUsers.forEach(user => {
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     listItem.setAttribute('data-id', user.id);
@@ -724,7 +733,7 @@
 
 
         // --- INITIAL LOAD ---
-        fetchAndRenderUsers();
+        await fetchAndRenderUsers();
         fetchAndRenderGroups();
         connectWebSocket();
         // initializeFirebase(); // You can uncomment this when you have your config

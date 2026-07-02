@@ -16,4 +16,6 @@ public interface GroupRepo extends JpaRepository<Group, UUID> {
     boolean existsByName(String name);
 
     Optional<Group> findByName(String name);
+
+    Optional<Group> findByOperId(Long operId);
 }

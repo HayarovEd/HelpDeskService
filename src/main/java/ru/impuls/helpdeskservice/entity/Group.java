@@ -15,6 +15,8 @@ import lombok.experimental.SuperBuilder;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Group extends BaseEntity {
     String name;
+    @Column(name = "oper_id")
+    Long operId;
 
    /* @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     @OnDelete(action = OnDeleteAction.CASCADE)

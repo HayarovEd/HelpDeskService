@@ -109,4 +109,12 @@ public class GroupServiceImpl implements GroupService {
 
         return groupMapper.toDto(group);
     }
+
+    @Transactional(readOnly = true)
+    @Override
+    public GroupResponse getByOperId(Long operId) {
+        return groupRepo.findByOperId(operId)
+                .map(groupMapper::toDto)
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
+    }
 }

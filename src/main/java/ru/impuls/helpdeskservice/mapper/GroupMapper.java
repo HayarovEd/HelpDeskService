@@ -17,19 +17,20 @@ public interface GroupMapper {
         }
         return new GroupResponse(
                 group.getId(),
-                group.getName()
-               // group.getSubgroups() == null ? Collections.emptyList() : mapSubgroups(group.getSubgroups())
+                group.getName(),
+                group.getOperId()
+                // group.getSubgroups() == null ? Collections.emptyList() : mapSubgroups(group.getSubgroups())
         );
     }
 
     GroupEvent toEvent(Group group);
 
     @Mapping(target = "id", ignore = true)
- //   @Mapping(target = "subgroups", ignore = true)
+        //   @Mapping(target = "subgroups", ignore = true)
     Group toEntity(GroupCreateRequest groupRequest);
 
     @Mapping(target = "id", ignore = true)
-   // @Mapping(target = "subgroups", ignore = true)
+        // @Mapping(target = "subgroups", ignore = true)
     void toEntity(@MappingTarget final Group group, final GroupEditRequest groupDto);
 
    /* default List<SubgroupDto> mapSubgroups(List<Subgroup> subgroups) {

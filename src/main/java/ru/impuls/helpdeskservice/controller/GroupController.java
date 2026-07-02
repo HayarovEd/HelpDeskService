@@ -38,6 +38,12 @@ public class GroupController {
         return groupService.getByName(name);
     }
 
+    @GetMapping("/oper")
+    @ResponseStatus(HttpStatus.OK)
+    public GroupResponse getByOperId(@RequestParam(name = "oper_id") Long operId) {
+        return groupService.getByOperId(operId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyAuthority('ADMIN')")
