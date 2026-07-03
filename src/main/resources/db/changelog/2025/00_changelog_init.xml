@@ -40,4 +40,10 @@
                  splitStatements="false"/>
     </changeSet>
 
+    <changeSet author="Khayarov Edward" id="030720261552-initial-groups">
+        <sqlFile path="03_add_groups.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>
