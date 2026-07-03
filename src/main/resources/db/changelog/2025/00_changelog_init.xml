@@ -40,7 +40,15 @@
                  splitStatements="false"/>
     </changeSet>
 
-    <changeSet author="Khayarov Edward" id="030720261552-initial-groups">
+    <changeSet author="Khayarov Edward" id="030720261552-initial-groups-v2">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="groups"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM groups
+                </sqlCheck>
+            </and>
+        </preConditions>
         <sqlFile path="03_add_groups.sql"
                  relativeToChangelogFile="true"
                  splitStatements="false"/>

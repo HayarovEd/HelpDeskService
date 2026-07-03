@@ -46,7 +46,9 @@
         .actions span { cursor: pointer; margin-left: 8px; font-size: 16px; }
         .subgroup-list { display: none; padding-left: 20px; margin-top: 5px; }
         .chat-list-nested { padding-left: 20px; display: none; }
-        .chat-item-nested { display: flex; align-items: center; padding-left: 10px; cursor: pointer; }
+        .chat-item-nested { display: flex; align-items: center; padding-left: 10px; cursor: pointer; border-radius: 4px; }
+        .chat-item-closed { background-color: #f0f0f0; color: #888; }
+        .chat-item-closed .chat-name { text-decoration: line-through; }
         .subgroup-item > span { cursor: pointer; flex-grow: 1; }
         .chat-list-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #333; }
         .unread-badge {
@@ -460,21 +462,21 @@
                 const activeChats = chats.filter(chat => chat.is_open);
                 const inactiveChats = chats.filter(chat => !chat.is_open);
 
-                const createChatHtml = chat => `
-                    <li class="chat-item-nested" data-id="${chat.id}">
-                        <div class="chat-name">${chat.name}</div>
-                        ${chat.unread_messages_count > 0 ? `<span class="unread-badge">${chat.unread_messages_count}</span>` : ''}
+                const createChatHtml = (chat, isClosed = false) => `
+                    <li class="chat-item-nested ${isClosed ? 'chat-item-closed' : ''}" data-id="${chat.id}">
+                        <div class="chat-name">${chat.name} (${chat.login || 'N/A'})</div>
+                        ${!isClosed && chat.unread_messages_count > 0 ? `<span class="unread-badge">${chat.unread_messages_count}</span>` : ''}
                     </li>`;
 
                 let html = '';
                 if (activeChats.length > 0) {
                     html += '<div class="chat-list-header">Активные</div>';
-                    html += activeChats.map(createChatHtml).join('');
+                    html += activeChats.map(chat => createChatHtml(chat, false)).join('');
                 }
 
                 if (inactiveChats.length > 0) {
                     html += '<div class="chat-list-header">Неактивные</div>';
-                    html += inactiveChats.map(createChatHtml).join('');
+                    html += inactiveChats.map(chat => createChatHtml(chat, true)).join('');
                 }
 
                 if (html === '') {
@@ -631,8 +633,12 @@
         });
 
         userList.addEventListener('click', async function(event) {
-            if (event.target.classList.contains('edit-user-btn')) {
-                const userId = event.target.closest('li').dataset.id;
+            const target = event.target;
+            const userLi = target.closest('li');
+            if (!userLi) return;
+            const userId = userLi.dataset.id;
+
+            if (target.classList.contains('edit-user-btn')) {
                 try {
                     const response = await fetchWithAuth(`/api/users`);
                     if (!response.ok) throw new Error('Could not fetch users');
@@ -640,6 +646,44 @@
                     const userToEdit = users.find(u => u.id === userId);
                     if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
                 } catch (error) { alert('Error: ' + error.message); }
+            } else if (target.classList.contains('change-password-btn')) {
+                openPasswordModal(userId);
+            }
+        });
+
+        function openPasswordModal(userId) {
+            passwordForm.passwordUserId.value = userId;
+            passwordForm.newPassword.value = '';
+            passwordModal.style.display = 'block';
+        }
+
+        passwordForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const userId = passwordForm.passwordUserId.value;
+            const newPassword = passwordForm.newPassword.value;
+
+            if (!userId || !newPassword) {
+                alert('User ID or password missing.');
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/users/${userId}/password`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: newPassword })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Failed to change password' }));
+                    throw new Error(errorData.message);
+                }
+
+                alert('Password changed successfully!');
+                passwordModal.style.display = 'none';
+            } catch (error) {
+                console.error('Error changing password:', error);
+                alert('Could not change password: ' + error.message);
             }
         });
 
@@ -678,14 +722,22 @@
                 if (!response.ok) throw new Error(response.statusText);
                 allUsers = await response.json();
                 userList.innerHTML = '';
-                allUsers.forEach(user => {
+
+                const filteredUsers = allUsers.filter(user =>
+                    user.role && (user.role.name === 'ADMIN' || user.role.name === 'SUPPORT')
+                );
+
+                filteredUsers.forEach(user => {
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     listItem.setAttribute('data-id', user.id);
 
                     let actionsHtml = '';
                     if (isAdmin) {
-                        actionsHtml = '<div class="actions"><span class="edit-user-btn">✏️</span></div>';
+                        actionsHtml = `<div class="actions">
+                                           <span class="edit-user-btn" title="Редактировать">✏️</span>
+                                           <span class="change-password-btn" title="Сменить пароль">🔑</span>
+                                       </div>`;
                     }
 
                     listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div>${actionsHtml}`;
