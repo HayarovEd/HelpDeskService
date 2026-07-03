@@ -36,6 +36,12 @@ public interface MessageRepo extends JpaRepository<Message, UUID> {
             "LIMIT 1")
     Optional<Message> findLastByConnectionId(@Param("connectionId") UUID connectionId);
 
+    @Query("SELECT m FROM Message m " +
+            "WHERE m.connection.chat.id = :chatId " +
+            "ORDER BY m.createdDate DESC " +
+            "LIMIT 1")
+    Optional<Message> findLastByChatId(@Param("chatId") UUID chatId);
+
     @Query("SELECT count(m) FROM Message m WHERE m.connection.chat.id = :chatId AND m.isRead = false AND m.isSupport = false")
     long countUnreadByChatId(@Param("chatId") UUID chatId);
 

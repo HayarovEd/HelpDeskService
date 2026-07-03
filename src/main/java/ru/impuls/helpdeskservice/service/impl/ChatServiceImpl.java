@@ -171,13 +171,14 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.closeCurrentConnection(chat);
-        connectionService.createSupportConnection(chat, currentUser);
-        connectionService.addSystemMessage(chat, "К чату подключился " + currentUser.getName());
+        Connection newConnection = connectionService.createSupportConnection(chat, currentUser);
+        connectionService.addSystemMessage(newConnection, "К чату подключился " + currentUser.getName());
 
         chat.setWork(true);
         messageRepo.markAllAsReadByChatId(chatId);
         Chat updatedChat = chatRepository.save(chat);
-
+        //var chatDto = chatMapper.toDto(updatedChat);
+        //webSocketHandler.notifyChatConnections(chat.getId(), chatMapper.toEvent(chatDto));
         notifyChatUpdated(updatedChat);
     }
 
@@ -190,8 +191,8 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         connectionService.validateCurrentUserIsResponder(chat, currentUser.getId());
-        connectionService.closeCurrentConnection(chat);
-        connectionService.addSystemMessage(chat, "Из чата вышел " + currentUser.getName());
+        Connection closedConnection = connectionService.closeCurrentConnection(chat);
+        connectionService.addSystemMessage(closedConnection, "Из чата вышел " + currentUser.getName());
         connectionService.createClientConnection(chat);
 
         chat.setWork(false);
@@ -208,7 +209,8 @@ public class ChatServiceImpl implements ChatService {
             throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
         }
 
-        connectionService.closeCurrentConnection(chat);
+        Connection closedConnection = connectionService.closeCurrentConnection(chat);
+        connectionService.addSystemMessage(closedConnection, "Чат был закрыт");
         chat.setOpen(false);
         chat.setWork(false);
 
@@ -284,28 +286,22 @@ public class ChatServiceImpl implements ChatService {
             return;
         }
 
-        var lastConnectionDto = messageRepo
-                .findLastByConnectionId(lastConnection.getId())
-                .stream()
-                .findFirst()
-                .map(message -> {
-                    MessageDto messageDto = messageMapper.toDto(message);
-                    return connectionMapper.toDto(lastConnection, messageDto);
-                })
-                .orElseGet(
-                        () -> {
-                            ConnectionDto dto = connectionMapper.toDto(lastConnection);
-                            return new ConnectionDto(
-                                    dto.id(),
-                                    dto.startDate(),
-                                    dto.endDate(),
-                                    dto.user(),
-                                    Collections.emptyList()
-                            );
-                        }/*connectionMapper.toDto(lastConnection, null)*/
-                );
+        var lastMessage = messageRepo.findLastByChatId(chatDto.getId()).orElse(null);
 
-        chatDto.setConnections(List.of(lastConnectionDto));
+        if (lastMessage != null) {
+            MessageDto messageDto = messageMapper.toDto(lastMessage);
+            ConnectionDto connectionDto = connectionMapper.toDto(lastMessage.getConnection(), messageDto);
+            chatDto.setConnections(List.of(connectionDto));
+        } else {
+            ConnectionDto connectionDto = connectionMapper.toDto(lastConnection);
+            chatDto.setConnections(List.of(new ConnectionDto(
+                    connectionDto.id(),
+                    connectionDto.startDate(),
+                    connectionDto.endDate(),
+                    connectionDto.user(),
+                    Collections.emptyList()
+            )));
+        }
     }
 
     private void validateParameters(int count, UUID groupId) {
