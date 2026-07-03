@@ -213,7 +213,7 @@ public class ChatServiceImpl implements ChatService {
         connectionService.addSystemMessage(closedConnection, "Чат был закрыт");
         chat.setOpen(false);
         chat.setWork(false);
-
+        chat.setActive(false);
         Chat updatedChat = chatRepository.save(chat);
         notifyChatUpdated(updatedChat);
     }
