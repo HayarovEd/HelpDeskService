@@ -13,11 +13,18 @@ public record ChatEvent (
         String name,
         String email,
         String phone,
-        @JsonProperty("isOpen") boolean open,
-        @JsonProperty("isWork") boolean work,
-        @JsonProperty("is_active") boolean active,
-        @JsonProperty("unread_messages_count") long unreadMessagesCount,
+        String login,
+        @JsonProperty("is_open")
+        boolean open,
+        @JsonProperty("is_work")
+        boolean work,
+        @JsonProperty("is_active")
+        boolean active,
+        @JsonProperty("unread_messages_count")
+        long unreadMessagesCount,
+        @JsonProperty("created_date")
         Instant createdDate,
+        @JsonProperty("group")
         GroupForSubDto group,
         List<ConnectionDto> connections
 ) {}

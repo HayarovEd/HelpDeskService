@@ -31,7 +31,7 @@
         .message.support { background-color: #dcf8c6; align-self: flex-end; }
         .message.client { background-color: #f1f0f0; align-self: flex-start; }
         .message.unread { border-left: 3px solid #007bff; }
-        .message-read-icon { font-size: 0.8em; color: #007bff; position: absolute; bottom: 5px; left: 10px; }
+        .read-receipt { color: #007bff; margin-right: 4px; font-weight: bold; }
         #message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; }
         #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         #send-btn { width: 100px; padding: 10px; margin-left: 10px; }
@@ -250,6 +250,7 @@
                 try {
                     const message = JSON.parse(event.data);
                     console.log('Received WebSocket message:', message);
+
                     if (message.path === '/users') {
                         fetchAndRenderUsers();
                     }
@@ -261,15 +262,13 @@
                     }
                     if (message.path === '/messages/read') {
                         const messageId = message.data.id;
+                        const readReceiptSpan = document.getElementById(`read-receipt-${messageId}`);
+                        if (readReceiptSpan) {
+                            readReceiptSpan.textContent = '✓✓';
+                        }
                         const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
                         if (messageElement) {
                             messageElement.classList.remove('unread');
-                            const readIcon = document.createElement('span');
-                            readIcon.className = 'message-read-icon';
-                            readIcon.textContent = '✓✓';
-                            if (!messageElement.querySelector('.message-read-icon')) {
-                                messageElement.appendChild(readIcon);
-                            }
                         }
                     }
                 } catch (e) { console.error('Error parsing WebSocket message:', e); }
@@ -379,13 +378,13 @@
                 notificationBlock.style.display = 'none';
             }
 
-            if (chat.is_active && isAdmin) {
+            if (chat.is_open && isAdmin) {
                 closeChatBtn.style.display = 'block';
             } else {
                 closeChatBtn.style.display = 'none';
             }
 
-            if (chat.is_active && !chat.is_work) {
+            if (chat.is_open && !chat.is_work) {
                 joinChatBtn.style.display = 'block';
                 exitChatBtn.style.display = 'none';
             } else if (chat.is_work && isCurrentUserResponder) {
@@ -417,7 +416,7 @@
             allMessages.forEach(msg => {
                 const msgDiv = document.createElement('div');
                 msgDiv.setAttribute('data-message-id', msg.id);
-                const isUnreadClientMessage = !msg.isSupport && !msg.isRead;
+                const isUnreadClientMessage = !msg.isSupport && !msg.is_read;
                 msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'} ${isUnreadClientMessage ? 'unread' : ''}`;
 
                 if (isUnreadClientMessage) {
@@ -425,16 +424,23 @@
                 }
 
                 const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div><div class="message-text">${msg.text}</div><div class="message-time">${time}</div>`;
 
-                if (msg.isRead) {
-                    const readIcon = document.createElement('span');
-                    readIcon.className = 'message-read-icon';
-                    readIcon.textContent = '✓✓';
-                    msgDiv.appendChild(readIcon);
-                }
+                const readReceiptHtml = msg.isSupport
+                    ? `<span class="read-receipt" id="read-receipt-${msg.id}"></span>`
+                    : '';
+
+                msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div>
+                                  <div class="message-text">${msg.text}</div>
+                                  <div class="message-time">${readReceiptHtml}${time}</div>`;
 
                 messageContainer.appendChild(msgDiv);
+
+                if (msg.isSupport && msg.is_read) {
+                    const readReceiptSpan = msgDiv.querySelector(`#read-receipt-${msg.id}`);
+                    if (readReceiptSpan) {
+                        readReceiptSpan.textContent = '✓✓';
+                    }
+                }
 
                 if (isUnreadClientMessage) {
                     messageObserver.observe(msgDiv);
@@ -451,8 +457,8 @@
                 if (!response.ok) throw new Error('Failed to fetch chats for group');
                 const chats = await response.json();
 
-                const activeChats = chats.filter(chat => chat.is_active);
-                const inactiveChats = chats.filter(chat => !chat.is_active);
+                const activeChats = chats.filter(chat => chat.is_open);
+                const inactiveChats = chats.filter(chat => !chat.is_open);
 
                 const createChatHtml = chat => `
                     <li class="chat-item-nested" data-id="${chat.id}">
@@ -511,7 +517,7 @@
                 const groupName = groupContainer.querySelector('.group-name').textContent;
                 const groupResponse = await fetchWithAuth(`/api/groups/${groupId}`);
                 const groupData = await groupResponse.json();
-                openGroupModal('Изменить группу', groupId, groupName, groupData.operId);
+                openGroupModal('Изменить группу', groupId, groupName, groupData.oper_id);
             } else if (target.classList.contains('delete-group-btn')) {
                 if (confirm('Вы уверены, что хотите удалить эту группу?')) {
                     try {
@@ -638,11 +644,11 @@
         });
 
         // --- GROUP LOGIC ---
-        function openGroupModal(title, id = '', name = '', operId = null) {
+        function openGroupModal(title, id = '', name = '', oper_id = null) {
             groupModal.querySelector('#groupModalTitle').textContent = title;
             groupForm.groupId.value = id;
             groupForm.groupName.value = name;
-            groupForm.groupOperId.value = operId || '';
+            groupForm.groupOperId.value = oper_id || '';
             groupModal.style.display = 'block';
         }
 
@@ -654,7 +660,7 @@
             const url = id ? `/api/groups/${id}` : '/api/groups';
             const method = id ? 'PUT' : 'POST';
             try {
-                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, operId: operId }) });
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, oper_id: operId }) });
                 if (!response.ok) {
                     const errorData = await response.json();
                     alert('Ошибка: ' + errorData.message);

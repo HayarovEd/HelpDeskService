@@ -224,14 +224,9 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         var user = AuthUtil.getAuthenticatedUser();
-        boolean wasClosed = !chat.isOpen();
         setActiveChat(chat);
         connectionService.addClientMessage(chat, messageCreateDto.getText(), user);
-        if (wasClosed && chat.isOpen()) {
-            notifyChatUpdated(chat);
-        } else {
-            notifyChatUpdated(chat);
-        }
+        notifyChatUpdated(chat);
     }
 
     @Override

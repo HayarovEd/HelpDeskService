@@ -131,7 +131,8 @@ public class ConnectionServiceImpl implements ConnectionService {
         Message message = Message.builder()
                 .connection(connection)
                 .text(text)
-                .isSupport(true) // Treat system messages as support messages for styling
+                .isRead(false)
+                .isSupport(true) //// Treat system messages as support messages for styling
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);
