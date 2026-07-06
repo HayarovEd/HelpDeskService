@@ -39,7 +39,13 @@ public class ConnectionServiceImpl implements ConnectionService {
         var connection = connectionMapper.toEntity(chat, user);
         connectionRepository.save(connection);
 
-        var message = messageMapper.toEntity(connection, messageText, false, false);
+        var message = messageMapper.toEntity(
+                connection,
+                messageText,
+                false,
+                false,
+                Collections.emptyList()
+        );
         messageRepository.save(message);
         connection.setMessages(Collections.singletonList(message));
 
@@ -123,7 +129,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
         messageRepository.save(message);
     }
-    
+
     @Override
     public void addSystemMessage(Connection connection, String text) {
         if (connection == null) return;

@@ -54,4 +54,18 @@
                  splitStatements="false"/>
     </changeSet>
 
+    <changeSet author="Khayarov Edward" id="060720260954-initial-files">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="files"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM files
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <sqlFile path="04_add_files.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>
