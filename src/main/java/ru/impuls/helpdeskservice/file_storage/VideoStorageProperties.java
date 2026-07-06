@@ -9,7 +9,7 @@ import java.util.Set;
 @Component
 public class VideoStorageProperties  extends MediaStorageProperties{
     public VideoStorageProperties() {
-        this.basePath = "./video";
+        this.basePath = "video";
         this.allowedMimeTypes = Set.of( "video/mp4",
                 "video/mpeg",
                 "video/ogg",

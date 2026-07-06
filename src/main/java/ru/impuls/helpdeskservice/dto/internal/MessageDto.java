@@ -3,9 +3,10 @@ package ru.impuls.helpdeskservice.dto.internal;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-public record MessageDto (
+public record MessageDto(
         UUID id,
         String text,
         @JsonProperty("is_read")
@@ -13,6 +14,9 @@ public record MessageDto (
         @JsonProperty("date")
         Instant createdDate,
         @JsonProperty("isSupport")
-        boolean support
-      //  @JsonProperty("files") List<FileDto> files
-        ) {}
+        boolean support,
+        @JsonProperty("files")
+        List<FileDto> files
+        //  @JsonProperty("files") List<FileDto> files
+) {
+}

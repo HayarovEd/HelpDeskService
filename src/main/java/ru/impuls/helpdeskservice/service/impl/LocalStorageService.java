@@ -41,7 +41,7 @@ public class LocalStorageService {
             String newFilename = UUID.randomUUID() + extension;
             OutputStream outputStream = Files.newOutputStream(uploadPath.resolve(newFilename), StandardOpenOption.CREATE_NEW);
             StreamUtils.copy(inputStream, outputStream);
-            return newFilename;
+            return FILES_UPLOAD_DIR + "/" + basePath + "/" + newFilename;
         } catch (
                 IOException e
         ) {

@@ -9,7 +9,7 @@ import java.util.Set;
 @Component
 public class ImageStorageProperties extends MediaStorageProperties {
     public ImageStorageProperties() {
-        this.basePath = "./images";
+        this.basePath = "images";
         this.allowedMimeTypes = Set.of(
                 "image/jpg",
                 "image/jpeg",

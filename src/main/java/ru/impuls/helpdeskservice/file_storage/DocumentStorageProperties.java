@@ -9,7 +9,7 @@ import java.util.Set;
 @Component
 public class DocumentStorageProperties extends MediaStorageProperties {
     public DocumentStorageProperties() {
-        this.basePath = "./documents";
+        this.basePath = "documents";
         this.allowedMimeTypes = Set.of(
                 "application/pdf",
                 "application/msword",
