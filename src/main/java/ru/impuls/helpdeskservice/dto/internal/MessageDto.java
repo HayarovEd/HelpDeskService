@@ -8,6 +8,8 @@ import java.util.UUID;
 public record MessageDto (
         UUID id,
         String text,
+        @JsonProperty("is_read")
+        Boolean isRead,
         @JsonProperty("date") Instant createdDate,
         @JsonProperty("isSupport")boolean support
 ) {}

@@ -2,15 +2,14 @@ package ru.impuls.helpdeskservice.mapper;
 
 import org.mapstruct.*;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
-import ru.impuls.helpdeskservice.dto.internal.MessageDto;
-import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
-import ru.impuls.helpdeskservice.entity.Message;
+import ru.impuls.helpdeskservice.dto.internal.GroupForSubDto;
+import ru.impuls.helpdeskservice.dto.response.GroupResponse;
+import ru.impuls.helpdeskservice.entity.*;
+import ru.impuls.helpdeskservice.repository.MessageRepo;
 import ru.impuls.helpdeskservice.websocket.event.ChatEvent;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
-import ru.impuls.helpdeskservice.entity.Chat;
-import ru.impuls.helpdeskservice.entity.Connection;
-import ru.impuls.helpdeskservice.entity.Subgroup;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,35 +18,50 @@ import java.util.List;
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.ERROR,
         imports = {Collections.class})
-public interface ChatMapper {
+public abstract class ChatMapper {
+
+    @Autowired
+    protected MessageRepo messageRepo;
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "connections", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "name", source = "chatRequest.name")
-    @Mapping(target = "subgroup", source = "subgroup")
+    @Mapping(target = "login", source = "chatRequest.login")
+    @Mapping(target = "group", source = "group")
     @Mapping(target = "open", expression = "java(true)")
     @Mapping(target = "work", expression = "java(false)")
-    Chat toEntity(ChatCreateRequest chatRequest, Subgroup subgroup);
+    @Mapping(target = "active", expression = "java(true)")
+    public abstract Chat toEntity(ChatCreateRequest chatRequest, Group group);
 
-    ChatDto toDto(Chat chat);
+    @Mapping(source = "chat.id", target = "id")
+    @Mapping(target = "unreadMessagesCount", expression = "java(messageRepo.countUnreadByChatId(chat.getId()))")
+    public abstract ChatDto toDto(Chat chat);
 
     @Mapping(target = "id", source = "chat.id")
     @Mapping(target = "name", source = "chat.name")
+    @Mapping(target = "login", source = "chat.login")
     @Mapping(target = "email", source = "chat.email")
     @Mapping(target = "phone", source = "chat.phone")
-    @Mapping(target = "subgroup", source = "chat.subgroup")
+    @Mapping(target = "group", source = "chat.group")
     @Mapping(target = "createdDate", source = "chat.createdDate")
     @Mapping(target = "connections", source = "connections")
-    Chat toEntity(Chat chat, List<Connection> connections);
+    public abstract Chat toEntity(Chat chat, List<Connection> connections);
 
     @Mapping(target = "id", source = "chat.id")
     @Mapping(target = "connections", expression = "java(Collections.singletonList(connectionDto))")
-    ChatEvent toEvent(Chat chat, ConnectionDto connectionDto);
+    @Mapping(target = "unreadMessagesCount", expression = "java(messageRepo.countUnreadByChatId(chat.getId()))")
+    public abstract ChatEvent toEvent(Chat chat, ConnectionDto connectionDto);
 
     @Mapping(target = "id", source = "chat.id")
     @Mapping(target = "connections", expression = "java(Collections.singletonList(connectionDto))")
-    ChatDto toDto(Chat chat, ConnectionDto connectionDto);
+    @Mapping(target = "unreadMessagesCount", expression = "java(messageRepo.countUnreadByChatId(chat.getId()))")
+    public abstract ChatDto toDto(Chat chat, ConnectionDto connectionDto);
 
-    ChatEvent toEvent(ChatDto newChat);
+    @Mapping(source = "group", target = "group")
+    public abstract ChatEvent toEvent(ChatDto newChat);
+
+    public abstract GroupForSubDto toGroupForSubDto(GroupResponse groupResponse);
+
+    public abstract GroupForSubDto toGroupForSubDto(Group group);
 }

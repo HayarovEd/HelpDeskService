@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +20,10 @@ import ru.impuls.helpdeskservice.service.ConnectionService;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -36,7 +39,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         var connection = connectionMapper.toEntity(chat, user);
         connectionRepository.save(connection);
 
-        var message = messageMapper.toEntity(connection, messageText, false);
+        var message = messageMapper.toEntity(connection, messageText, false, false);
         messageRepository.save(message);
         connection.setMessages(Collections.singletonList(message));
 
@@ -44,22 +47,23 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
     @Override
-    public void closeCurrentConnection(Chat chat) {
+    public Connection closeCurrentConnection(Chat chat) {
         Connection currentConnection = getCurrentConnection(chat);
         if (currentConnection != null) {
             currentConnection.setEndDate(Instant.now());
-            connectionRepository.save(currentConnection);
+            return connectionRepository.save(currentConnection);
         }
+        return null;
     }
 
     @Override
-    public void createSupportConnection(Chat chat, User user) {
+    public Connection createSupportConnection(Chat chat, User user) {
         Connection connection = Connection.builder()
                 .chat(chat)
                 .user(user)
                 .startDate(Instant.now())
                 .build();
-        connectionRepository.save(connection);
+        return connectionRepository.save(connection);
     }
 
     @Override
@@ -96,6 +100,7 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .connection(currentConnection)
                 .text(text)
                 .isSupport(false)
+                .isRead(false)
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);
@@ -113,29 +118,46 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .connection(currentConnection)
                 .text(text)
                 .isSupport(true)
+                .isRead(false)
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);
     }
     
     @Override
-    public void addSystemMessage(Chat chat, String text) {
-        Connection currentConnection = getCurrentConnection(chat);
-        if (currentConnection == null) return;
+    public void addSystemMessage(Connection connection, String text) {
+        if (connection == null) return;
 
         Message message = Message.builder()
-                .connection(currentConnection)
+                .connection(connection)
                 .text(text)
-                .isSupport(true) // Treat system messages as support messages for styling
+                .isRead(false)
+                .isSupport(true) //// Treat system messages as support messages for styling
                 .createdDate(Instant.now())
                 .build();
         messageRepository.save(message);
     }
 
     private Connection getCurrentConnection(Chat chat) {
-        return chat.getConnections().stream()
+        List<Connection> connections = chat.getConnections();
+
+        log.info("Close connection, Всего соединений: {}", connections.size());
+
+        for (int i = 0; i < connections.size(); i++) {
+            Connection c = connections.get(i);
+            log.info("Close connection, {}. ID: {}", i, c.getId());
+            log.info("Close connection,    endDate: {}", c.getEndDate());
+            log.info("Close connection,    endDate == null? {}", c.getEndDate() == null);
+            log.info("Close connection,    startDate: {}", c.getStartDate());
+            log.info("Close connection, ---");
+        }
+
+        Connection result = connections.stream()
                 .filter(c -> c.getEndDate() == null)
                 .findFirst()
                 .orElse(null);
+
+        log.info("Close connection, Результат: {}", result != null ? result.getId() : "null");
+        return result;
     }
 }

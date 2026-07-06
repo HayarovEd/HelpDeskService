@@ -3,15 +3,16 @@ package ru.impuls.helpdeskservice.service;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
+import ru.impuls.helpdeskservice.entity.Connection;
 
 import java.util.UUID;
 
 public interface ConnectionService {
     ConnectionDto createInitialConnection(Chat chat, String messageText, User user);
 
-    void closeCurrentConnection(Chat chat);
+    Connection closeCurrentConnection(Chat chat);
 
-    void createSupportConnection(Chat chat, User user);
+    Connection createSupportConnection(Chat chat, User user);
 
     void createClientConnection(Chat chat);
 
@@ -21,5 +22,5 @@ public interface ConnectionService {
 
     void addSupportMessage(Chat chat, UUID userId, String text);
 
-    void addSystemMessage(Chat chat, String text);
+    void addSystemMessage(Connection connection, String text);
 }

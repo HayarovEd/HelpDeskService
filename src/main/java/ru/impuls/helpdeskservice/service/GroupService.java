@@ -22,4 +22,6 @@ public interface GroupService {
     GroupResponse update(UUID id, GroupEditRequest groupRequest);
 
     GroupResponse delete(UUID id);
+
+    GroupResponse getByOperId(Long operId);
 }

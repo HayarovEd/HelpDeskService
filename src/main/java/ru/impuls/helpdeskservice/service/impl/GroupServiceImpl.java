@@ -11,7 +11,6 @@ import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
 import ru.impuls.helpdeskservice.dto.response.GroupResponse;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
-import ru.impuls.helpdeskservice.entity.Subgroup;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.GroupMapper;
 import ru.impuls.helpdeskservice.repository.GroupRepo;
@@ -20,7 +19,6 @@ import ru.impuls.helpdeskservice.service.LogService;
 import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -42,7 +40,7 @@ public class GroupServiceImpl implements GroupService {
     public List<GroupResponse> getAll() {
         return groupRepo.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
                 .filter(Objects::nonNull)
-                .peek(group -> group.getSubgroups().sort(Comparator.comparing(Subgroup::getName)))
+            //    .peek(group -> group.getSubgroups().sort(Comparator.comparing(Subgroup::getName)))
                 .map(groupMapper::toDto)
                 .toList();
     }
@@ -110,5 +108,13 @@ public class GroupServiceImpl implements GroupService {
         );
 
         return groupMapper.toDto(group);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public GroupResponse getByOperId(Long operId) {
+        return groupRepo.findByOperId(operId)
+                .map(groupMapper::toDto)
+                .orElseThrow(() -> new AppException(ErrorMessage.GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
     }
 }

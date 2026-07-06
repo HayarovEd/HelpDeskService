@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.impuls.helpdeskservice.entity.Message;
@@ -34,4 +35,17 @@ public interface MessageRepo extends JpaRepository<Message, UUID> {
             "ORDER BY m.createdDate DESC " +
             "LIMIT 1")
     Optional<Message> findLastByConnectionId(@Param("connectionId") UUID connectionId);
+
+    @Query("SELECT m FROM Message m " +
+            "WHERE m.connection.chat.id = :chatId " +
+            "ORDER BY m.createdDate DESC " +
+            "LIMIT 1")
+    Optional<Message> findLastByChatId(@Param("chatId") UUID chatId);
+
+    @Query("SELECT count(m) FROM Message m WHERE m.connection.chat.id = :chatId AND m.isRead = false AND m.isSupport = false")
+    long countUnreadByChatId(@Param("chatId") UUID chatId);
+
+    @Modifying
+    @Query("UPDATE Message m SET m.isRead = true WHERE m.connection.chat.id = :chatId AND m.isRead = false AND m.isSupport = false")
+    void markAllAsReadByChatId(@Param("chatId") UUID chatId);
 }

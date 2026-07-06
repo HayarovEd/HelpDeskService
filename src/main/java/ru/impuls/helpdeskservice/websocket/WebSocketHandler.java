@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.impuls.helpdeskservice.constant.WebsocketEventType;
 import ru.impuls.helpdeskservice.websocket.event.LogItemEvent;
 
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CONNECTED;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 @Slf4j
@@ -174,7 +175,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     public <T> void notifyChatConnections(UUID chatId, T data) {
         Set<WebSocketSession> subscribers = chatConnectionsSubscribers.getOrDefault(chatId, Collections.emptySet());
-        String message = createMessage("/chats/" + chatId + "/connections", data, UPDATED);
+        String message = createMessage("/chats/" + chatId + "/connections", data, CONNECTED);
         sendToSessions(subscribers, message);
     }
 

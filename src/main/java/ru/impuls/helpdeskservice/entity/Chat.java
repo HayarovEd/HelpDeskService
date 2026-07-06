@@ -24,6 +24,7 @@ import java.util.List;
 public class Chat extends BaseEntity {
 
     String name;
+    String login;
     String email;
     String phone;
 
@@ -33,9 +34,12 @@ public class Chat extends BaseEntity {
     @Column(name = "is_work")
     boolean work;
 
+    @Column(name = "is_active")
+    boolean active;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subgroup_id")
-    Subgroup subgroup;
+    @JoinColumn(name = "group_id")
+    Group group;
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     @OnDelete(action = OnDeleteAction.CASCADE)

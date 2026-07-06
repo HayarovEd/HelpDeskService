@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.dto.request.GroupCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.GroupEditRequest;
@@ -37,20 +38,29 @@ public class GroupController {
         return groupService.getByName(name);
     }
 
+    @GetMapping("/oper")
+    @ResponseStatus(HttpStatus.OK)
+    public GroupResponse getByOperId(@RequestParam(name = "oper_id") Long operId) {
+        return groupService.getByOperId(operId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public GroupResponse create(@RequestBody @Valid GroupCreateRequest groupRequest) {
         return groupService.create(groupRequest);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public GroupResponse update(@PathVariable UUID id, @RequestBody @Valid GroupEditRequest groupRequest) {
         return groupService.update(id, groupRequest);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public GroupResponse delete(@PathVariable UUID id) {
         return groupService.delete(id);
     }

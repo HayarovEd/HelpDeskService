@@ -4,11 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
@@ -20,8 +15,10 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Group extends BaseEntity {
     String name;
+    @Column(name = "oper_id")
+    Long operId;
 
-    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+   /* @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    List<Subgroup> subgroups = new ArrayList<>();
+    List<Subgroup> subgroups = new ArrayList<>();*/
 }

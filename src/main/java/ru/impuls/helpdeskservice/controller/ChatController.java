@@ -24,7 +24,6 @@ public class ChatController {
     @ResponseStatus(HttpStatus.OK)
     public List<ChatDto> getAll(
             @RequestParam(required = false) UUID groupId,
-            @RequestParam(required = false) UUID subgroupId,
             @RequestParam(required = false) Instant to,
             @RequestParam(defaultValue = "100") int count,
             @RequestParam(required = false) String search,
@@ -32,15 +31,15 @@ public class ChatController {
             @RequestParam(required = false) Boolean isWork,
             @RequestParam(required = false) Boolean isMy) {
 
-        return chatService.getAll(groupId, subgroupId, to, search, isOpen, isWork, isMy, count);
+        return chatService.getAll(groupId, to, search, isOpen, isWork, isMy, count);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ChatDto create(
-            @RequestParam UUID subgroupId,
+            @RequestParam UUID groupId,
             @RequestBody @Valid ChatCreateRequest chatRequest) {
-        return chatService.create(subgroupId, chatRequest);
+        return chatService.create(groupId, chatRequest);
     }
 
     @GetMapping("/{id}")
@@ -51,6 +50,13 @@ public class ChatController {
             @RequestParam(defaultValue = "100") int count) {
 
         return chatService.getById(id, to, count);
+    }
+
+    @GetMapping("/user_chats")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ChatDto> getByUserLogin(
+            @RequestParam(name = "login") String login) {
+        return chatService.getByUserLogin(login);
     }
 
     @DeleteMapping("/{id}")

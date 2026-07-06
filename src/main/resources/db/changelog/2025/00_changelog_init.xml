@@ -5,20 +5,51 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet author="Abdulloev Bakhtovar" id="100720251218-fix-tokens">
-        <!-- Preconditions removed to ensure this runs on a clean DB after clearing old logs -->
+    <!--
+      ChangeSet 1: Create all tables.
+      Logic: If the 'roles' table does NOT exist, it means the database is new, so run the script.
+             If it DOES exist, the precondition fails, and onFail="MARK_RAN" marks this changeset as already executed.
+    -->
+    <changeSet author="Abdulloev Bakhtovar" id="100720251218-initial-schema">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="roles"/>
+            </not>
+        </preConditions>
         <sqlFile path="01_init_tables.sql"
                  relativeToChangelogFile="true"
                  splitStatements="false"/>
     </changeSet>
 
-    <changeSet author="Abdulloev Bakhtovar" id="100720251220">
+    <!--
+      ChangeSet 2: Insert initial roles.
+      Logic: If the 'roles' table exists but does NOT contain an 'ADMIN' role, run the script.
+             If the 'ADMIN' role already exists, the precondition fails, and onFail="MARK_RAN" marks this changeset as already executed.
+    -->
+    <changeSet author="Abdulloev Bakhtovar" id="100720251220-initial-roles">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="0">
-                SELECT COUNT(*) FROM roles WHERE name = 'ADMIN'
-            </sqlCheck>
+            <and>
+                <tableExists tableName="roles"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM roles WHERE name = 'ADMIN'
+                </sqlCheck>
+            </and>
         </preConditions>
         <sqlFile path="02_add_roles.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
+    <changeSet author="Khayarov Edward" id="030720261552-initial-groups-v2">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="groups"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM groups
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <sqlFile path="03_add_groups.sql"
                  relativeToChangelogFile="true"
                  splitStatements="false"/>
     </changeSet>

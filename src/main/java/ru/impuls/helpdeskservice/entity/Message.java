@@ -4,12 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -28,6 +25,9 @@ public class Message extends BaseEntity {
 
     @Column(name = "created_date")
     Instant createdDate;
+
+    @Column(name = "is_read")
+    Boolean isRead;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "connection_id")

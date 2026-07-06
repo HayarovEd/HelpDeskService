@@ -1,9 +1,8 @@
 package ru.impuls.helpdeskservice.websocket.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.With;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
-import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
+import ru.impuls.helpdeskservice.dto.internal.GroupForSubDto;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,9 +13,18 @@ public record ChatEvent (
         String name,
         String email,
         String phone,
-        @JsonProperty("isOpen") boolean open,
-        @JsonProperty("isWork") boolean work,
+        String login,
+        @JsonProperty("is_open")
+        boolean open,
+        @JsonProperty("is_work")
+        boolean work,
+        @JsonProperty("is_active")
+        boolean active,
+        @JsonProperty("unread_messages_count")
+        long unreadMessagesCount,
+        @JsonProperty("created_date")
         Instant createdDate,
-        SubgroupDto subgroup,
+        @JsonProperty("group")
+        GroupForSubDto group,
         List<ConnectionDto> connections
 ) {}

@@ -18,16 +18,24 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ChatDto extends BaseDto {
     String name;
+    String login;
     String email;
     String phone;
 
-    @JsonProperty("isOpen")
+    @JsonProperty("is_open")
     boolean open;
 
-    @JsonProperty("isWork")
+    @JsonProperty("is_work")
     boolean work;
 
+    @JsonProperty("is_active")
+    boolean active;
+
+    @JsonProperty("unread_messages_count")
+    long unreadMessagesCount;
+
+    @JsonProperty("created_date")
     Instant createdDate;
-    SubgroupResponse subgroup;
+    GroupResponse group;
     List<ConnectionDto> connections;
 }

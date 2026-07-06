@@ -1,12 +1,13 @@
 package ru.impuls.helpdeskservice.dto.response;
 
-import ru.impuls.helpdeskservice.dto.internal.SubgroupDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
 import java.util.UUID;
 
 public record GroupResponse (
         UUID id,
-        String name, 
-        List<SubgroupDto> subgroups
+        String name,
+        @JsonProperty("oper_id")
+        Long operId
+       // List<SubgroupDto> subgroups
 ) {}

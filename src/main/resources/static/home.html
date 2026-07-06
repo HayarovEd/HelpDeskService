@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         #header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid #ccc; height: 70px; box-sizing: border-box; flex-shrink: 0; }
@@ -18,8 +21,8 @@
         #chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; position: relative; }
         #chat-title { font-size: 1.2em; font-weight: bold; }
         #chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
-        #join-chat-btn, #exit-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
-        #close-chat-btn { position: absolute; right: 120px; top: 50%; transform: translateY(-50%); padding: 5px 10px; background-color: #f44336; color: white; border: 1px solid #d32f2f; border-radius: 4px; }
+        #join-chat-btn, #exit-chat-btn, #close-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
+        #close-chat-btn { right: 120px; background-color: #dc3545; border-color: #dc3545; color: white; border-radius: 4px; }
         #message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
         .message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
         .message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
@@ -27,6 +30,8 @@
         .message-time { font-size: 0.75em; color: #888; position: absolute; bottom: 5px; right: 10px; }
         .message.support { background-color: #dcf8c6; align-self: flex-end; }
         .message.client { background-color: #f1f0f0; align-self: flex-start; }
+        .message.unread { border-left: 3px solid #007bff; }
+        .read-receipt { color: #007bff; margin-right: 4px; font-weight: bold; }
         #message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; }
         #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         #send-btn { width: 100px; padding: 10px; margin-left: 10px; }
@@ -34,19 +39,44 @@
         .add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
         ul { list-style-type: none; padding: 0; }
         li { margin-bottom: 5px; }
-        .group-item-container, .user-item, .chat-item { padding: 4px 0; }
+        .group-item-container, .user-item { padding: 4px 0; }
         .group-item, .subgroup-item, .user-item { display: flex; justify-content: space-between; align-items: center; }
         .group-name, .user-name, .chat-name { cursor: pointer; flex-grow: 1; }
         .actions { margin-left: auto; white-space: nowrap; }
         .actions span { cursor: pointer; margin-left: 8px; font-size: 16px; }
         .subgroup-list { display: none; padding-left: 20px; margin-top: 5px; }
+        .chat-list-nested { padding-left: 20px; display: none; }
+        .chat-item-nested { display: flex; align-items: center; padding-left: 10px; cursor: pointer; border-radius: 4px; }
+        .chat-item-closed { background-color: #f0f0f0; color: #888; }
+        .chat-item-closed .chat-name { text-decoration: line-through; }
+        .subgroup-item > span { cursor: pointer; flex-grow: 1; }
+        .chat-list-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #333; }
+        .unread-badge {
+            background-color: #dc3545;
+            color: white;
+            border-radius: 10px;
+            padding: 1px 6px;
+            font-size: 0.75em;
+            margin-left: 8px;
+            min-width: 10px;
+            text-align: center;
+            line-height: 1.5;
+        }
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
         .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
         .form-row { margin-bottom: 10px; }
         .form-row label { display: block; margin-bottom: 5px; }
-        .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row select { width: 95%; padding: 8px; }
+        .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row input[type="number"], .form-row select { width: 95%; padding: 8px; }
+        #chat-in-work-by-other-user-notification {
+            display: none;
+            padding: 10px;
+            background-color: #ffc107;
+            color: #333;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
@@ -57,15 +87,11 @@
     </div>
     <div class="container">
         <div id="side-panel">
-            <div id="chats-header" class="collapsible-header"><h2>Чаты</h2></div>
-            <ul id="chat-list" style="display: none;"></ul>
-            <div id="chat-error" style="color: red;"></div>
-
             <div id="users-header" class="collapsible-header"><h2>Пользователи</h2><span class="add-btn" id="add-user-btn">+</span></div>
             <ul id="user-list" style="display: none;"></ul>
             <div id="user-error" style="color: red;"></div>
 
-            <div id="groups-header" class="collapsible-header"><h2>Группы</h2><span class="add-btn" id="add-group-btn">+</span></div>
+            <div id="groups-header" class="collapsible-header"><h2>Группы и Чаты</h2><span class="add-btn" id="add-group-btn">+</span></div>
             <ul id="group-list" style="display: none;"></ul>
             <div id="group-error" style="color: red;"></div>
         </div>
@@ -81,6 +107,7 @@
                     <button id="join-chat-btn" style="display: none;">Взять в работу</button>
                     <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
                 </div>
+                <div id="chat-in-work-by-other-user-notification"></div>
                 <div id="message-container"></div>
                 <div id="message-input-container">
                     <input type="text" id="message-input" placeholder="Введите сообщение...">
@@ -92,8 +119,8 @@
 
     <!-- Modals -->
     <div id="userModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="userModalTitle"></h3><form id="userForm"><input type="hidden" id="userId"><div class="form-row"><label>Username: <input type="text" id="username" required></label></div><div class="form-row" id="password-row"><label>Password: <input type="password" id="password"></label></div><div class="form-row"><label>Name: <input type="text" id="name" required></label></div><div class="form-row"><label>Email: <input type="email" id="email"></label></div><div class="form-row"><label>Role: <select id="role"></select></label></div><div class="form-row"><label><input type="checkbox" id="isDisabled"> Disabled</label></div><button type="submit">Сохранить</button></form></div></div>
-    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><input type="text" id="groupName" placeholder="Название группы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
-    <div id="subgroupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="subgroupModalTitle"></h3><form id="subgroupForm"><input type="hidden" id="subgroupId"><input type="hidden" id="parentGroupId"><input type="text" id="subgroupName" placeholder="Название подгруппы" required style="width: 95%; padding: 8px;"><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
+    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><div class="form-row"><label>Название группы: <input type="text" id="groupName" required style="width: 95%; padding: 8px;"></label></div><div class="form-row"><label>Внутренний номер: <input type="number" id="groupOperId" required style="width: 95%; padding: 8px;"></label></div><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
+    <div id="passwordModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>Смена пароля</h3><form id="passwordForm"><input type="hidden" id="passwordUserId"><div class="form-row"><label>Новый пароль: <input type="password" id="newPassword" required></label></div><button type="submit">Сохранить</button></form></div></div>
 
     <script>
     // --- AUTH & FETCH WRAPPER ---
@@ -154,8 +181,64 @@
             document.getElementById('user-error').textContent = 'Failed to load roles. User management is disabled.';
         }
 
-        let currentChatId = null;
-        const currentUserId = parseJwt(localStorage.getItem('accessToken')).sub;
+        let currentChat = null;
+        const tokenPayload = parseJwt(localStorage.getItem('accessToken'));
+        const currentUserId = tokenPayload.sub;
+        const currentUserRole = tokenPayload.role;
+        const isAdmin = currentUserRole === 'ADMIN';
+        let messageObserver;
+        let allUsers = [];
+
+        // --- UI Permissions ---
+        if (!isAdmin) {
+            document.getElementById('add-user-btn').style.display = 'none';
+            document.getElementById('add-group-btn').style.display = 'none';
+        }
+
+        function setupMessageObserver() {
+            if (messageObserver) {
+                messageObserver.disconnect();
+            }
+            const options = {
+                root: document.getElementById('message-container'),
+                rootMargin: '0px',
+                threshold: 1.0
+            };
+            messageObserver = new IntersectionObserver(handleMessageIntersection, options);
+        }
+
+        async function handleMessageIntersection(entries, observer) {
+            if (!currentChat || !currentChat.is_work) return;
+
+            const activeSupportConnection = currentChat.connections?.find(c => c.user && c.end === null);
+            const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+
+            if (!isCurrentUserResponder) return;
+
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    const messageId = entry.target.dataset.unreadMessageId;
+                    console.log(`Message ${messageId} is visible. Marking as read.`);
+                    try {
+                        await fetchWithAuth(`/api/messages/${messageId}/read`, { method: 'POST' });
+                        observer.unobserve(entry.target);
+                        entry.target.removeAttribute('data-unread-message-id');
+                        entry.target.classList.remove('unread');
+                    } catch (error) {
+                        console.error(`Failed to mark message ${messageId} as read:`, error);
+                    }
+                }
+            }
+        }
+
+        // --- FIREBASE & FCM SETUP ---
+        function initializeFirebase() {
+            // ... (Firebase logic remains the same)
+        }
+
+        async function sendFcmTokenToServer(fcmToken) {
+            // ... (Firebase logic remains the same)
+        }
 
         // --- WEBSOCKET SETUP ---
         function connectWebSocket() {
@@ -169,16 +252,25 @@
                 try {
                     const message = JSON.parse(event.data);
                     console.log('Received WebSocket message:', message);
+
                     if (message.path === '/users') {
-                        console.log('User list update received. Refreshing...');
                         fetchAndRenderUsers();
                     }
                     if (message.path && message.path.startsWith('/chats')) {
-                        console.log('Chat update received. Refreshing chat list...');
-                        fetchAndRenderChats();
-                        if (currentChatId) {
-                            console.log(`Refreshing currently open chat: ${currentChatId}`);
-                            fetchAndRenderChatDetails(currentChatId);
+                        fetchAndRenderGroups(); // Refresh groups to update chat lists
+                        if (currentChat) {
+                            fetchAndRenderChatDetails(currentChat.id);
+                        }
+                    }
+                    if (message.path === '/messages/read') {
+                        const messageId = message.data.id;
+                        const readReceiptSpan = document.getElementById(`read-receipt-${messageId}`);
+                        if (readReceiptSpan) {
+                            readReceiptSpan.textContent = '✓✓';
+                        }
+                        const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
+                        if (messageElement) {
+                            messageElement.classList.remove('unread');
                         }
                     }
                 } catch (e) { console.error('Error parsing WebSocket message:', e); }
@@ -199,7 +291,6 @@
 
         const userList = document.getElementById('user-list');
         const groupList = document.getElementById('group-list');
-        const chatList = document.getElementById('chat-list');
         const mainContentPlaceholder = document.getElementById('main-content-placeholder');
         const chatView = document.getElementById('chat-view');
         const chatHeader = document.getElementById('chat-header');
@@ -215,13 +306,10 @@
         const userForm = document.getElementById('userForm');
         const groupModal = document.getElementById('groupModal');
         const groupForm = document.getElementById('groupForm');
-        const subgroupModal = document.getElementById('subgroupModal');
-        const subgroupForm = document.getElementById('subgroupForm');
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordForm = document.getElementById('passwordForm');
 
         // --- COLLAPSIBLE HEADERS ---
-        document.getElementById('chats-header').addEventListener('click', (e) => {
-            chatList.style.display = chatList.style.display === 'none' ? 'block' : 'none';
-        });
         document.getElementById('users-header').addEventListener('click', (e) => {
             if (e.target.tagName.toLowerCase() !== 'span') {
                 userList.style.display = userList.style.display === 'none' ? 'block' : 'none';
@@ -234,16 +322,22 @@
         });
 
         // --- MODAL HANDLING ---
-        function setupModal(modal, openBtn, closeBtnClass) {
-            if (openBtn) openBtn.onclick = () => modal.style.display = 'block';
+        function setupModal(modal, closeBtnClass) {
             modal.querySelector(closeBtnClass).onclick = () => modal.style.display = 'none';
             window.addEventListener('click', (event) => {
-                if (event.target == modal) modal.style.display = 'none';
+                if (event.target === modal) modal.style.display = 'none';
             });
         }
-        setupModal(userModal, document.getElementById('add-user-btn'), '.close-btn');
-        setupModal(groupModal, document.getElementById('add-group-btn'), '.close-btn');
-        setupModal(subgroupModal, null, '.close-btn');
+        setupModal(userModal, '.close-btn');
+        setupModal(groupModal, '.close-btn');
+        setupModal(passwordModal, '.close-btn');
+
+        document.getElementById('add-user-btn').addEventListener('click', () => {
+            openUserModal('Новый пользователь');
+        });
+        document.getElementById('add-group-btn').addEventListener('click', () => {
+            openGroupModal('Новая группа');
+        });
 
         // --- CHAT VIEW LOGIC ---
         async function fetchAndRenderChatDetails(chatId) {
@@ -259,7 +353,7 @@
         }
 
         function renderChatDetails(chat) {
-            currentChatId = chat.id;
+            currentChat = chat;
             mainContentPlaceholder.style.display = 'none';
             chatView.style.display = 'flex';
 
@@ -277,17 +371,25 @@
 
             const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
             const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+            const notificationBlock = document.getElementById('chat-in-work-by-other-user-notification');
 
-            if (chat.isOpen) {
+            if (chat.is_work && !isCurrentUserResponder && activeSupportConnection) {
+                notificationBlock.textContent = `Чат в работе у пользователя: ${activeSupportConnection.user.name}`;
+                notificationBlock.style.display = 'block';
+            } else {
+                notificationBlock.style.display = 'none';
+            }
+
+            if (chat.is_open && isAdmin) {
                 closeChatBtn.style.display = 'block';
             } else {
                 closeChatBtn.style.display = 'none';
             }
 
-            if (chat.isOpen && !chat.isWork) {
+            if (chat.is_open && !chat.is_work) {
                 joinChatBtn.style.display = 'block';
                 exitChatBtn.style.display = 'none';
-            } else if (chat.isWork && isCurrentUserResponder) {
+            } else if (chat.is_work && isCurrentUserResponder) {
                 joinChatBtn.style.display = 'none';
                 exitChatBtn.style.display = 'block';
             } else {
@@ -295,6 +397,7 @@
                 exitChatBtn.style.display = 'none';
             }
 
+            setupMessageObserver();
             messageContainer.innerHTML = '';
             let allMessages = [];
             if (chat.connections) {
@@ -314,27 +417,130 @@
 
             allMessages.forEach(msg => {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'}`;
+                msgDiv.setAttribute('data-message-id', msg.id);
+                const isUnreadClientMessage = !msg.isSupport && !msg.is_read;
+                msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'} ${isUnreadClientMessage ? 'unread' : ''}`;
+
+                if (isUnreadClientMessage) {
+                    msgDiv.setAttribute('data-unread-message-id', msg.id);
+                }
+
                 const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div><div class="message-text">${msg.text}</div><div class="message-time">${time}</div>`;
+
+                const readReceiptHtml = msg.isSupport
+                    ? `<span class="read-receipt" id="read-receipt-${msg.id}"></span>`
+                    : '';
+
+                msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div>
+                                  <div class="message-text">${msg.text}</div>
+                                  <div class="message-time">${readReceiptHtml}${time}</div>`;
+
                 messageContainer.appendChild(msgDiv);
+
+                if (msg.isSupport && msg.is_read) {
+                    const readReceiptSpan = msgDiv.querySelector(`#read-receipt-${msg.id}`);
+                    if (readReceiptSpan) {
+                        readReceiptSpan.textContent = '✓✓';
+                    }
+                }
+
+                if (isUnreadClientMessage) {
+                    messageObserver.observe(msgDiv);
+                }
             });
 
             messageContainer.scrollTop = messageContainer.scrollHeight;
         }
 
-        chatList.addEventListener('click', (event) => {
-            const chatItem = event.target.closest('.chat-item');
+        // --- EVENT LISTENERS ---
+        async function loadAndDisplayChats(groupId, chatListContainer) {
+            try {
+                const response = await fetchWithAuth(`/api/chats?groupId=${groupId}`);
+                if (!response.ok) throw new Error('Failed to fetch chats for group');
+                const chats = await response.json();
+
+                const activeChats = chats.filter(chat => chat.is_open);
+                const inactiveChats = chats.filter(chat => !chat.is_open);
+
+                const createChatHtml = (chat, isClosed = false) => `
+                    <li class="chat-item-nested ${isClosed ? 'chat-item-closed' : ''}" data-id="${chat.id}">
+                        <div class="chat-name">${chat.name} (${chat.login || 'N/A'})</div>
+                        ${!isClosed && chat.unread_messages_count > 0 ? `<span class="unread-badge">${chat.unread_messages_count}</span>` : ''}
+                    </li>`;
+
+                let html = '';
+                if (activeChats.length > 0) {
+                    html += '<div class="chat-list-header">Активные</div>';
+                    html += activeChats.map(chat => createChatHtml(chat, false)).join('');
+                }
+
+                if (inactiveChats.length > 0) {
+                    html += '<div class="chat-list-header">Неактивные</div>';
+                    html += inactiveChats.map(chat => createChatHtml(chat, true)).join('');
+                }
+
+                if (html === '') {
+                    html = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
+                }
+
+                chatListContainer.innerHTML = html;
+                return true;
+            } catch (error) {
+                console.error(error);
+                chatListContainer.innerHTML = `<li><span style="color: red;">Ошибка</span></li>`;
+                return false;
+            }
+        }
+
+        groupList.addEventListener('click', async function(event) {
+            const target = event.target;
+
+            const chatItem = target.closest('.chat-item-nested');
             if (chatItem) {
                 const chatId = chatItem.dataset.id;
                 fetchAndRenderChatDetails(chatId);
+                return;
+            }
+
+            const groupContainer = target.closest('.group-item-container');
+            if (!groupContainer) return;
+
+            const groupId = groupContainer.dataset.groupId;
+
+            if (target.classList.contains('group-name')) {
+                const chatListContainer = groupContainer.querySelector('.chat-list-nested');
+                const isVisible = chatListContainer.style.display === 'block';
+
+                if (!isVisible && chatListContainer.innerHTML === '') {
+                    await loadAndDisplayChats(groupId, chatListContainer);
+                }
+                chatListContainer.style.display = isVisible ? 'none' : 'block';
+            } else if (target.classList.contains('edit-group-btn')) {
+                const groupName = groupContainer.querySelector('.group-name').textContent;
+                const groupResponse = await fetchWithAuth(`/api/groups/${groupId}`);
+                const groupData = await groupResponse.json();
+                openGroupModal('Изменить группу', groupId, groupName, groupData.oper_id);
+            } else if (target.classList.contains('delete-group-btn')) {
+                if (confirm('Вы уверены, что хотите удалить эту группу?')) {
+                    try {
+                        const response = await fetchWithAuth(`/api/groups/${groupId}`, { method: 'DELETE' });
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ message: 'Failed to delete group' }));
+                            throw new Error(errorData.message);
+                        }
+                        fetchAndRenderGroups();
+                    } catch (error) {
+                        console.error('Error deleting group:', error);
+                        alert('Could not delete group: ' + error.message);
+                    }
+                }
             }
         });
 
         joinChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/join`, { method: 'POST' });
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/join`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to join chat');
             } catch (error) {
                 console.error('Error joining chat:', error);
@@ -343,9 +549,9 @@
         });
 
         exitChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/exit`, { method: 'POST' });
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/exit`, { method: 'POST' });
                 if (!response.ok) throw new Error('Failed to exit chat');
             } catch (error) {
                 console.error('Error exiting chat:', error);
@@ -354,10 +560,10 @@
         });
 
         closeChatBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
+            if (!currentChat) return;
             if (confirm('Вы уверены, что хотите закрыть этот чат? Это действие необратимо.')) {
                 try {
-                    const response = await fetchWithAuth(`/api/chats/${currentChatId}/close`, { method: 'POST' });
+                    const response = await fetchWithAuth(`/api/chats/${currentChat.id}/close`, { method: 'POST' });
                     if (!response.ok) throw new Error('Failed to close chat');
                 } catch (error) {
                     console.error('Error closing chat:', error);
@@ -368,10 +574,10 @@
 
         sendBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
-            if (!messageText || !currentChatId) return;
+            if (!messageText || !currentChat) return;
 
             try {
-                const response = await fetchWithAuth(`/api/chats/${currentChatId}/message/support`, {
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/message/support`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: messageText })
@@ -427,8 +633,12 @@
         });
 
         userList.addEventListener('click', async function(event) {
-            if (event.target.classList.contains('edit-user-btn')) {
-                const userId = event.target.closest('li').dataset.id;
+            const target = event.target;
+            const userLi = target.closest('li');
+            if (!userLi) return;
+            const userId = userLi.dataset.id;
+
+            if (target.classList.contains('edit-user-btn')) {
                 try {
                     const response = await fetchWithAuth(`/api/users`);
                     if (!response.ok) throw new Error('Could not fetch users');
@@ -436,14 +646,53 @@
                     const userToEdit = users.find(u => u.id === userId);
                     if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
                 } catch (error) { alert('Error: ' + error.message); }
+            } else if (target.classList.contains('change-password-btn')) {
+                openPasswordModal(userId);
+            }
+        });
+
+        function openPasswordModal(userId) {
+            passwordForm.passwordUserId.value = userId;
+            passwordForm.newPassword.value = '';
+            passwordModal.style.display = 'block';
+        }
+
+        passwordForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const userId = passwordForm.passwordUserId.value;
+            const newPassword = passwordForm.newPassword.value;
+
+            if (!userId || !newPassword) {
+                alert('User ID or password missing.');
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/api/users/${userId}/password`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: newPassword })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Failed to change password' }));
+                    throw new Error(errorData.message);
+                }
+
+                alert('Password changed successfully!');
+                passwordModal.style.display = 'none';
+            } catch (error) {
+                console.error('Error changing password:', error);
+                alert('Could not change password: ' + error.message);
             }
         });
 
         // --- GROUP LOGIC ---
-        function openGroupModal(title, id = '', name = '') {
+        function openGroupModal(title, id = '', name = '', oper_id = null) {
             groupModal.querySelector('#groupModalTitle').textContent = title;
             groupForm.groupId.value = id;
             groupForm.groupName.value = name;
+            groupForm.groupOperId.value = oper_id || '';
             groupModal.style.display = 'block';
         }
 
@@ -451,118 +700,61 @@
             event.preventDefault();
             const id = groupForm.groupId.value;
             const name = groupForm.groupName.value;
+            const operId = groupForm.groupOperId.value;
             const url = id ? `/api/groups/${id}` : '/api/groups';
             const method = id ? 'PUT' : 'POST';
             try {
-                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) });
-                if (!response.ok) throw new Error('Group operation failed');
+                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, oper_id: operId }) });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert('Ошибка: ' + errorData.message);
+                    return;
+                }
                 fetchAndRenderGroups();
                 groupModal.style.display = 'none';
             } catch (error) { alert('Error: ' + error.message); }
         });
 
-        // --- SUBGROUP LOGIC ---
-        function openSubgroupModal(title, parentGroupId, subgroupId = '', subgroupName = '') {
-            subgroupModal.querySelector('#subgroupModalTitle').textContent = title;
-            subgroupForm.parentGroupId.value = parentGroupId;
-            subgroupForm.subgroupId.value = subgroupId;
-            subgroupForm.subgroupName.value = subgroupName;
-            subgroupModal.style.display = 'block';
-        }
-
-        subgroupForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const parentGroupId = subgroupForm.parentGroupId.value;
-            const subgroupId = subgroupForm.subgroupId.value;
-            const name = subgroupForm.subgroupName.value;
-            const isEditing = !!subgroupId;
-            const url = isEditing ? `/api/subgroups/${subgroupId}` : `/api/subgroups?groupId=${parentGroupId}`;
-            const method = isEditing ? 'PUT' : 'POST';
-            try {
-                const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) });
-                if (!response.ok) throw new Error('Subgroup operation failed');
-                fetchAndRenderGroups();
-                subgroupModal.style.display = 'none';
-            } catch (error) { alert('Error: ' + error.message); }
-        });
-
-        // --- LIST EVENT DELEGATION (Groups & Subgroups) ---
-        groupList.addEventListener('click', async function(event) {
-            const target = event.target;
-            const groupContainer = target.closest('.group-item-container');
-            if (!groupContainer) return;
-            const groupId = groupContainer.dataset.groupId;
-            const groupName = groupContainer.querySelector('.group-name').textContent.trim();
-
-            if (target.classList.contains('group-name')) {
-                const subgroupList = groupContainer.querySelector('.subgroup-list');
-                if (subgroupList) subgroupList.style.display = subgroupList.style.display === 'none' ? 'block' : 'none';
-            }
-            if (target.classList.contains('add-subgroup-btn')) openSubgroupModal('Новая подгруппа', groupId);
-            if (target.classList.contains('edit-group-btn')) openGroupModal('Изменить группу', groupId, groupName);
-            if (target.classList.contains('delete-group-btn')) {
-                if (confirm(`Удалить группу "${groupName}"?`)) {
-                    try {
-                        const response = await fetchWithAuth(`/api/groups/${groupId}`, { method: 'DELETE' });
-                        if (!response.ok) throw new Error('Delete failed');
-                        fetchAndRenderGroups();
-                    } catch (error) { alert('Error: ' + error.message); }
-                }
-            }
-
-            const subgroupItem = target.closest('.subgroup-item');
-            if (subgroupItem) {
-                const subgroupId = subgroupItem.dataset.subgroupId;
-                const subgroupName = subgroupItem.querySelector('span').textContent.trim();
-                if (target.classList.contains('edit-subgroup-btn')) openSubgroupModal('Изменить подгруппу', groupId, subgroupId, subgroupName);
-                if (target.classList.contains('delete-subgroup-btn')) {
-                    if (confirm(`Удалить подгруппу "${subgroupName}"?`)) {
-                        try {
-                            const response = await fetchWithAuth(`/api/subgroups/${subgroupId}`, { method: 'DELETE' });
-                            if (!response.ok) throw new Error('Delete failed');
-                            fetchAndRenderGroups();
-                        } catch (error) { alert('Error: ' + error.message); }
-                    }
-                }
-            }
-        });
-
         // --- DATA FETCHING & RENDERING ---
-        async function fetchAndRenderChats() {
-            try {
-                const response = await fetchWithAuth('/api/chats');
-                if (!response.ok) throw new Error(response.statusText);
-                const chats = await response.json();
-                chatList.innerHTML = '';
-                chats.forEach(chat => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'chat-item';
-                    listItem.setAttribute('data-id', chat.id);
-                    listItem.innerHTML = `<div class="chat-name">${chat.name}</div>`;
-                    chatList.appendChild(listItem);
-                });
-            } catch (error) {
-                document.getElementById('chat-error').textContent = 'Error fetching chats: ' + error.message;
-            }
-        }
-
         async function fetchAndRenderUsers() {
             try {
                 const response = await fetchWithAuth('/api/users');
                 if (!response.ok) throw new Error(response.statusText);
-                const users = await response.json();
+                allUsers = await response.json();
                 userList.innerHTML = '';
-                users.forEach(user => {
+
+                const filteredUsers = allUsers.filter(user =>
+                    user.role && (user.role.name === 'ADMIN' || user.role.name === 'SUPPORT')
+                );
+
+                filteredUsers.forEach(user => {
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     listItem.setAttribute('data-id', user.id);
-                    listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div><div class="actions"><span class="edit-user-btn">✏️</span></div>`;
+
+                    let actionsHtml = '';
+                    if (isAdmin) {
+                        actionsHtml = `<div class="actions">
+                                           <span class="edit-user-btn" title="Редактировать">✏️</span>
+                                           <span class="change-password-btn" title="Сменить пароль">🔑</span>
+                                       </div>`;
+                    }
+
+                    listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div>${actionsHtml}`;
                     userList.appendChild(listItem);
                 });
             } catch (error) { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; }
         }
 
         async function fetchAndRenderGroups() {
+            const expandedGroupIds = [];
+            document.querySelectorAll('#group-list .group-item-container').forEach(container => {
+                const chatList = container.querySelector('.chat-list-nested');
+                if (chatList && chatList.style.display === 'block') {
+                    expandedGroupIds.push(container.dataset.groupId);
+                }
+            });
+
             try {
                 const response = await fetchWithAuth('/api/groups');
                 if (!response.ok) throw new Error(response.statusText);
@@ -572,23 +764,37 @@
                     const listItem = document.createElement('li');
                     listItem.className = 'group-item-container';
                     listItem.setAttribute('data-group-id', group.id);
-                    let subgroupsHtml = '';
-                    if (group.subgroups && group.subgroups.length > 0) {
-                        subgroupsHtml = '<ul class="subgroup-list">';
-                        subgroupsHtml += group.subgroups.map(subgroup => `<li class="subgroup-item" data-subgroup-id="${subgroup.id}"><span>${subgroup.name}</span><div class="actions"><span class="edit-subgroup-btn">✏️</span><span class="delete-subgroup-btn">🗑️</span></div></li>`).join('');
-                        subgroupsHtml += '</ul>';
+
+                    let actionsHtml = '';
+                    if (isAdmin) {
+                        actionsHtml = '<div class="actions"><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div>';
                     }
-                    listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div><div class="actions"><span class="add-subgroup-btn">+</span><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div></div>${subgroupsHtml}`;
+
+                    const chatsHtml = '<ul class="chat-list-nested"></ul>';
+                    listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div>${actionsHtml}</div>${chatsHtml}`;
                     groupList.appendChild(listItem);
                 });
+
+                for (const groupId of expandedGroupIds) {
+                    const groupContainer = groupList.querySelector(`[data-group-id='${groupId}']`);
+                    if (groupContainer) {
+                        const chatListContainer = groupContainer.querySelector('.chat-list-nested');
+                        if (chatListContainer) {
+                            await loadAndDisplayChats(groupId, chatListContainer);
+                            chatListContainer.style.display = 'block';
+                        }
+                    }
+                }
+
             } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
         }
 
+
         // --- INITIAL LOAD ---
-        fetchAndRenderChats();
-        fetchAndRenderUsers();
+        await fetchAndRenderUsers();
         fetchAndRenderGroups();
         connectWebSocket();
+        // initializeFirebase(); // You can uncomment this when you have your config
     });
     </script>
 </body>

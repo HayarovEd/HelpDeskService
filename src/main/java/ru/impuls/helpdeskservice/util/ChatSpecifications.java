@@ -14,14 +14,9 @@ import java.util.UUID;
 
 public class ChatSpecifications {
 
-    public static Specification<Chat> hasSubgroupId(UUID subgroupId) {
-        return (root, query, cb) ->
-                cb.equal(root.get("subgroup").get("id"), subgroupId);
-    }
-
     public static Specification<Chat> hasGroupId(UUID groupId) {
         return (root, query, cb) ->
-                cb.equal(root.get("subgroup").get("group").get("id"), groupId);
+                cb.equal(root.get("group").get("id"), groupId);
     }
 
     public static Specification<Chat> hasLastMessageBefore(Instant to) {
@@ -31,7 +26,7 @@ public class ChatSpecifications {
             Root<Connection> connectionRoot = subquery.from(Connection.class);
             Join<Connection, Message> messageJoin = connectionRoot.join("messages");
 
-            subquery.select(cb.greatest(messageJoin.<Instant>get("createdDate")))
+            subquery.select(cb.greatest(messageJoin.get("createdDate").as(Instant.class)))
                     .where(cb.equal(connectionRoot.get("chat"), root));
 
             return cb.lessThan(subquery, to);
