@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
@@ -33,6 +34,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     private final MessageRepo messageRepository;
     private final ConnectionMapper connectionMapper;
     private final MessageMapper messageMapper;
+    private final FileService fileService;
 
     @Override
     public ConnectionDto createInitialConnection(Chat chat, String messageText, User user) {
@@ -92,7 +94,12 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
     @Override
-    public void addClientMessage(Chat chat, String text, User user) {
+    public void addClientMessage(
+            Chat chat,
+            String text,
+            User user,
+            List<MultipartFile> files
+    ) {
         Connection currentConnection;
 
         if (!chat.isOpen()) {
@@ -109,7 +116,12 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .isRead(false)
                 .createdDate(Instant.now())
                 .build();
-        messageRepository.save(message);
+        var savedMessage = messageRepository.save(message);
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                fileService.storeFile(file, savedMessage);
+            }
+        }
     }
 
     @Override

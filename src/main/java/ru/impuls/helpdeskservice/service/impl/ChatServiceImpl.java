@@ -226,7 +226,7 @@ public class ChatServiceImpl implements ChatService {
 
         var user = AuthUtil.getAuthenticatedUser();
         setActiveChat(chat);
-        connectionService.addClientMessage(chat, messageCreateDto.getText(), user);
+        connectionService.addClientMessage(chat, messageCreateDto.getText(), user, files);
         notifyChatUpdated(chat);
     }
 

@@ -1,7 +1,12 @@
 package ru.impuls.helpdeskservice.file_storage;
 
+import lombok.Getter;
+import org.springframework.stereotype.Component;
+
 import java.util.Set;
 
+@Getter
+@Component
 public class DocumentStorageProperties extends MediaStorageProperties {
     public DocumentStorageProperties() {
         this.basePath = "./documents";
