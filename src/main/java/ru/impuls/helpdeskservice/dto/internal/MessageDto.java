@@ -10,6 +10,9 @@ public record MessageDto (
         String text,
         @JsonProperty("is_read")
         Boolean isRead,
-        @JsonProperty("date") Instant createdDate,
-        @JsonProperty("isSupport")boolean support
-) {}
+        @JsonProperty("date")
+        Instant createdDate,
+        @JsonProperty("isSupport")
+        boolean support
+      //  @JsonProperty("files") List<FileDto> files
+        ) {}

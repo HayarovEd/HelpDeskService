@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.service;
 
+import org.springframework.web.multipart.MultipartFile;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
@@ -33,7 +34,11 @@ public interface ChatService {
 
     void close(UUID chatId);
 
-    void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto);
+    void sendClientMessage(
+            UUID chatId,
+            MessageCreateDto messageCreateDto,
+            List<MultipartFile> files
+    );
 
     void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto);
 

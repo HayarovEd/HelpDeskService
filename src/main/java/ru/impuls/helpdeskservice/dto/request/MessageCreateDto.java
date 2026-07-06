@@ -13,4 +13,7 @@ import lombok.experimental.FieldDefaults;
 public class MessageCreateDto {
     @NotBlank
     String text;
+
+   /* @Builder.Default
+    List<MultipartFile> files = new ArrayList<>();*/
 }

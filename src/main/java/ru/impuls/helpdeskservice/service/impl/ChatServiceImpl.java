@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ru.impuls.helpdeskservice.auth.entity.User;
 import ru.impuls.helpdeskservice.auth.repository.UserRepo;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
@@ -219,7 +220,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto) {
+    public void sendClientMessage(UUID chatId, MessageCreateDto messageCreateDto, List<MultipartFile> files) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 

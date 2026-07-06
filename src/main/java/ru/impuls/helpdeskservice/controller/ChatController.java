@@ -3,8 +3,10 @@ package ru.impuls.helpdeskservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
@@ -86,12 +88,19 @@ public class ChatController {
         chatService.close(id);
     }
 
-    @PostMapping("/{id}/message/client")
+    @PostMapping(
+            value = "/{id}/message/client",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @ResponseStatus(HttpStatus.OK)
     public void sendClientMessage(
             @PathVariable UUID id,
-            @RequestBody MessageCreateDto messageCreateDto) {
-        chatService.sendClientMessage(id, messageCreateDto);
+            @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+//        if (files != null && !files.isEmpty()) {
+//            messageCreateDto.setFiles(files);
+//        }
+        chatService.sendClientMessage(id, messageCreateDto, files);
     }
 
     @PostMapping("/{id}/message/support")
@@ -100,6 +109,6 @@ public class ChatController {
     public void sendSupportMessage(
             @PathVariable UUID id,
             @RequestBody MessageCreateDto messageCreateDto) {
-        chatService.sendSupportMessage(id,messageCreateDto);
+        chatService.sendSupportMessage(id, messageCreateDto);
     }
 }
