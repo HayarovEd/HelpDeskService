@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,7 @@ public class LocalStorageService {
             String newFilename = UUID.randomUUID() + extension;
             OutputStream outputStream = Files.newOutputStream(uploadPath.resolve(newFilename), StandardOpenOption.CREATE_NEW);
             StreamUtils.copy(inputStream, outputStream);
-            return FILES_UPLOAD_DIR + "/" + basePath + "/" + newFilename;
+            return /*FILES_UPLOAD_DIR + "/" + basePath + "/" + */newFilename;
         } catch (
                 IOException e
         ) {
@@ -61,14 +62,13 @@ public class LocalStorageService {
     }
 
     public Resource loadFilePath(
-            String fileName
-    ) throws MalformedURLException {
-        Path filePath = Paths.get(fileName)
-                .resolve(fileName);
+            String path
+    ) {
+        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + path);
 
         if (!Files.exists(filePath)) {
-            throw new AppException("Файл не найден: " + fileName, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new AppException("Файл не найден на диске: " + path, HttpStatus.NOT_FOUND);
         }
-        return new UrlResource(filePath.toUri());
+        return new FileSystemResource(filePath);
     }
 }

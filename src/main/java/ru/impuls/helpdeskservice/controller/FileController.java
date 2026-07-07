@@ -3,6 +3,7 @@ package ru.impuls.helpdeskservice.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,9 @@ public class FileController {
 
     @GetMapping("/{filePath}")
     public ResponseEntity<Resource> viewFile(@PathVariable String filePath) {
+        var fileResource = fileService.getFileResource(filePath);
         return ResponseEntity.ok()
-                .body(fileService.getFileResource(filePath));
+                .contentType(MediaType.parseMediaType(fileResource.contentType()))
+                .body(fileResource.resource());
     }
 }

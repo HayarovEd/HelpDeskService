@@ -1,12 +1,11 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import ru.impuls.helpdeskservice.dto.internal.FileResource;
 import ru.impuls.helpdeskservice.entity.FileMetaData;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
@@ -14,9 +13,6 @@ import ru.impuls.helpdeskservice.file_storage.MediaStorageProperties;
 import ru.impuls.helpdeskservice.repository.FileMetaDataRepo;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -38,7 +34,7 @@ public class FileService {
         if (originalFilename == null) {
             throw new AppException("Некорректный файл", HttpStatus.BAD_REQUEST);
         }
-        if (file.getSize()>properties.getMaxFileSize()) {
+        if (file.getSize() > properties.getMaxFileSize()) {
             throw new AppException("Превышен максимальный размер файла", HttpStatus.PAYLOAD_TOO_LARGE);
         }
         try {
@@ -63,20 +59,29 @@ public class FileService {
         }
     }
 
-    public Resource getFileResource(String path) {
+    public FileResource getFileResource(String filename) {
         try {
-            Path filePath = Paths.get(path);
+            FileMetaData metadata = fileMetaDataRepo.findByStoredFileName(filename)
+                    .orElseThrow(() -> new AppException("Файл не найден: " + filename, HttpStatus.NOT_FOUND));
 
-            if (!Files.exists(filePath)) {
-                throw new AppException("Файл не найден: " + path, HttpStatus.NOT_FOUND);
-            }
-
-            return new FileSystemResource(filePath);
+            MediaStorageProperties properties = validateFileMetaData(metadata);
+            return new FileResource(
+                    localStorageService.loadFilePath(properties.getBasePath() + "/" + metadata.getStoredFileName()),
+                    metadata.getMimeType()
+            );
+          //  return new FileSystemResource();
         } catch (Exception e) {
-            throw new AppException("Ошибка при открытии файла:"+e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new AppException("Ошибка при открытии файла:" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
+    private MediaStorageProperties validateFileMetaData(FileMetaData metadata) {
+        return storagePropertiesList.stream()
+                .filter(properties -> properties.supportsMimeType(metadata.getMimeType()))
+                .findFirst()
+                .orElseThrow(() -> new AppException("Неподдерживаемый MIME-тип", HttpStatus.UNSUPPORTED_MEDIA_TYPE));
+    }
 
 
     private MediaStorageProperties validateFile(MultipartFile file) {
