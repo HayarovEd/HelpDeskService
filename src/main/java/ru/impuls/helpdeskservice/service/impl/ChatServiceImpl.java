@@ -231,13 +231,13 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto) {
+    public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto, List<MultipartFile> files) {
         var userId = AuthUtil.getAuthenticatedUser().getId();
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
         setActiveChat(chat);
-        connectionService.addSupportMessage(chat, userId, messageCreateDto.getText());
+        connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         notifyChatUpdated(chat);
     }
 

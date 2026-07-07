@@ -22,7 +22,7 @@ public interface ConnectionService {
 
     void addClientMessage(Chat chat, String text, User user, List<MultipartFile> files);
 
-    void addSupportMessage(Chat chat, UUID userId, String text);
+    void addSupportMessage(Chat chat, UUID userId, String text, List<MultipartFile> files);
 
     void addSystemMessage(Connection connection, String text);
 }

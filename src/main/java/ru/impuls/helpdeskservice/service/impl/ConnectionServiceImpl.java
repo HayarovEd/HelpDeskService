@@ -117,15 +117,11 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .createdDate(Instant.now())
                 .build();
         var savedMessage = messageRepository.save(message);
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                fileService.storeFile(file, savedMessage);
-            }
-        }
+        storeFile(files, savedMessage);
     }
 
     @Override
-    public void addSupportMessage(Chat chat, UUID userId, String text) {
+    public void addSupportMessage(Chat chat, UUID userId, String text, List<MultipartFile> files) {
         if (!chat.isOpen()) {
             throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
         }
@@ -139,7 +135,8 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .isRead(false)
                 .createdDate(Instant.now())
                 .build();
-        messageRepository.save(message);
+        var savedMessage = messageRepository.save(message);
+        storeFile(files, savedMessage);
     }
 
     @Override
@@ -177,5 +174,13 @@ public class ConnectionServiceImpl implements ConnectionService {
 
         log.info("Close connection, Результат: {}", result != null ? result.getId() : "null");
         return result;
+    }
+
+    private void storeFile(List<MultipartFile> files, Message savedMessage) {
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                fileService.storeFile(file, savedMessage);
+            }
+        }
     }
 }

@@ -40,7 +40,11 @@ public interface ChatService {
             List<MultipartFile> files
     );
 
-    void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto);
+    void sendSupportMessage(
+            UUID chatId,
+            MessageCreateDto messageCreateDto,
+            List<MultipartFile> files
+    );
 
     List<ChatDto> getByUserLogin(String login);
 }

@@ -97,9 +97,6 @@ public class ChatController {
             @PathVariable UUID id,
             @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
-//        if (files != null && !files.isEmpty()) {
-//            messageCreateDto.setFiles(files);
-//        }
         chatService.sendClientMessage(id, messageCreateDto, files);
     }
 
@@ -108,7 +105,8 @@ public class ChatController {
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void sendSupportMessage(
             @PathVariable UUID id,
-            @RequestBody MessageCreateDto messageCreateDto) {
-        chatService.sendSupportMessage(id, messageCreateDto);
+            @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        chatService.sendSupportMessage(id, messageCreateDto, files);
     }
 }
