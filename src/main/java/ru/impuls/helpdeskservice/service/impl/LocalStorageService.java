@@ -50,14 +50,13 @@ public class LocalStorageService {
     }
 
     public void deleteFile(
-            String fileName,
-            String basePath
+            String path
     ) {
-        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + basePath);
+        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + path);
         try {
-            Files.deleteIfExists(filePath.resolve(fileName));
+            Files.deleteIfExists(filePath.resolve(path));
         } catch (IOException e) {
-            throw new AppException("Ошибка уделения файла" + fileName, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new AppException("Ошибка уделения файла" + path, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

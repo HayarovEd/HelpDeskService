@@ -69,9 +69,20 @@ public class FileService {
                     localStorageService.loadFilePath(properties.getBasePath() + "/" + metadata.getStoredFileName()),
                     metadata.getMimeType()
             );
-          //  return new FileSystemResource();
         } catch (Exception e) {
             throw new AppException("Ошибка при открытии файла:" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public void deleteFile(String filename) {
+        try {
+            FileMetaData metadata = fileMetaDataRepo.findByStoredFileName(filename)
+                    .orElseThrow(() -> new AppException("Файл не найден: " + filename, HttpStatus.NOT_FOUND));
+
+            MediaStorageProperties properties = validateFileMetaData(metadata);
+            localStorageService.deleteFile(properties.getBasePath() + "/" + metadata.getStoredFileName());
+        } catch (Exception e) {
+            throw new AppException("Ошибка удаления файла:" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
