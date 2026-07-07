@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import ru.impuls.helpdeskservice.exception.AppException;
-import ru.impuls.helpdeskservice.repository.FileMetaDataRepo;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,10 +61,9 @@ public class LocalStorageService {
     }
 
     public Resource loadFilePath(
-            String fileName,
-            String basePath
+            String fileName
     ) throws MalformedURLException {
-        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + basePath)
+        Path filePath = Paths.get(fileName)
                 .resolve(fileName);
 
         if (!Files.exists(filePath)) {

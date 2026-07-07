@@ -1,6 +1,8 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,9 @@ import ru.impuls.helpdeskservice.file_storage.MediaStorageProperties;
 import ru.impuls.helpdeskservice.repository.FileMetaDataRepo;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -58,9 +63,19 @@ public class FileService {
         }
     }
 
-   /* public void deleteFile(
+    public Resource getFileResource(String path) {
+        try {
+            Path filePath = Paths.get(path);
 
-    )*/
+            if (!Files.exists(filePath)) {
+                throw new AppException("Файл не найден: " + path, HttpStatus.NOT_FOUND);
+            }
+
+            return new FileSystemResource(filePath);
+        } catch (Exception e) {
+            throw new AppException("Ошибка при открытии файла:"+e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
 
