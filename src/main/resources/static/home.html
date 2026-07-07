@@ -32,9 +32,14 @@
         .message.client { background-color: #f1f0f0; align-self: flex-start; }
         .message.unread { border-left: 3px solid #007bff; }
         .read-receipt { color: #007bff; margin-right: 4px; font-weight: bold; }
-        #message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; }
+        #message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; flex-direction: column; }
+        #message-input-row { display: flex; width: 100%; }
         #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         #send-btn { width: 100px; padding: 10px; margin-left: 10px; }
+        #attach-btn { padding: 10px; margin-left: 10px; font-size: 1.2em; line-height: 1; border-radius: 5px; border: 1px solid #ccc; background-color: #f8f8f8; }
+        #attachment-preview-container { display: none; justify-content: space-between; align-items: center; padding: 5px 10px; background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; }
+        #attachment-filename { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
+        #remove-attachment-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
         .collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
         .add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
         ul { list-style-type: none; padding: 0; }
@@ -51,17 +56,7 @@
         .chat-item-closed .chat-name { text-decoration: line-through; }
         .subgroup-item > span { cursor: pointer; flex-grow: 1; }
         .chat-list-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #333; }
-        .unread-badge {
-            background-color: #dc3545;
-            color: white;
-            border-radius: 10px;
-            padding: 1px 6px;
-            font-size: 0.75em;
-            margin-left: 8px;
-            min-width: 10px;
-            text-align: center;
-            line-height: 1.5;
-        }
+        .unread-badge { background-color: #dc3545; color: white; border-radius: 10px; padding: 1px 6px; font-size: 0.75em; margin-left: 8px; min-width: 10px; text-align: center; line-height: 1.5; }
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
@@ -69,14 +64,7 @@
         .form-row { margin-bottom: 10px; }
         .form-row label { display: block; margin-bottom: 5px; }
         .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row input[type="number"], .form-row select { width: 95%; padding: 8px; }
-        #chat-in-work-by-other-user-notification {
-            display: none;
-            padding: 10px;
-            background-color: #ffc107;
-            color: #333;
-            text-align: center;
-            border-bottom: 1px solid #ccc;
-        }
+        #chat-in-work-by-other-user-notification { display: none; padding: 10px; background-color: #ffc107; color: #333; text-align: center; border-bottom: 1px solid #ccc; }
     </style>
 </head>
 <body>
@@ -110,8 +98,16 @@
                 <div id="chat-in-work-by-other-user-notification"></div>
                 <div id="message-container"></div>
                 <div id="message-input-container">
-                    <input type="text" id="message-input" placeholder="Введите сообщение...">
-                    <button id="send-btn">Отправить</button>
+                    <div id="attachment-preview-container">
+                        <span id="attachment-filename"></span>
+                        <button id="remove-attachment-btn">&times;</button>
+                    </div>
+                    <div id="message-input-row">
+                        <input type="text" id="message-input" placeholder="Введите сообщение...">
+                        <input type="file" id="file-input" style="display: none;">
+                        <button id="attach-btn" title="Прикрепить файл">📎</button>
+                        <button id="send-btn">Отправить</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,7 +156,14 @@
         }
 
         const newOptions = { ...options };
+        // When using FormData, don't set Content-Type, let the browser do it.
+        // The original headers might have 'Content-Type': 'application/json', which we need to remove for FormData.
+        if (options.body instanceof FormData) {
+            newOptions.headers = { ...newOptions.headers }; // Clone headers
+            delete newOptions.headers['Content-Type']; // Remove content type
+        }
         newOptions.headers = { ...newOptions.headers, 'Authorization': 'Bearer ' + token };
+
 
         return fetch(url, newOptions);
     }
@@ -309,6 +312,13 @@
         const passwordModal = document.getElementById('passwordModal');
         const passwordForm = document.getElementById('passwordForm');
 
+        // --- ATTACHMENT ELEMENTS ---
+        const attachBtn = document.getElementById('attach-btn');
+        const fileInput = document.getElementById('file-input');
+        const attachmentPreviewContainer = document.getElementById('attachment-preview-container');
+        const attachmentFilename = document.getElementById('attachment-filename');
+        const removeAttachmentBtn = document.getElementById('remove-attachment-btn');
+
         // --- COLLAPSIBLE HEADERS ---
         document.getElementById('users-header').addEventListener('click', (e) => {
             if (e.target.tagName.toLowerCase() !== 'span') {
@@ -431,8 +441,16 @@
                     ? `<span class="read-receipt" id="read-receipt-${msg.id}"></span>`
                     : '';
 
+                let messageContent = `<div class="message-text">${msg.text || ''}</div>`;
+
+                if (msg.file_name && msg.file_link) {
+                    messageContent += `<div class="message-attachment">
+                        <a href="${msg.file_link}" target="_blank" rel="noopener noreferrer">${msg.file_name}</a>
+                    </div>`;
+                }
+
                 msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div>
-                                  <div class="message-text">${msg.text}</div>
+                                  ${messageContent}
                                   <div class="message-time">${readReceiptHtml}${time}</div>`;
 
                 messageContainer.appendChild(msgDiv);
@@ -572,21 +590,77 @@
             }
         });
 
+        // --- ATTACHMENT LOGIC ---
+        const fileConstraints = {
+            'image': { types: ["image/jpg", "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml"], maxSize: 10 * 1024 * 1024, label: 'Image' },
+            'video': { types: ["video/mp4", "video/mpeg", "video/ogg", "video/webm", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/mp2t"], maxSize: 100 * 1024 * 1024, label: 'Video' },
+            'document': { types: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "text/plain", "application/rtf"], maxSize: 5 * 1024 * 1024, label: 'Document' }
+        };
+        const allAllowedMimeTypes = Object.values(fileConstraints).flatMap(c => c.types);
+        fileInput.accept = allAllowedMimeTypes.join(',');
+
+        function removeAttachment() {
+            fileInput.value = ''; // Reset file input
+            attachmentPreviewContainer.style.display = 'none';
+            attachmentFilename.textContent = '';
+        }
+
+        attachBtn.addEventListener('click', () => fileInput.click());
+        removeAttachmentBtn.addEventListener('click', removeAttachment);
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const fileType = Object.values(fileConstraints).find(c => c.types.includes(file.type));
+
+            if (!fileType) {
+                alert(`Неподдерживаемый тип файла: ${file.type}.\n\nДопустимые типы:\nИзображения, Видео, Документы.`);
+                removeAttachment();
+                return;
+            }
+
+            if (file.size > fileType.maxSize) {
+                alert(`Файл слишком большой. Максимальный размер для категории "${fileType.label}" - ${fileType.maxSize / 1024 / 1024} MB.`);
+                removeAttachment();
+                return;
+            }
+
+            attachmentFilename.textContent = file.name;
+            attachmentPreviewContainer.style.display = 'flex';
+        });
+
         sendBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
-            if (!messageText || !currentChat) return;
+            const attachedFile = fileInput.files[0];
+
+            if ((!messageText && !attachedFile) || !currentChat) return;
+
+            const formData = new FormData();
+            const messageCreateDto = { text: messageText };
+            const messageDtoBlob = new Blob([JSON.stringify(messageCreateDto)], { type: 'application/json' });
+            formData.append('data', messageDtoBlob);
+
+            if (attachedFile) {
+                formData.append('files', attachedFile);
+            }
 
             try {
                 const response = await fetchWithAuth(`/api/chats/${currentChat.id}/message/support`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: messageText })
+                    body: formData
                 });
-                if (!response.ok) throw new Error('Failed to send message');
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Failed to send message' }));
+                    throw new Error(errorData.message || 'Failed to send message');
+                }
+
                 messageInput.value = '';
+                removeAttachment();
             } catch (error) {
                 console.error('Error sending message:', error);
-                alert('Could not send message.');
+                alert('Could not send message: ' + error.message);
             }
         });
 
