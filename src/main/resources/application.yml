@@ -6,6 +6,12 @@ spring:
     name: help-desk-service
   profiles:
     active: dev # The 'dev' profile is active by default
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+      file-size-threshold: 2KB
 
 springdoc:
   swagger-ui:

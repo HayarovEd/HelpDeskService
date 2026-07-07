@@ -36,7 +36,7 @@
         #message-input-row { display: flex; width: 100%; }
         #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         #send-btn { width: 100px; padding: 10px; margin-left: 10px; }
-        #attach-btn { padding: 10px; margin-left: 10px; font-size: 1.2em; line-height: 1; border-radius: 5px; border: 1px solid #ccc; background-color: #f8f8f8; }
+        #attach-btn { padding: 10px; margin-left: 10px; font-size: 1.2em; line-height: 1; border-radius: 5px; border: 1px solid #ccc; background-color: #f8f8f8; cursor: pointer; }
         #attachment-preview-container { display: none; justify-content: space-between; align-items: center; padding: 5px 10px; background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; }
         #attachment-filename { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
         #remove-attachment-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
@@ -65,60 +65,227 @@
         .form-row label { display: block; margin-bottom: 5px; }
         .form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row input[type="number"], .form-row select { width: 95%; padding: 8px; }
         #chat-in-work-by-other-user-notification { display: none; padding: 10px; background-color: #ffc107; color: #333; text-align: center; border-bottom: 1px solid #ccc; }
+
+        .message-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .message-attachment {
+            width: 140px;
+            height: 180px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .message-attachment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .attachment-link {
+            display: block;
+            text-decoration: none;
+            color: #333;
+            height: 100%;
+        }
+
+        .attachment-preview {
+            position: relative;
+            height: 130px;
+            overflow: hidden;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== ИЗОБРАЖЕНИЯ - ПОЛНОСТЬЮ ВИДНЫ ===== */
+        .attachment-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;  /* ← вместо cover, чтобы видеть полностью */
+            background: #fafafa;
+        }
+
+        /* Для видео затемнение */
+        .attachment-preview.video-preview .attachment-thumbnail {
+            filter: brightness(0.7);
+            object-fit: contain;
+        }
+
+        /* Если нужно увеличить изображение для лучшего вида */
+        .attachment-preview.image-preview .attachment-thumbnail {
+            object-fit: contain;
+            background: #f5f5f5;
+        }
+
+        /* ===== ОСТАЛЬНЫЕ СТИЛИ ===== */
+        .attachment-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .message-attachment:hover .attachment-overlay {
+            opacity: 1;
+        }
+
+        .play-icon {
+            font-size: 32px;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .document-icon-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.92);
+        }
+
+        .doc-icon {
+            font-size: 48px;
+            margin-bottom: 4px;
+        }
+
+        .doc-type {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            background: #f0f0f0;
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        .attachment-info {
+            padding: 4px 8px;
+            background: white;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .attachment-info .file-name {
+            font-size: 11px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .attachment-info .file-size {
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* Галерея в сообщении */
+        .message .message-attachments {
+            justify-content: flex-start;
+        }
+
+        .message.support .message-attachments {
+            justify-content: flex-end;
+        }
+
+        /* Ссылка на файл (запасной вариант) */
+        .file-link-simple {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .file-link-simple:hover {
+            background: #dee2e6;
+        }
     </style>
 </head>
 <body>
-    <div id="header">
-        <div class="header-spacer"></div>
-        <div id="header-title"><h1>Служба поддержки</h1><p style="margin:0;">Система управления</p></div>
-        <button id="logout-btn">Выход</button>
+<div id="header">
+    <div class="header-spacer"></div>
+    <div id="header-title"><h1>Служба поддержки</h1><p style="margin:0;">Система управления</p></div>
+    <button id="logout-btn">Выход</button>
+</div>
+<div class="container">
+    <div id="side-panel">
+        <div id="users-header" class="collapsible-header"><h2>Пользователи</h2><span class="add-btn" id="add-user-btn">+</span></div>
+        <ul id="user-list" style="display: none;"></ul>
+        <div id="user-error" style="color: red;"></div>
+
+        <div id="groups-header" class="collapsible-header"><h2>Группы и Чаты</h2><span class="add-btn" id="add-group-btn">+</span></div>
+        <ul id="group-list" style="display: none;"></ul>
+        <div id="group-error" style="color: red;"></div>
     </div>
-    <div class="container">
-        <div id="side-panel">
-            <div id="users-header" class="collapsible-header"><h2>Пользователи</h2><span class="add-btn" id="add-user-btn">+</span></div>
-            <ul id="user-list" style="display: none;"></ul>
-            <div id="user-error" style="color: red;"></div>
-
-            <div id="groups-header" class="collapsible-header"><h2>Группы и Чаты</h2><span class="add-btn" id="add-group-btn">+</span></div>
-            <ul id="group-list" style="display: none;"></ul>
-            <div id="group-error" style="color: red;"></div>
+    <div id="main-panel">
+        <div id="main-content-placeholder">
+            <h2>Выберите чат для просмотра</h2>
         </div>
-        <div id="main-panel">
-            <div id="main-content-placeholder">
-                <h2>Выберите чат для просмотра</h2>
+        <div id="chat-view">
+            <div id="chat-header">
+                <div id="chat-title"></div>
+                <div id="chat-participants"></div>
+                <button id="close-chat-btn" style="display: none;">Закрыть чат</button>
+                <button id="join-chat-btn" style="display: none;">Взять в работу</button>
+                <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
             </div>
-            <div id="chat-view">
-                <div id="chat-header">
-                    <div id="chat-title"></div>
-                    <div id="chat-participants"></div>
-                    <button id="close-chat-btn" style="display: none;">Закрыть чат</button>
-                    <button id="join-chat-btn" style="display: none;">Взять в работу</button>
-                    <button id="exit-chat-btn" style="display: none;">Покинуть чат</button>
+            <div id="chat-in-work-by-other-user-notification"></div>
+            <div id="message-container"></div>
+            <div id="message-input-container">
+                <div id="attachment-preview-container">
+                    <span id="attachment-filename"></span>
+                    <button id="remove-attachment-btn">&times;</button>
                 </div>
-                <div id="chat-in-work-by-other-user-notification"></div>
-                <div id="message-container"></div>
-                <div id="message-input-container">
-                    <div id="attachment-preview-container">
-                        <span id="attachment-filename"></span>
-                        <button id="remove-attachment-btn">&times;</button>
-                    </div>
-                    <div id="message-input-row">
-                        <input type="text" id="message-input" placeholder="Введите сообщение...">
-                        <input type="file" id="file-input" style="display: none;">
-                        <button id="attach-btn" title="Прикрепить файл">📎</button>
-                        <button id="send-btn">Отправить</button>
-                    </div>
+                <div id="message-input-row">
+                    <input type="text" id="message-input" placeholder="Введите сообщение...">
+                    <input type="file" id="file-input" style="display: none;" multiple>
+                    <button id="attach-btn" title="Прикрепить файл">📎</button>
+                    <button id="send-btn">Отправить</button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modals -->
-    <div id="userModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="userModalTitle"></h3><form id="userForm"><input type="hidden" id="userId"><div class="form-row"><label>Username: <input type="text" id="username" required></label></div><div class="form-row" id="password-row"><label>Password: <input type="password" id="password"></label></div><div class="form-row"><label>Name: <input type="text" id="name" required></label></div><div class="form-row"><label>Email: <input type="email" id="email"></label></div><div class="form-row"><label>Role: <select id="role"></select></label></div><div class="form-row"><label><input type="checkbox" id="isDisabled"> Disabled</label></div><button type="submit">Сохранить</button></form></div></div>
-    <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><div class="form-row"><label>Название группы: <input type="text" id="groupName" required style="width: 95%; padding: 8px;"></label></div><div class="form-row"><label>Внутренний номер: <input type="number" id="groupOperId" required style="width: 95%; padding: 8px;"></label></div><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
-    <div id="passwordModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>Смена пароля</h3><form id="passwordForm"><input type="hidden" id="passwordUserId"><div class="form-row"><label>Новый пароль: <input type="password" id="newPassword" required></label></div><button type="submit">Сохранить</button></form></div></div>
+<!-- Modals -->
+<div id="userModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="userModalTitle"></h3><form id="userForm"><input type="hidden" id="userId"><div class="form-row"><label>Username: <input type="text" id="username" required></label></div><div class="form-row" id="password-row"><label>Password: <input type="password" id="password"></label></div><div class="form-row"><label>Name: <input type="text" id="name" required></label></div><div class="form-row"><label>Email: <input type="email" id="email"></label></div><div class="form-row"><label>Role: <select id="role"></select></label></div><div class="form-row"><label><input type="checkbox" id="isDisabled"> Disabled</label></div><button type="submit">Сохранить</button></form></div></div>
+<div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><div class="form-row"><label>Название группы: <input type="text" id="groupName" required style="width: 95%; padding: 8px;"></label></div><div class="form-row"><label>Внутренний номер: <input type="number" id="groupOperId" required style="width: 95%; padding: 8px;"></label></div><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
+<div id="passwordModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>Смена пароля</h3><form id="passwordForm"><input type="hidden" id="passwordUserId"><div class="form-row"><label>Новый пароль: <input type="password" id="newPassword" required></label></div><button type="submit">Сохранить</button></form></div></div>
 
-    <script>
+<script>
     // --- AUTH & FETCH WRAPPER ---
     function parseJwt(token) {
         try {
@@ -137,7 +304,7 @@
         }
 
         const decodedToken = parseJwt(token);
-        if (decodedToken && decodedToken.exp * 1000 < Date.now() + 30000) { // 30-second buffer
+        if (decodedToken && decodedToken.exp * 1000 < Date.now() + 30000) {
             console.log('Access token expired, refreshing...');
             try {
                 const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
@@ -156,17 +323,172 @@
         }
 
         const newOptions = { ...options };
-        // When using FormData, don't set Content-Type, let the browser do it.
-        // The original headers might have 'Content-Type': 'application/json', which we need to remove for FormData.
         if (options.body instanceof FormData) {
-            newOptions.headers = { ...newOptions.headers }; // Clone headers
-            delete newOptions.headers['Content-Type']; // Remove content type
+            newOptions.headers = { ...newOptions.headers };
+            delete newOptions.headers['Content-Type'];
         }
         newOptions.headers = { ...newOptions.headers, 'Authorization': 'Bearer ' + token };
 
-
         return fetch(url, newOptions);
     }
+
+    // ============================================================
+    // ФУНКЦИИ ДЛЯ ОТОБРАЖЕНИЯ ВЛОЖЕНИЙ
+    // ============================================================
+
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(mimeType) {
+        if (!mimeType) return '📄';
+        if (mimeType.startsWith('image/')) return '🖼️';
+        if (mimeType.startsWith('video/')) return '🎬';
+        if (mimeType.startsWith('audio/')) return '🎵';
+        switch (mimeType) {
+            case 'application/pdf': return '📕';
+            case 'application/msword': return '📘';
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return '📘';
+            case 'application/vnd.ms-excel': return '📗';
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return '📗';
+            case 'application/vnd.ms-powerpoint': return '📙';
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return '📙';
+            case 'text/plain': return '📃';
+            default: return '📄';
+        }
+    }
+
+    function getFileTypeLabel(mimeType) {
+        if (!mimeType) return 'DOC';
+        if (mimeType.startsWith('image/')) return 'Image';
+        if (mimeType.startsWith('video/')) return 'Video';
+        if (mimeType.startsWith('audio/')) return 'Audio';
+        switch (mimeType) {
+            case 'application/pdf': return 'PDF';
+            case 'application/msword': return 'DOC';
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return 'DOCX';
+            case 'application/vnd.ms-excel': return 'XLS';
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return 'XLSX';
+            case 'application/vnd.ms-powerpoint': return 'PPT';
+            case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return 'PPTX';
+            case 'text/plain': return 'TXT';
+            default: return 'DOC';
+        }
+    }
+
+    function renderMessageFiles(files) {
+        if (!files || files.length === 0) return '';
+
+        let attachmentsHtml = '';
+
+        files.forEach(file => {
+            const storedName = file.image_url || file.stored_name;
+            const fileSize = file.file_size || file.size || 0;
+            const mimeType = file.mime_type || file.mimeType || '';
+            const fileName = file.file_name || storedName || 'Файл';
+
+            const isImage = mimeType.startsWith('image/');
+            const isVideo = mimeType.startsWith('video/');
+            const isAudio = mimeType.startsWith('audio/');
+            const isDocument = !isImage && !isVideo && !isAudio;
+
+            const fileUrl = `/api/files/${storedName}`;
+            const fileIcon = getFileIcon(mimeType);
+            const fileTypeLabel = getFileTypeLabel(mimeType);
+            const formattedSize = formatFileSize(fileSize);
+
+            attachmentsHtml += `
+            <div class="message-attachment" data-type="${mimeType}">
+                <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="attachment-link">
+                    <div class="attachment-preview ${isImage ? 'image-preview' : ''} ${isVideo ? 'video-preview' : ''}">
+                        ${isImage ? `
+                            <div class="image-loader" data-url="${fileUrl}"
+                                 style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#999;font-size:14px;">
+                                ⏳ Загрузка...
+                            </div>
+                        ` : `
+                            <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
+                                ${fileIcon}
+                            </div>
+                        `}
+
+                        ${isVideo ? `
+                            <div class="attachment-overlay">
+                                <span class="play-icon">▶</span>
+                            </div>
+                        ` : ''}
+
+                        ${isDocument ? `
+                            <div class="document-icon-overlay">
+                                <span class="doc-icon">${fileIcon}</span>
+                                <span class="doc-type">${fileTypeLabel}</span>
+                            </div>
+                        ` : ''}
+
+                        ${isAudio ? `
+                            <div class="document-icon-overlay">
+                                <span class="doc-icon">🎵</span>
+                                <span class="doc-type">AUDIO</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="attachment-info">
+                        <span class="file-name" title="${fileName}">${fileName}</span>
+                        <span class="file-size">${formattedSize}</span>
+                    </div>
+                </a>
+            </div>
+        `;
+        });
+
+        return `<div class="message-attachments">${attachmentsHtml}</div>`;
+    }
+
+    // Загрузка изображений с Bearer-токеном
+    async function loadImagesWithAuth() {
+        const loaders = document.querySelectorAll('.image-loader');
+        const token = localStorage.getItem('accessToken');
+
+        for (const loader of loaders) {
+            const url = loader.dataset.url;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+
+                    const img = document.createElement('img');
+                    img.src = objectUrl;
+                    img.alt = 'Image';
+                    img.className = 'attachment-thumbnail';
+                    img.loading = 'lazy';
+
+                    loader.parentNode.replaceChild(img, loader);
+                } else {
+                    loader.innerHTML = '❌ Ошибка загрузки';
+                    loader.style.fontSize = '14px';
+                    loader.style.color = '#e74c3c';
+                }
+            } catch (error) {
+                console.error('Error loading image:', error);
+                loader.innerHTML = '❌';
+                loader.style.fontSize = '32px';
+                loader.style.color = '#e74c3c';
+            }
+        }
+    }
+
+    // --- ОСТАЛЬНОЙ КОД ---
 
     document.addEventListener('DOMContentLoaded', async function() {
         if (!localStorage.getItem('accessToken')) {
@@ -234,15 +556,6 @@
             }
         }
 
-        // --- FIREBASE & FCM SETUP ---
-        function initializeFirebase() {
-            // ... (Firebase logic remains the same)
-        }
-
-        async function sendFcmTokenToServer(fcmToken) {
-            // ... (Firebase logic remains the same)
-        }
-
         // --- WEBSOCKET SETUP ---
         function connectWebSocket() {
             const token = localStorage.getItem('accessToken');
@@ -260,7 +573,7 @@
                         fetchAndRenderUsers();
                     }
                     if (message.path && message.path.startsWith('/chats')) {
-                        fetchAndRenderGroups(); // Refresh groups to update chat lists
+                        fetchAndRenderGroups();
                         if (currentChat) {
                             fetchAndRenderChatDetails(currentChat.id);
                         }
@@ -443,11 +756,11 @@
 
                 let messageContent = `<div class="message-text">${msg.text || ''}</div>`;
 
-                if (msg.file_name && msg.file_link) {
-                    messageContent += `<div class="message-attachment">
-                        <a href="${msg.file_link}" target="_blank" rel="noopener noreferrer">${msg.file_name}</a>
-                    </div>`;
+                // ==== ОТОБРАЖЕНИЕ ФАЙЛОВ ====
+                if (msg.files && msg.files.length > 0) {
+                    messageContent += renderMessageFiles(msg.files);
                 }
+                // ==== КОНЕЦ ОТОБРАЖЕНИЯ ФАЙЛОВ ====
 
                 msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div>
                                   ${messageContent}
@@ -468,6 +781,9 @@
             });
 
             messageContainer.scrollTop = messageContainer.scrollHeight;
+            setTimeout(() => {
+                loadImagesWithAuth();
+            }, 200);
         }
 
         // --- EVENT LISTENERS ---
@@ -600,7 +916,7 @@
         fileInput.accept = allAllowedMimeTypes.join(',');
 
         function removeAttachment() {
-            fileInput.value = ''; // Reset file input
+            fileInput.value = '';
             attachmentPreviewContainer.style.display = 'none';
             attachmentFilename.textContent = '';
         }
@@ -609,7 +925,11 @@
         removeAttachmentBtn.addEventListener('click', removeAttachment);
 
         fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0];
+            const files = fileInput.files;
+            if (!files || files.length === 0) return;
+
+            // Для нескольких файлов показываем первый
+            const file = files[0];
             if (!file) return;
 
             const fileType = Object.values(fileConstraints).find(c => c.types.includes(file.type));
@@ -626,23 +946,27 @@
                 return;
             }
 
-            attachmentFilename.textContent = file.name;
+            const count = files.length > 1 ? ` (+${files.length - 1} файлов)` : '';
+            attachmentFilename.textContent = file.name + count;
             attachmentPreviewContainer.style.display = 'flex';
         });
 
         sendBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
-            const attachedFile = fileInput.files[0];
+            const files = fileInput.files;
 
-            if ((!messageText && !attachedFile) || !currentChat) return;
+            if ((!messageText && (!files || files.length === 0)) || !currentChat) return;
 
             const formData = new FormData();
             const messageCreateDto = { text: messageText };
             const messageDtoBlob = new Blob([JSON.stringify(messageCreateDto)], { type: 'application/json' });
             formData.append('data', messageDtoBlob);
 
-            if (attachedFile) {
-                formData.append('files', attachedFile);
+            // Добавляем все файлы
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
             }
 
             try {
@@ -863,13 +1187,12 @@
             } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
         }
 
-
         // --- INITIAL LOAD ---
         await fetchAndRenderUsers();
         fetchAndRenderGroups();
         connectWebSocket();
-        // initializeFirebase(); // You can uncomment this when you have your config
+        // initializeFirebase();
     });
-    </script>
+</script>
 </body>
 </html>

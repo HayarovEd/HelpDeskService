@@ -2,6 +2,7 @@ package ru.impuls.helpdeskservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
@@ -107,6 +109,44 @@ public class ChatController {
             @PathVariable UUID id,
             @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        log.info("=== FILE UPLOAD DIAGNOSTICS ===");
+        log.info("Chat ID: {}", id);
+
+        if (files != null) {
+            log.info("Number of files: {}", files.size());
+            for (int i = 0; i < files.size(); i++) {
+                MultipartFile file = files.get(i);
+                log.info("File {}:", i + 1);
+                log.info("  - Name: {}", file.getOriginalFilename());
+                log.info("  - Size: {} MB", file.getSize() / 1024 / 1024);
+                log.info("  - Size: {} bytes", file.getSize());
+                log.info("  - ContentType: {}", file.getContentType());
+            }
+
+            // Проверяем общий размер
+            long totalSize = files.stream().mapToLong(MultipartFile::getSize).sum();
+            log.info("Total size: {} MB", totalSize / 1024 / 1024);
+
+            // Проверяем лимиты
+            long maxFileSize = 500 * 1024 * 1024; // 500 MB
+            if (totalSize > maxFileSize) {
+                log.warn("Total size {} MB exceeds limit {} MB",
+                        totalSize / 1024 / 1024, maxFileSize / 1024 / 1024);
+                throw new RuntimeException("Total file size exceeds limit: " + totalSize);
+            }
+
+            for (MultipartFile file : files) {
+                if (file.getSize() > maxFileSize) {
+                    log.warn("File {} size {} MB exceeds limit {} MB",
+                            file.getOriginalFilename(),
+                            file.getSize() / 1024 / 1024,
+                            maxFileSize / 1024 / 1024);
+                    throw new RuntimeException("File too large: " + file.getOriginalFilename());
+                }
+            }
+        }
+
+        log.info("=== END DIAGNOSTICS ===");
         chatService.sendSupportMessage(id, messageCreateDto, files);
     }
 }

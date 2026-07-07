@@ -119,6 +119,7 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>1.6.3</version>
         </dependency>
+
     </dependencies>
 
     <build>

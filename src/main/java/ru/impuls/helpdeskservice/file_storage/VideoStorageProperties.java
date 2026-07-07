@@ -18,6 +18,6 @@ public class VideoStorageProperties  extends MediaStorageProperties{
                 "video/x-msvideo",
                 "video/x-matroska",
                 "video/mp2t");
-        this.maxFileSize = 100 * 1024 * 1024; // 100 MB
+        this.maxFileSize = 500 * 1024 * 1024; // 100 MB
     }
 }
