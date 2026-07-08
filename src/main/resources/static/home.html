@@ -111,7 +111,7 @@
         .attachment-thumbnail {
             width: 100%;
             height: 100%;
-            object-fit: contain;  /* ← вместо cover, чтобы видеть полностью */
+            object-fit: contain;
             background: #fafafa;
         }
 
@@ -121,7 +121,6 @@
             object-fit: contain;
         }
 
-        /* Если нужно увеличить изображение для лучшего вида */
         .attachment-preview.image-preview .attachment-thumbnail {
             object-fit: contain;
             background: #f5f5f5;
@@ -279,6 +278,158 @@
         .download-btn.loading {
             animation: spin 1s linear infinite;
         }
+
+        /* ===== МОДАЛЬНОЕ ОКНО ПРОСМОТРА МЕДИА ===== */
+        #media-viewer-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #media-viewer-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-viewer-content {
+            position: relative;
+            width: 90%;
+            height: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-viewer-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .media-viewer-video {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .media-viewer-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: #f1f1f1;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            z-index: 10000;
+        }
+
+        .media-viewer-close:hover,
+        .media-viewer-close:focus {
+            color: #bbb;
+        }
+
+        .media-viewer-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 50px;
+            color: #f1f1f1;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-viewer-nav:hover {
+            color: #bbb;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .media-viewer-prev {
+            left: 20px;
+        }
+
+        .media-viewer-next {
+            right: 20px;
+        }
+
+        .media-viewer-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f1f1f1;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            z-index: 10000;
+        }
+
+        .media-viewer-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f1f1f1;
+            font-size: 24px;
+            z-index: 10001;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .media-viewer-content {
+                width: 100%;
+                height: 80%;
+            }
+
+            .media-viewer-close {
+                top: 10px;
+                right: 20px;
+                font-size: 35px;
+            }
+
+            .media-viewer-nav {
+                font-size: 35px;
+                width: 45px;
+                height: 45px;
+            }
+            .media-viewer-content iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+                border-radius: 4px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            }
+
+            /* Стили для PDF превью в сообщении */
+            .attachment-preview.pdf-preview {
+                background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            }
+        }
     </style>
 </head>
 <body>
@@ -325,6 +476,17 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Модальное окно для просмотра медиа -->
+<div id="media-viewer-modal">
+    <span class="media-viewer-close">&times;</span>
+    <span class="media-viewer-nav media-viewer-prev">&#10094;</span>
+    <span class="media-viewer-nav media-viewer-next">&#10095;</span>
+    <div class="media-viewer-content">
+        <div class="media-viewer-loader">Загрузка...</div>
+    </div>
+    <div class="media-viewer-counter"></div>
 </div>
 
 <!-- Modals -->
@@ -458,6 +620,225 @@
     }
 
     // ============================================================
+    // МОДАЛЬНОЕ ОКНО ПРОСМОТРА МЕДИА
+    // ============================================================
+
+    const mediaViewer = {
+        modal: document.getElementById('media-viewer-modal'),
+        content: document.querySelector('.media-viewer-content'),
+        closeBtn: document.querySelector('.media-viewer-close'),
+        prevBtn: document.querySelector('.media-viewer-prev'),
+        nextBtn: document.querySelector('.media-viewer-next'),
+        counter: document.querySelector('.media-viewer-counter'),
+        loader: document.querySelector('.media-viewer-loader'),
+
+        mediaItems: [],
+        currentIndex: 0,
+
+        init() {
+            // Закрытие по клику на крестик
+            this.closeBtn.addEventListener('click', () => this.close());
+
+            // Закрытие по клику на фон
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.close();
+                }
+            });
+
+            // Навигация
+            this.prevBtn.addEventListener('click', () => this.navigate(-1));
+            this.nextBtn.addEventListener('click', () => this.navigate(1));
+
+            // Клавиатурная навигация
+            document.addEventListener('keydown', (e) => {
+                if (this.modal.classList.contains('active')) {
+                    if (e.key === 'Escape') this.close();
+                    if (e.key === 'ArrowLeft') this.navigate(-1);
+                    if (e.key === 'ArrowRight') this.navigate(1);
+                }
+            });
+
+            // Предотвращаем закрытие при клике на контент
+            this.content.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        },
+
+        async open(items, startIndex = 0) {
+            this.mediaItems = items;
+            this.currentIndex = startIndex;
+            this.modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            await this.showMedia(this.currentIndex);
+            this.updateCounter();
+            this.updateNavigationButtons();
+        },
+
+        close() {
+            this.modal.classList.remove('active');
+            document.body.style.overflow = '';
+
+            // Очищаем контент
+            setTimeout(() => {
+                this.content.innerHTML = '<div class="media-viewer-loader">Загрузка...</div>';
+            }, 300);
+        },
+
+        async navigate(direction) {
+            const newIndex = this.currentIndex + direction;
+
+            if (newIndex >= 0 && newIndex < this.mediaItems.length) {
+                this.currentIndex = newIndex;
+                await this.showMedia(this.currentIndex);
+                this.updateCounter();
+                this.updateNavigationButtons();
+            }
+        },
+
+        async showMedia(index) {
+            this.showLoader();
+
+            const item = this.mediaItems[index];
+            const token = localStorage.getItem('accessToken');
+
+            try {
+                const response = await fetch(item.url, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load media');
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                this.content.innerHTML = '';
+
+                if (item.type.startsWith('image/')) {
+                    // Изображения
+                    const img = document.createElement('img');
+                    img.src = objectUrl;
+                    img.className = 'media-viewer-image';
+                    img.alt = item.fileName || 'Image';
+
+                    img.onload = () => {
+                        this.hideLoader();
+                    };
+
+                    img.onerror = () => {
+                        this.showError('Ошибка загрузки изображения');
+                    };
+
+                    this.content.appendChild(img);
+                } else if (item.type.startsWith('video/')) {
+                    // Видео
+                    const video = document.createElement('video');
+                    video.src = objectUrl;
+                    video.className = 'media-viewer-video';
+                    video.controls = true;
+                    video.autoplay = true;
+
+                    video.onloadeddata = () => {
+                        this.hideLoader();
+                    };
+
+                    video.onerror = () => {
+                        this.showError('Ошибка загрузки видео');
+                    };
+
+                    this.content.appendChild(video);
+                } else if (item.type === 'application/pdf') {
+                    // PDF файлы
+                    const iframe = document.createElement('iframe');
+                    iframe.src = objectUrl;
+                    iframe.className = 'media-viewer-image'; // Используем тот же класс для стилизации
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    iframe.style.borderRadius = '4px';
+                    iframe.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
+
+                    iframe.onload = () => {
+                        this.hideLoader();
+                    };
+
+                    iframe.onerror = () => {
+                        this.showError('Ошибка загрузки PDF');
+                    };
+
+                    this.content.appendChild(iframe);
+                }
+
+                // Очищаем object URL когда он больше не нужен
+                setTimeout(() => {
+                    if (this.content.querySelector('img')?.src !== objectUrl &&
+                        this.content.querySelector('video')?.src !== objectUrl &&
+                        this.content.querySelector('iframe')?.src !== objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                    }
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error loading media:', error);
+                this.showError('Не удалось загрузить медиафайл');
+            }
+        },
+
+        showLoader() {
+            const existingLoader = this.content.querySelector('.media-viewer-loader');
+            if (!existingLoader) {
+                const loader = document.createElement('div');
+                loader.className = 'media-viewer-loader';
+                loader.textContent = 'Загрузка...';
+                this.content.appendChild(loader);
+            }
+        },
+
+        hideLoader() {
+            const loader = this.content.querySelector('.media-viewer-loader');
+            if (loader) {
+                loader.remove();
+            }
+        },
+
+        showError(message) {
+            this.hideLoader();
+            this.content.innerHTML = `
+                <div style="color: white; text-align: center; font-size: 18px;">
+                    <p>❌ ${message}</p>
+                </div>
+            `;
+        },
+
+        updateCounter() {
+            if (this.mediaItems.length > 1) {
+                this.counter.textContent = `${this.currentIndex + 1} / ${this.mediaItems.length}`;
+                this.counter.style.display = 'block';
+            } else {
+                this.counter.style.display = 'none';
+            }
+        },
+
+        updateNavigationButtons() {
+            if (this.mediaItems.length <= 1) {
+                this.prevBtn.style.display = 'none';
+                this.nextBtn.style.display = 'none';
+            } else {
+                this.prevBtn.style.display = this.currentIndex === 0 ? 'none' : 'flex';
+                this.nextBtn.style.display = this.currentIndex === this.mediaItems.length - 1 ? 'none' : 'flex';
+            }
+        }
+    };
+
+    // Инициализируем медиа-вьювер
+    mediaViewer.init();
+
+    // ============================================================
     // ФУНКЦИИ ДЛЯ ОТОБРАЖЕНИЯ ВЛОЖЕНИЙ
     // ============================================================
 
@@ -505,12 +886,13 @@
         }
     }
 
-    function renderMessageFiles(files) {
+    function renderMessageFiles(files, allMessageFiles = null) {
         if (!files || files.length === 0) return '';
 
         let attachmentsHtml = '';
+        const mediaFiles = allMessageFiles || files;
 
-        files.forEach(file => {
+        files.forEach((file, fileIndex) => {
             const storedName = file.image_url || file.stored_name;
             const fileSize = file.file_size || file.size || 0;
             const mimeType = file.mime_type || file.mimeType || '';
@@ -519,57 +901,90 @@
             const isImage = mimeType.startsWith('image/');
             const isVideo = mimeType.startsWith('video/');
             const isAudio = mimeType.startsWith('audio/');
-            const isDocument = !isImage && !isVideo && !isAudio;
+            const isPdf = mimeType === 'application/pdf';
+            const isDocument = !isImage && !isVideo && !isAudio && !isPdf;
 
             const fileUrl = `/api/files/${storedName}`;
             const fileIcon = getFileIcon(mimeType);
             const fileTypeLabel = getFileTypeLabel(mimeType);
             const formattedSize = formatFileSize(fileSize);
 
+            // Определяем, можно ли открыть в модальном окне (изображения, видео и PDF)
+            const canOpenInViewer = true;
+
             attachmentsHtml += `
-            <div class="message-attachment" data-type="${mimeType}">
-                <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="attachment-link">
-                    <div class="attachment-preview ${isImage ? 'image-preview' : ''} ${isVideo ? 'video-preview' : ''}">
-                        ${isImage ? `
-                            <div class="image-loader" data-url="${fileUrl}"
-                                 style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#999;font-size:14px;">
-                                ⏳ Загрузка...
-                            </div>
-                        ` : `
-                            <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
-                                ${fileIcon}
-                            </div>
-                        `}
-
-                        ${isVideo ? `
-                            <div class="attachment-overlay">
-                                <span class="play-icon">▶</span>
-                            </div>
-                        ` : ''}
-
-                        ${isDocument ? `
-                            <div class="document-icon-overlay">
-                                <span class="doc-icon">${fileIcon}</span>
-                                <span class="doc-type">${fileTypeLabel}</span>
-                            </div>
-                        ` : ''}
-
-                        ${isAudio ? `
-                            <div class="document-icon-overlay">
-                                <span class="doc-icon">🎵</span>
-                                <span class="doc-type">AUDIO</span>
-                            </div>
-                        ` : ''}
+        <div class="message-attachment"
+             data-type="${mimeType}"
+             data-url="${fileUrl}"
+             data-filename="${fileName}"
+             ${canOpenInViewer ? 'data-viewable="true"' : ''}
+             data-media-index="${fileIndex}">
+            ${canOpenInViewer ? `
+            <div class="attachment-preview ${isImage ? 'image-preview' : ''} ${isVideo ? 'video-preview' : ''} ${isPdf ? 'pdf-preview' : ''}">
+                ${isImage ? `
+                    <div class="image-loader" data-url="${fileUrl}"
+                         style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#999;font-size:14px;">
+                        ⏳ Загрузка...
                     </div>
-                    <div class="attachment-info">
-                        <span class="file-size">${formattedSize}</span>
-                        <button class="download-btn" onclick="downloadFile('${storedName}', '${fileName}')" title="Скачать файл">
-                        ⬇️
-                    </button>
+                ` : isPdf ? `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f5;">
+                        <span style="font-size:48px;">📕</span>
+                        <span style="font-size:12px;color:#666;margin-top:4px;">PDF</span>
                     </div>
-                </a>
+                ` : `
+                    <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
+                        ${fileIcon}
+                    </div>
+                `}
+
+                ${isVideo ? `
+                    <div class="attachment-overlay">
+                        <span class="play-icon">▶</span>
+                    </div>
+                ` : ''}
+
+                ${isPdf ? `
+                    <div class="attachment-overlay" style="opacity: 0.8;">
+                        <span style="font-size: 24px; color: white; background: rgba(0,0,0,0.6); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">👁</span>
+                    </div>
+                ` : ''}
             </div>
-        `;
+            ` : `
+            <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="attachment-link">
+                <div class="attachment-preview">
+                    <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
+                        ${fileIcon}
+                    </div>
+
+                    ${isDocument ? `
+                        <div class="document-icon-overlay">
+                            <span class="doc-icon">${fileIcon}</span>
+                            <span class="doc-type">${fileTypeLabel}</span>
+                        </div>
+                    ` : ''}
+
+                    ${isAudio ? `
+                        <div class="document-icon-overlay">
+                            <span class="doc-icon">🎵</span>
+                            <span class="doc-type">AUDIO</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="attachment-info">
+                    <span class="file-name">${fileName}</span>
+                    <span class="file-size">${formattedSize}</span>
+                </div>
+            </a>
+            `}
+            <div class="attachment-info" style="${canOpenInViewer ? 'display:flex;' : 'display:none;'}">
+                <span class="file-name">${fileName}</span>
+                <span class="file-size">${formattedSize}</span>
+            </div>
+            <button class="download-btn" onclick="event.stopPropagation(); downloadFile('${storedName}', '${fileName}')" title="Скачать файл">
+                ⬇️
+            </button>
+        </div>
+    `;
         });
 
         return `<div class="message-attachments">${attachmentsHtml}</div>`;
@@ -613,6 +1028,71 @@
                 loader.style.color = '#e74c3c';
             }
         }
+
+        // Добавляем обработчики кликов для открытия медиа-вьювера
+        attachMediaViewerListeners();
+    }
+
+    /**
+     * Добавляет обработчики кликов на вложения для открытия в модальном окне
+     */
+    function attachMediaViewerListeners() {
+        // Добавляем обработчики только для изображений и видео
+        const viewableAttachments = document.querySelectorAll('.message-attachment[data-viewable="true"]');
+
+        viewableAttachments.forEach(attachment => {
+            // Удаляем старый обработчик, если есть
+            attachment.removeEventListener('click', handleAttachmentClick);
+            // Добавляем новый
+            attachment.addEventListener('click', handleAttachmentClick);
+        });
+
+        // Для остальных файлов (документы, аудио) добавляем курсор-указатель только если есть ссылка
+        const nonViewableAttachments = document.querySelectorAll('.message-attachment:not([data-viewable="true"])');
+        nonViewableAttachments.forEach(attachment => {
+            attachment.style.cursor = 'default';
+            attachment.removeEventListener('click', handleAttachmentClick);
+        });
+    }
+
+    /**
+     * Обработчик клика на вложение
+     */
+    function handleAttachmentClick(e) {
+        // Не открываем, если кликнули на кнопку скачивания
+        if (e.target.closest('.download-btn')) {
+            return;
+        }
+
+        const attachment = e.currentTarget;
+        const mimeType = attachment.dataset.type;
+
+        // Проверяем, что это изображение, видео или PDF
+        if (!mimeType ||
+            (!mimeType.startsWith('image/') &&
+                !mimeType.startsWith('video/') &&
+                mimeType !== 'application/pdf')) {
+            // Для остальных типов файлов ничего не делаем
+            return;
+        }
+
+        const messageAttachments = attachment.closest('.message-attachments');
+
+        // Собираем все просматриваемые вложения из этого сообщения
+        const allViewableAttachments = messageAttachments.querySelectorAll('.message-attachment[data-viewable="true"]');
+
+        // Формируем массив медиа-элементов
+        const mediaItems = Array.from(allViewableAttachments).map(att => ({
+            url: att.dataset.url,
+            type: att.dataset.type,
+            fileName: att.dataset.filename
+        }));
+
+        // Находим индекс текущего элемента
+        const currentIndex = Array.from(allViewableAttachments).indexOf(attachment);
+
+        // Открываем модальное окно
+        mediaViewer.open(mediaItems, currentIndex >= 0 ? currentIndex : 0);
     }
 
     // --- ОСТАЛЬНОЙ КОД ---
@@ -885,7 +1365,7 @@
 
                 // ==== ОТОБРАЖЕНИЕ ФАЙЛОВ ====
                 if (msg.files && msg.files.length > 0) {
-                    messageContent += renderMessageFiles(msg.files);
+                    messageContent += renderMessageFiles(msg.files, msg.files);
                 }
                 // ==== КОНЕЦ ОТОБРАЖЕНИЯ ФАЙЛОВ ====
 
