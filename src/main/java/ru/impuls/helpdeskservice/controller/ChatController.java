@@ -97,7 +97,7 @@ public class ChatController {
     @ResponseStatus(HttpStatus.OK)
     public void sendClientMessage(
             @PathVariable UUID id,
-            @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
+            @RequestPart(value = "data", required = false) MessageCreateDto messageCreateDto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         chatService.sendClientMessage(id, messageCreateDto, files);
     }
@@ -107,7 +107,7 @@ public class ChatController {
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPPORT')")
     public void sendSupportMessage(
             @PathVariable UUID id,
-            @RequestPart("data") @Valid MessageCreateDto messageCreateDto,
+            @RequestPart(value = "data", required = false) MessageCreateDto messageCreateDto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         chatService.sendSupportMessage(id, messageCreateDto, files);
     }

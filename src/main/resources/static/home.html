@@ -971,18 +971,17 @@
                     ` : ''}
                 </div>
                 <div class="attachment-info">
-                    <span class="file-name">${fileName}</span>
                     <span class="file-size">${formattedSize}</span>
                 </div>
             </a>
             `}
             <div class="attachment-info" style="${canOpenInViewer ? 'display:flex;' : 'display:none;'}">
-                <span class="file-name">${fileName}</span>
                 <span class="file-size">${formattedSize}</span>
-            </div>
-            <button class="download-btn" onclick="event.stopPropagation(); downloadFile('${storedName}', '${fileName}')" title="Скачать файл">
+                <button class="download-btn" onclick="event.stopPropagation(); downloadFile('${storedName}', '${fileName}')" title="Скачать файл">
                 ⬇️
             </button>
+            </div>
+
         </div>
     `;
         });
