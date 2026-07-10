@@ -11,6 +11,7 @@ import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.dto.internal.ConnectionDto;
 import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
+import ru.impuls.helpdeskservice.entity.FileMetaData;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
 
 @Slf4j
 @Service
@@ -94,7 +96,7 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
     @Override
-    public void addClientMessage(
+    public Message addClientMessage(
             Chat chat,
             String text,
             User user,
@@ -105,7 +107,7 @@ public class ConnectionServiceImpl implements ConnectionService {
         if (!chat.isOpen()) {
             createInitialConnection(chat, text, user);
             chat.setOpen(true);
-            return;
+            return null; // Or handle as needed
         }
 
         currentConnection = getCurrentConnection(chat);
@@ -117,11 +119,19 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .createdDate(Instant.now())
                 .build();
         var savedMessage = messageRepository.save(message);
-        storeFile(files, savedMessage);
+        return Message.builder()
+                .connection(savedMessage.getConnection())
+                .text(savedMessage.getText())
+                .isSupport(savedMessage.isSupport())
+                .isRead(savedMessage.getIsRead())
+                .createdDate(savedMessage.getCreatedDate())
+                .id(savedMessage.getId())
+                .files(storeFile(files, savedMessage))
+                .build();
     }
 
     @Override
-    public void addSupportMessage(Chat chat, UUID userId, String text, List<MultipartFile> files) {
+    public Message addSupportMessage(Chat chat, UUID userId, String text, List<MultipartFile> files) {
         if (!chat.isOpen()) {
             throw new AppException(ErrorMessage.CHAT_IS_CLOSED, HttpStatus.BAD_REQUEST);
         }
@@ -137,6 +147,15 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .build();
         var savedMessage = messageRepository.save(message);
         storeFile(files, savedMessage);
+        return Message.builder()
+                .connection(savedMessage.getConnection())
+                .text(savedMessage.getText())
+                .isSupport(savedMessage.isSupport())
+                .isRead(savedMessage.getIsRead())
+                .createdDate(savedMessage.getCreatedDate())
+                .id(savedMessage.getId())
+                .files(storeFile(files, savedMessage))
+                .build();
     }
 
     @Override
@@ -176,11 +195,13 @@ public class ConnectionServiceImpl implements ConnectionService {
         return result;
     }
 
-    private void storeFile(List<MultipartFile> files, Message savedMessage) {
+    private List<FileMetaData> storeFile(List<MultipartFile> files, Message savedMessage) {
+        List<FileMetaData> storedFiles = new java.util.ArrayList<>(List.of());
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
-                fileService.storeFile(file, savedMessage);
+                storedFiles.add(fileService.storeFile(file, savedMessage));
             }
         }
+        return storedFiles;
     }
 }

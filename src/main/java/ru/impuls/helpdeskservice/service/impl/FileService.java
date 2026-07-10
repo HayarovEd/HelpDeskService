@@ -25,7 +25,7 @@ public class FileService {
     private final List<MediaStorageProperties> storagePropertiesList;
 
 
-    public void storeFile(
+    public FileMetaData storeFile(
             MultipartFile file,
             Message message
     ) {
@@ -54,6 +54,7 @@ public class FileService {
                     .message(message)
                     .build();
             fileMetaDataRepo.save(fileMetaData);
+            return fileMetaData;
         } catch (IOException e) {
             throw new AppException("Ошибки в файле", HttpStatus.BAD_REQUEST);
         }

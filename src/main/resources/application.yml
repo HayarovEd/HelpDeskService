@@ -78,6 +78,12 @@ application:
       - method: GET
         path: /webjars/**
 
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.apache.tomcat.util.http: DEBUG
+
+
 ---
 # ===================================================================
 # DEVELOPMENT PROFILE

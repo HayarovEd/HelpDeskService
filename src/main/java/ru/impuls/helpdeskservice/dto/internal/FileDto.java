@@ -7,6 +7,8 @@ public record FileDto(
         String storedFileName,
         @JsonProperty("file_size")
         Long fileSize,
+        @JsonProperty("original_name")
+        String originalFileName,
         @JsonProperty("mime_type")
         String mimeType
 ) {}

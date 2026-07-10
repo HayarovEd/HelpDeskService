@@ -178,8 +178,6 @@ public class ChatServiceImpl implements ChatService {
         chat.setWork(true);
         messageRepo.markAllAsReadByChatId(chatId);
         Chat updatedChat = chatRepository.save(chat);
-        //var chatDto = chatMapper.toDto(updatedChat);
-        //webSocketHandler.notifyChatConnections(chat.getId(), chatMapper.toEvent(chatDto));
         notifyChatUpdated(updatedChat);
     }
 
@@ -225,9 +223,10 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         var user = AuthUtil.getAuthenticatedUser();
+        Message newMessage = connectionService.addClientMessage(chat, messageCreateDto.getText(), user, files);
+
         setActiveChat(chat);
-        connectionService.addClientMessage(chat, messageCreateDto.getText(), user, files);
-        notifyChatUpdated(chat);
+        notifyChatUpdated(chat, newMessage);
     }
 
     @Override
@@ -236,9 +235,9 @@ public class ChatServiceImpl implements ChatService {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
+        Message newMessage = connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         setActiveChat(chat);
-        connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
-        notifyChatUpdated(chat);
+        notifyChatUpdated(chat, newMessage);
     }
 
     @Override
@@ -321,9 +320,21 @@ public class ChatServiceImpl implements ChatService {
 
     private void notifyChatUpdated(Chat chat) {
         var chatDto = chatMapper.toDto(chat);
-
         loadLastConnectionAndMessage(chatDto);
         webSocketHandler.notifyChangeAfterCommit("/chats", chatMapper.toEvent(chatDto), UPDATED);
         webSocketHandler.notifyChatMessages(chat.getId(), chatMapper.toEvent(chatDto));
+    }
+
+    private void notifyChatUpdated(Chat chat, Message message) {
+        var chatDto = chatMapper.toDto(chat);
+        loadLastConnectionAndMessage(chatDto);
+        if (message != null) {
+            MessageDto messageDto = messageMapper.toDto(message);
+            ConnectionDto connectionDto = connectionMapper.toDto(message.getConnection(), messageDto);
+            chatDto.setConnections(List.of(connectionDto));
+        }
+        var chatEvent = chatMapper.toEvent(chatDto);
+        webSocketHandler.notifyChangeAfterCommit("/chats", chatEvent, UPDATED);
+        webSocketHandler.notifyChatMessages(chat.getId(), chatEvent);
     }
 }
