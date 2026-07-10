@@ -146,7 +146,6 @@ public class ConnectionServiceImpl implements ConnectionService {
                 .createdDate(Instant.now())
                 .build();
         var savedMessage = messageRepository.save(message);
-        storeFile(files, savedMessage);
         return Message.builder()
                 .connection(savedMessage.getConnection())
                 .text(savedMessage.getText())
