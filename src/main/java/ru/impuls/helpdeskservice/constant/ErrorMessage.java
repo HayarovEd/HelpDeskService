@@ -50,4 +50,5 @@ public class ErrorMessage {
     public static final String CHAT_NOT_FOUND = "Chat not found";
 
     public static final String MESSAGE_NOT_FOUND = "Message not found";
+    public static final String INVALID_TOKEN = "token is invalid";
 }

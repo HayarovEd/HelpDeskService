@@ -20,9 +20,11 @@ import ru.impuls.helpdeskservice.auth.service.AuthService;
 import ru.impuls.helpdeskservice.auth.service.JwtService;
 import ru.impuls.helpdeskservice.auth.service.TokenService;
 import ru.impuls.helpdeskservice.auth.service.UserHelperService;
+import ru.impuls.helpdeskservice.client.ExternalServiceClient;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
+import ru.impuls.helpdeskservice.dto.response.ValidateToken;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
@@ -42,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenService tokenService;
     private final TokenRepo tokenRepo;
     private final UserHelperService userHelperService;
+    private final ExternalServiceClient externalServiceClient;
 
     /************************ login ***************************/
     @Override
@@ -56,6 +59,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponse loginUserByOutApp(UserBillingRequest userBillingRequest, HttpServletResponse servletResponse) {
+        var isValidToken = externalServiceClient.validateToken(userBillingRequest.token()).isValid();
+        if (!isValidToken) {
+            throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
+        }
         var user = userRepo.findByUsername(userBillingRequest.username());
         User newUser;
         if (user.isPresent()) {

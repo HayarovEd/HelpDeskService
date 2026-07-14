@@ -113,6 +113,12 @@ logging:
   level:
     org.springframework: DEBUG
     ru.impuls.helpdeskservice: DEBUG
+    org.springframework.cloud.openfeign: DEBUG
+    org.springframework.web: DEBUG
+
+external:
+  service:
+    base-url: http://10.222.222.174:9998/api/
 
 ---
 # ===================================================================
@@ -143,3 +149,7 @@ logging:
   level:
     org.springframework: INFO
     ru.impuls.helpdeskservice: INFO
+
+external:
+  service:
+    base-url: http://77.236.64.205:9998/api/

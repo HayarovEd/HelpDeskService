@@ -46,7 +46,10 @@ public class UserHelperServiceImpl implements UserHelperService {
 
     @Override
     public User createNewUser(UserBillingRequest response) {
-        User newUser = User.builder()
+
+        //   User savedUser = userRepo.save(newUser);
+      //  webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
+        return User.builder()
                 .name(response.name())
                 .username(response.username())
                 .email(response.email())
@@ -55,10 +58,6 @@ public class UserHelperServiceImpl implements UserHelperService {
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getDefaultRole())
                 .build();
-
-        User savedUser = userRepo.save(newUser);
-        webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
-        return savedUser;
     }
 
     private Role getDefaultRole() {
