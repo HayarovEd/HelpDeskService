@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.impuls.helpdeskservice.auth.dto.request.LoginRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.TokenResponse;
+import ru.impuls.helpdeskservice.auth.dto.response.UnregisteredUserRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.entity.Token;
 import ru.impuls.helpdeskservice.auth.entity.User;
@@ -24,7 +25,6 @@ import ru.impuls.helpdeskservice.client.ExternalServiceClient;
 import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
-import ru.impuls.helpdeskservice.dto.response.ValidateToken;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
@@ -70,6 +70,12 @@ public class AuthServiceImpl implements AuthService {
         } else {
             newUser = userHelperService.createNewUser(userBillingRequest);
         }
+        return generateToken(newUser, servletResponse);
+    }
+
+    @Override
+    public TokenResponse loginUnregisteredUser(UnregisteredUserRequest unregisteredUserRequest, HttpServletResponse servletResponse) {
+        var newUser = userHelperService.createUnregisteredNewUser(unregisteredUserRequest);
         return generateToken(newUser, servletResponse);
     }
 

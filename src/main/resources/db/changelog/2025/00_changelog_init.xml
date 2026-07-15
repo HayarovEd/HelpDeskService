@@ -68,4 +68,18 @@
                  splitStatements="false"/>
     </changeSet>
 
+    <changeSet author="Your Name" id="05072026-add-unknown-group1">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="groups"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM groups WHERE name = 'Незарегистированные'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <sqlFile path="05_add_unknown_group.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

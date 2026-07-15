@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.impuls.helpdeskservice.auth.dto.response.UnregisteredUserRequest;
 import ru.impuls.helpdeskservice.auth.dto.response.UserBillingRequest;
 import ru.impuls.helpdeskservice.auth.entity.Role;
 import ru.impuls.helpdeskservice.auth.entity.User;
@@ -17,7 +18,6 @@ import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
-import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 
@@ -60,9 +60,30 @@ public class UserHelperServiceImpl implements UserHelperService {
                 .build();
     }
 
+    @Override
+    public User createUnregisteredNewUser(UnregisteredUserRequest response) {
+        //   User savedUser = userRepo.save(newUser);
+        //  webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
+        var newUser =  User.builder()
+                .name(response.name())
+                .username(response.phone())
+                .email(response.email())
+                .password(passwordEncoder.encode("12345"))
+                .disabled(false)
+                .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
+                .role(getUnregisteredRole())
+                .build();
+        return userRepo.save(newUser);
+    }
+
     private Role getDefaultRole() {
         // Получаем роль по умолчанию (например, USER)
         return roleRepo.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
+    }
+
+    private Role getUnregisteredRole() {
+        return roleRepo.findByName("UNREGISTERED_USER")
                 .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 }
