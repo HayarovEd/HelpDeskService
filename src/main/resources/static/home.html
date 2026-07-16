@@ -494,6 +494,15 @@
 <div id="groupModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3 id="groupModalTitle"></h3><form id="groupForm"><input type="hidden" id="groupId"><div class="form-row"><label>Название группы: <input type="text" id="groupName" required style="width: 95%; padding: 8px;"></label></div><div class="form-row"><label>Внутренний номер: <input type="number" id="groupOperId" required style="width: 95%; padding: 8px;"></label></div><button type="submit" style="margin-top: 10px;">Сохранить</button></form></div></div>
 <div id="passwordModal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h3>Смена пароля</h3><form id="passwordForm"><input type="hidden" id="passwordUserId"><div class="form-row"><label>Новый пароль: <input type="password" id="newPassword" required></label></div><button type="submit">Сохранить</button></form></div></div>
 
+<!-- Unread Messages Modal -->
+<div id="unread-message-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3>Предупреждение</h3>
+        <p>У вас есть непрочитанные сообщения от клиентов.</p>
+    </div>
+</div>
+
 <script>
     // --- AUTH & FETCH WRAPPER ---
     function parseJwt(token) {
@@ -1803,33 +1812,13 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const NOTIFICATION_INTERVAL = 10 * 60 * 1000; // 10 minutes
+        const unreadMessageModal = document.getElementById('unread-message-modal');
+        const unreadMessageModalCloseBtn = unreadMessageModal.querySelector('.close-btn');
 
-        // 1. Request notification permission on load
-        function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                console.log("This browser does not support desktop notification");
-                return;
-            }
+        unreadMessageModalCloseBtn.onclick = () => {
+            unreadMessageModal.style.display = 'none';
+        };
 
-            if (Notification.permission !== "granted") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        console.log("Notification permission granted.");
-                    } else {
-                        console.log("Notification permission denied.");
-                    }
-                });
-            }
-        }
-
-        // 2. Function to show a notification
-        function showNotification(title, body) {
-            if (Notification.permission === "granted") {
-                new Notification(title, { body: body, icon: '/path/to/your/icon.png' }); // Optional: add an icon
-            }
-        }
-
-        // 3. Function to check for unread messages
         async function checkForUnreadMessages() {
             console.log("Checking for unread messages...");
             try {
@@ -1865,8 +1854,8 @@
                 }
 
                 if (hasUnread) {
-                    console.log("Found unread client messages. Showing notification.");
-                    showNotification("Новые сообщения", "У вас есть непрочитанные сообщения от клиентов.");
+                    console.log("Found unread client messages. Showing modal.");
+                    unreadMessageModal.style.display = 'block';
                 } else {
                     console.log("No unread client messages found.");
                 }
@@ -1877,10 +1866,7 @@
         }
 
         // Initial setup
-        requestNotificationPermission();
         setInterval(checkForUnreadMessages, NOTIFICATION_INTERVAL);
-        // Optional: run the check once on page load as well
-        // checkForUnreadMessages();
     });
 </script>
 </body>
