@@ -1,0 +1,1374 @@
+// --- AUTH & FETCH WRAPPER ---
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) { return null; }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    let token = localStorage.getItem('accessToken');
+    if (!token) {
+        window.location.href = '/login.html';
+        throw new Error('No token found');
+    }
+
+    const decodedToken = parseJwt(token);
+    if (decodedToken && decodedToken.exp * 1000 < Date.now() + 30000) {
+        console.log('Access token expired, refreshing...');
+        try {
+            const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+            if (!refreshResponse.ok) throw new Error('Refresh failed');
+
+            const newTokenData = await refreshResponse.json();
+            token = newTokenData.token;
+            localStorage.setItem('accessToken', token);
+            console.log('Token refreshed successfully.');
+        } catch (error) {
+            console.error('Session expired, redirecting to login.', error);
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login.html';
+            throw new Error('Session expired');
+        }
+    }
+
+    const newOptions = { ...options };
+    if (options.body instanceof FormData) {
+        newOptions.headers = { ...newOptions.headers };
+        delete newOptions.headers['Content-Type'];
+    }
+    newOptions.headers = { ...newOptions.headers, 'Authorization': 'Bearer ' + token };
+
+    return fetch(url, newOptions);
+}
+
+async function downloadFile(storedName, fileName) {
+    const token = localStorage.getItem('accessToken');
+    const fileUrl = `/api/files/${storedName}`;
+
+    // Показываем индикатор загрузки
+    showDownloadingIndicator(storedName);
+
+    try {
+        const response = await fetch(fileUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Ошибка загрузки' }));
+            throw new Error(errorData.message || 'Не удалось скачать файл');
+        }
+
+        // Получаем blob из ответа
+        const blob = await response.blob();
+
+        // Создаем ссылку для скачивания
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || storedName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Освобождаем память
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, 100);
+
+        console.log(`Файл "${fileName}" скачан успешно`);
+
+    } catch (error) {
+        console.error('Ошибка скачивания:', error);
+        alert('Не удалось скачать файл: ' + error.message);
+    } finally {
+        // Убираем индикатор загрузки
+        hideDownloadingIndicator(storedName);
+    }
+}
+
+/**
+ * Показ индикатора загрузки на кнопке
+ */
+function showDownloadingIndicator(storedName) {
+    const buttons = document.querySelectorAll('.download-btn');
+    buttons.forEach(btn => {
+        const parent = btn.closest('.message-attachment');
+        if (parent && parent.querySelector(`[data-url*="${storedName}"]`)) {
+            btn.textContent = '⏳';
+            btn.style.opacity = '0.6';
+            btn.disabled = true;
+        }
+    });
+}
+
+/**
+ * Скрытие индикатора загрузки
+ */
+function hideDownloadingIndicator(storedName) {
+    const buttons = document.querySelectorAll('.download-btn');
+    buttons.forEach(btn => {
+        const parent = btn.closest('.message-attachment');
+        if (parent && parent.querySelector(`[data-url*="${storedName}"]`)) {
+            btn.textContent = '⬇️';
+            btn.style.opacity = '1';
+            btn.disabled = false;
+        }
+    });
+}
+
+// ============================================================
+// МОДАЛЬНОЕ ОКНО ПРОСМОТРА МЕДИА
+// ============================================================
+
+const mediaViewer = {
+    modal: document.getElementById('media-viewer-modal'),
+    content: document.querySelector('.media-viewer-content'),
+    closeBtn: document.querySelector('.media-viewer-close'),
+    prevBtn: document.querySelector('.media-viewer-prev'),
+    nextBtn: document.querySelector('.media-viewer-next'),
+    counter: document.querySelector('.media-viewer-counter'),
+    loader: document.querySelector('.media-viewer-loader'),
+
+    mediaItems: [],
+    currentIndex: 0,
+
+    init() {
+        // Закрытие по клику на крестик
+        this.closeBtn.addEventListener('click', () => this.close());
+
+        // Закрытие по клику на фон
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.close();
+            }
+        });
+
+        // Навигация
+        this.prevBtn.addEventListener('click', () => this.navigate(-1));
+        this.nextBtn.addEventListener('click', () => this.navigate(1));
+
+        // Клавиатурная навигация
+        document.addEventListener('keydown', (e) => {
+            if (this.modal.classList.contains('active')) {
+                if (e.key === 'Escape') this.close();
+                if (e.key === 'ArrowLeft') this.navigate(-1);
+                if (e.key === 'ArrowRight') this.navigate(1);
+            }
+        });
+
+        // Предотвращаем закрытие при клике на контент
+        this.content.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    },
+
+    async open(items, startIndex = 0) {
+        this.mediaItems = items;
+        this.currentIndex = startIndex;
+        this.modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        await this.showMedia(this.currentIndex);
+        this.updateCounter();
+        this.updateNavigationButtons();
+    },
+
+    close() {
+        this.modal.classList.remove('active');
+        document.body.style.overflow = '';
+
+        // Очищаем контент
+        setTimeout(() => {
+            this.content.innerHTML = '<div class="media-viewer-loader">Загрузка...</div>';
+        }, 300);
+    },
+
+    async navigate(direction) {
+        const newIndex = this.currentIndex + direction;
+
+        if (newIndex >= 0 && newIndex < this.mediaItems.length) {
+            this.currentIndex = newIndex;
+            await this.showMedia(this.currentIndex);
+            this.updateCounter();
+            this.updateNavigationButtons();
+        }
+    },
+
+    async showMedia(index) {
+        this.showLoader();
+
+        const item = this.mediaItems[index];
+        const token = localStorage.getItem('accessToken');
+
+        try {
+            const response = await fetch(item.url, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load media');
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+
+            this.content.innerHTML = '';
+
+            if (item.type.startsWith('image/')) {
+                // Изображения
+                const img = document.createElement('img');
+                img.src = objectUrl;
+                img.className = 'media-viewer-image';
+                img.alt = item.fileName || 'Image';
+
+                img.onload = () => {
+                    this.hideLoader();
+                };
+
+                img.onerror = () => {
+                    this.showError('Ошибка загрузки изображения');
+                };
+
+                this.content.appendChild(img);
+            } else if (item.type.startsWith('video/')) {
+                // Видео
+                const video = document.createElement('video');
+                video.src = objectUrl;
+                video.className = 'media-viewer-video';
+                video.controls = true;
+                video.autoplay = true;
+
+                video.onloadeddata = () => {
+                    this.hideLoader();
+                };
+
+                video.onerror = () => {
+                    this.showError('Ошибка загрузки видео');
+                };
+
+                this.content.appendChild(video);
+            } else if (item.type === 'application/pdf') {
+                // PDF файлы
+                const iframe = document.createElement('iframe');
+                iframe.src = objectUrl;
+                iframe.className = 'media-viewer-image'; // Используем тот же класс для стилизации
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.borderRadius = '4px';
+                iframe.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
+
+                iframe.onload = () => {
+                    this.hideLoader();
+                };
+
+                iframe.onerror = () => {
+                    this.showError('Ошибка загрузки PDF');
+                };
+
+                this.content.appendChild(iframe);
+            }
+
+            // Очищаем object URL когда он больше не нужен
+            setTimeout(() => {
+                if (this.content.querySelector('img')?.src !== objectUrl &&
+                    this.content.querySelector('video')?.src !== objectUrl &&
+                    this.content.querySelector('iframe')?.src !== objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                }
+            }, 1000);
+
+        } catch (error) {
+            console.error('Error loading media:', error);
+            this.showError('Не удалось загрузить медиафайл');
+        }
+    },
+
+    showLoader() {
+        const existingLoader = this.content.querySelector('.media-viewer-loader');
+        if (!existingLoader) {
+            const loader = document.createElement('div');
+            loader.className = 'media-viewer-loader';
+            loader.textContent = 'Загрузка...';
+            this.content.appendChild(loader);
+        }
+    },
+
+    hideLoader() {
+        const loader = this.content.querySelector('.media-viewer-loader');
+        if (loader) {
+            loader.remove();
+        }
+    },
+
+    showError(message) {
+        this.hideLoader();
+        this.content.innerHTML = `
+            <div style="color: white; text-align: center; font-size: 18px;">
+                <p>❌ ${message}</p>
+            </div>
+        `;
+    },
+
+    updateCounter() {
+        if (this.mediaItems.length > 1) {
+            this.counter.textContent = `${this.currentIndex + 1} / ${this.mediaItems.length}`;
+            this.counter.style.display = 'block';
+        } else {
+            this.counter.style.display = 'none';
+        }
+    },
+
+    updateNavigationButtons() {
+        if (this.mediaItems.length <= 1) {
+            this.prevBtn.style.display = 'none';
+            this.nextBtn.style.display = 'none';
+        } else {
+            this.prevBtn.style.display = this.currentIndex === 0 ? 'none' : 'flex';
+            this.nextBtn.style.display = this.currentIndex === this.mediaItems.length - 1 ? 'none' : 'flex';
+        }
+    }
+};
+
+// ============================================================
+// ФУНКЦИИ ДЛЯ ОТОБРАЖЕНИЯ ВЛОЖЕНИЙ
+// ============================================================
+
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileIcon(mimeType) {
+    if (!mimeType) return '📄';
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.startsWith('video/')) return '🎬';
+    if (mimeType.startsWith('audio/')) return '🎵';
+    switch (mimeType) {
+        case 'application/pdf': return '📕';
+        case 'application/msword': return '📘';
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return '📘';
+        case 'application/vnd.ms-excel': return '📗';
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return '📗';
+        case 'application/vnd.ms-powerpoint': return '📙';
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return '📙';
+        case 'text/plain': return '📃';
+        default: return '📄';
+    }
+}
+
+function getFileTypeLabel(mimeType) {
+    if (!mimeType) return 'DOC';
+    if (mimeType.startsWith('image/')) return 'Image';
+    if (mimeType.startsWith('video/')) return 'Video';
+    if (mimeType.startsWith('audio/')) return 'Audio';
+    switch (mimeType) {
+        case 'application/pdf': return 'PDF';
+        case 'application/msword': return 'DOC';
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return 'DOCX';
+        case 'application/vnd.ms-excel': return 'XLS';
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': return 'XLSX';
+        case 'application/vnd.ms-powerpoint': return 'PPT';
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation': return 'PPTX';
+        case 'text/plain': return 'TXT';
+        default: return 'DOC';
+    }
+}
+
+function renderMessageFiles(files, allMessageFiles = null) {
+    if (!files || files.length === 0) return '';
+
+    let attachmentsHtml = '';
+    const mediaFiles = allMessageFiles || files;
+
+    files.forEach((file, fileIndex) => {
+        const storedName = file.image_url || file.stored_name;
+        const fileSize = file.file_size || file.size || 0;
+        const mimeType = file.mime_type || file.mimeType || '';
+        const fileName = file.file_name || storedName || 'Файл';
+
+        const isImage = mimeType.startsWith('image/');
+        const isVideo = mimeType.startsWith('video/');
+        const isAudio = mimeType.startsWith('audio/');
+        const isPdf = mimeType === 'application/pdf';
+        const isDocument = !isImage && !isVideo && !isAudio && !isPdf;
+
+        const fileUrl = `/api/files/${storedName}`;
+        const fileIcon = getFileIcon(mimeType);
+        const fileTypeLabel = getFileTypeLabel(mimeType);
+        const formattedSize = formatFileSize(fileSize);
+
+        // Определяем, можно ли открыть в модальном окне (изображения, видео и PDF)
+        const canOpenInViewer = true;
+
+        attachmentsHtml += `
+    <div class="message-attachment"
+         data-type="${mimeType}"
+         data-url="${fileUrl}"
+         data-filename="${fileName}"
+         ${canOpenInViewer ? 'data-viewable="true"' : ''}
+         data-media-index="${fileIndex}">
+        ${canOpenInViewer ? `
+        <div class="attachment-preview ${isImage ? 'image-preview' : ''} ${isVideo ? 'video-preview' : ''} ${isPdf ? 'pdf-preview' : ''}">
+            ${isImage ? `
+                <div class="image-loader" data-url="${fileUrl}"
+                     style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#999;font-size:14px;">
+                    ⏳ Загрузка...
+                </div>
+            ` : isPdf ? `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f5;">
+                    <span style="font-size:48px;">📕</span>
+                    <span style="font-size:12px;color:#666;margin-top:4px;">PDF</span>
+                </div>
+            ` : `
+                <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
+                    ${fileIcon}
+                </div>
+            `}
+
+            ${isVideo ? `
+                <div class="attachment-overlay">
+                    <span class="play-icon">▶</span>
+                </div>
+            ` : ''}
+
+            ${isPdf ? `
+                <div class="attachment-overlay" style="opacity: 0.8;">
+                    <span style="font-size: 24px; color: white; background: rgba(0,0,0,0.6); border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">👁</span>
+                </div>
+            ` : ''}
+        </div>
+        ` : `
+        <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="attachment-link">
+            <div class="attachment-preview">
+                <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;color:#999;">
+                    ${fileIcon}
+                </div>
+
+                ${isDocument ? `
+                    <div class="document-icon-overlay">
+                        <span class="doc-icon">${fileIcon}</span>
+                        <span class="doc-type">${fileTypeLabel}</span>
+                    </div>
+                ` : ''}
+
+                ${isAudio ? `
+                    <div class="document-icon-overlay">
+                        <span class="doc-icon">🎵</span>
+                        <span class="doc-type">AUDIO</span>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="attachment-info">
+                <span class="file-size">${formattedSize}</span>
+            </div>
+        </a>
+        `}
+        <div class="attachment-info" style="${canOpenInViewer ? 'display:flex;' : 'display:none;'}">
+            <span class="file-size">${formattedSize}</span>
+            <button class="download-btn" onclick="event.stopPropagation(); downloadFile('${storedName}', '${fileName}')" title="Скачать файл">
+            ⬇️
+        </button>
+        </div>
+
+    </div>
+`;
+    });
+
+    return `<div class="message-attachments">${attachmentsHtml}</div>`;
+}
+
+// Загрузка изображений с Bearer-токеном
+async function loadImagesWithAuth() {
+    const loaders = document.querySelectorAll('.image-loader');
+    const token = localStorage.getItem('accessToken');
+
+    for (const loader of loaders) {
+        const url = loader.dataset.url;
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                const img = document.createElement('img');
+                img.src = objectUrl;
+                img.alt = 'Image';
+                img.className = 'attachment-thumbnail';
+                img.loading = 'lazy';
+
+                loader.parentNode.replaceChild(img, loader);
+            } else {
+                loader.innerHTML = '❌ Ошибка загрузки';
+                loader.style.fontSize = '14px';
+                loader.style.color = '#e74c3c';
+            }
+        } catch (error) {
+            console.error('Error loading image:', error);
+            loader.innerHTML = '❌';
+            loader.style.fontSize = '32px';
+            loader.style.color = '#e74c3c';
+        }
+    }
+
+    // Добавляем обработчики кликов для открытия медиа-вьювера
+    attachMediaViewerListeners();
+}
+
+/**
+ * Добавляет обработчики кликов на вложения для открытия в модальном окне
+ */
+function attachMediaViewerListeners() {
+    // Добавляем обработчики только для изображений и видео
+    const viewableAttachments = document.querySelectorAll('.message-attachment[data-viewable="true"]');
+
+    viewableAttachments.forEach(attachment => {
+        // Удаляем старый обработчик, если есть
+        attachment.removeEventListener('click', handleAttachmentClick);
+        // Добавляем новый
+        attachment.addEventListener('click', handleAttachmentClick);
+    });
+
+    // Для остальных файлов (документы, аудио) добавляем курсор-указатель только если есть ссылка
+    const nonViewableAttachments = document.querySelectorAll('.message-attachment:not([data-viewable="true"])');
+    nonViewableAttachments.forEach(attachment => {
+        attachment.style.cursor = 'default';
+        attachment.removeEventListener('click', handleAttachmentClick);
+    });
+}
+
+/**
+ * Обработчик клика на вложение
+ */
+function handleAttachmentClick(e) {
+    // Не открываем, если кликнули на кнопку скачивания
+    if (e.target.closest('.download-btn')) {
+        return;
+    }
+
+    const attachment = e.currentTarget;
+    const mimeType = attachment.dataset.type;
+
+    // Проверяем, что это изображение, видео или PDF
+    if (!mimeType ||
+        (!mimeType.startsWith('image/') &&
+            !mimeType.startsWith('video/') &&
+            mimeType !== 'application/pdf')) {
+        // Для остальных типов файлов ничего не делаем
+        return;
+    }
+
+    const messageAttachments = attachment.closest('.message-attachments');
+
+    // Собираем все просматриваемые вложения из этого сообщения
+    const allViewableAttachments = messageAttachments.querySelectorAll('.message-attachment[data-viewable="true"]');
+
+    // Формируем массив медиа-элементов
+    const mediaItems = Array.from(allViewableAttachments).map(att => ({
+        url: att.dataset.url,
+        type: att.dataset.type,
+        fileName: att.dataset.filename
+    }));
+
+    // Находим индекс текущего элемента
+    const currentIndex = Array.from(allViewableAttachments).indexOf(attachment);
+
+    // Открываем модальное окно
+    mediaViewer.open(mediaItems, currentIndex >= 0 ? currentIndex : 0);
+}
+
+// --- ОСТАЛЬНОЙ КОД ---
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // --- MAIN APPLICATION LOGIC ---
+    if (!localStorage.getItem('accessToken')) {
+        window.location.href = '/login.html';
+        return;
+    }
+
+    let availableRoles = [];
+    try {
+        const response = await fetchWithAuth('/api/roles');
+        if (!response.ok) throw new Error('Could not fetch roles');
+        availableRoles = await response.json();
+    } catch (error) {
+        console.error(error);
+        document.getElementById('user-error').textContent = 'Failed to load roles. User management is disabled.';
+    }
+
+    let currentChat = null;
+    const tokenPayload = parseJwt(localStorage.getItem('accessToken'));
+    const currentUserId = tokenPayload.sub;
+    const currentUserRole = tokenPayload.role;
+    const isAdmin = currentUserRole === 'ADMIN';
+    let messageObserver;
+    let allUsers = [];
+
+    // --- UI Permissions ---
+    if (!isAdmin) {
+        document.getElementById('add-user-btn').style.display = 'none';
+        document.getElementById('add-group-btn').style.display = 'none';
+    }
+
+    function setupMessageObserver() {
+        if (messageObserver) {
+            messageObserver.disconnect();
+        }
+        const options = {
+            root: document.getElementById('message-container'),
+            rootMargin: '0px',
+            threshold: 1.0
+        };
+        messageObserver = new IntersectionObserver(handleMessageIntersection, options);
+    }
+
+    async function handleMessageIntersection(entries, observer) {
+        if (!currentChat || !currentChat.is_work) return;
+
+        const activeSupportConnection = currentChat.connections?.find(c => c.user && c.end === null);
+        const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+
+        if (!isCurrentUserResponder) return;
+
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                const messageId = entry.target.dataset.unreadMessageId;
+                console.log(`Message ${messageId} is visible. Marking as read.`);
+                try {
+                    await fetchWithAuth(`/api/messages/${messageId}/read`, { method: 'POST' });
+                    observer.unobserve(entry.target);
+                    entry.target.removeAttribute('data-unread-message-id');
+                    entry.target.classList.remove('unread');
+                } catch (error) {
+                    console.error(`Failed to mark message ${messageId} as read:`, error);
+                }
+            }
+        }
+    }
+
+    // --- WEBSOCKET SETUP ---
+    function connectWebSocket() {
+        const token = localStorage.getItem('accessToken');
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
+        const socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => console.log("WebSocket connection established.");
+        socket.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log('Received WebSocket message:', message);
+
+                if (message.path === '/users') {
+                    fetchAndRenderUsers();
+                }
+                if (message.path && message.path.startsWith('/chats')) {
+                    fetchAndRenderGroups();
+                    if (currentChat) {
+                        fetchAndRenderChatDetails(currentChat.id);
+                    }
+                }
+                if (message.path === '/messages/read') {
+                    const messageId = message.data.id;
+                    const readReceiptSpan = document.getElementById(`read-receipt-${messageId}`);
+                    if (readReceiptSpan) {
+                        readReceiptSpan.textContent = '✓✓';
+                    }
+                    const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
+                    if (messageElement) {
+                        messageElement.classList.remove('unread');
+                    }
+                }
+            } catch (e) { console.error('Error parsing WebSocket message:', e); }
+        };
+        socket.onclose = () => setTimeout(connectWebSocket, 5000);
+        socket.onerror = (error) => console.error("WebSocket error:", error);
+    }
+
+    // --- LOGOUT ---
+    document.getElementById('logout-btn').addEventListener('click', async function() {
+        try {
+            await fetchWithAuth('/api/auth/logout', { method: 'POST' });
+        } finally {
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login.html';
+        }
+    });
+
+    const userList = document.getElementById('user-list');
+    const groupList = document.getElementById('group-list');
+    const mainContentPlaceholder = document.getElementById('main-content-placeholder');
+    const chatView = document.getElementById('chat-view');
+    const chatHeader = document.getElementById('chat-header');
+    const chatTitle = document.getElementById('chat-title');
+    const chatParticipants = document.getElementById('chat-participants');
+    const joinChatBtn = document.getElementById('join-chat-btn');
+    const exitChatBtn = document.getElementById('exit-chat-btn');
+    const closeChatBtn = document.getElementById('close-chat-btn');
+    const messageContainer = document.getElementById('message-container');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const userModal = document.getElementById('userModal');
+    const userForm = document.getElementById('userForm');
+    const groupModal = document.getElementById('groupModal');
+    const groupForm = document.getElementById('groupForm');
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordForm = document.getElementById('passwordForm');
+
+    // --- ATTACHMENT ELEMENTS ---
+    const attachBtn = document.getElementById('attach-btn');
+    const fileInput = document.getElementById('file-input');
+    const attachmentPreviewContainer = document.getElementById('attachment-preview-container');
+    const attachmentFilename = document.getElementById('attachment-filename');
+    const removeAttachmentBtn = document.getElementById('remove-attachment-btn');
+
+    // --- COLLAPSIBLE HEADERS ---
+    document.getElementById('users-header').addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() !== 'span') {
+            userList.style.display = userList.style.display === 'none' ? 'block' : 'none';
+        }
+    });
+    document.getElementById('groups-header').addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() !== 'span') {
+            groupList.style.display = groupList.style.display === 'none' ? 'block' : 'none';
+        }
+    });
+
+    // --- MODAL HANDLING ---
+    function setupModal(modal, closeBtnClass) {
+        modal.querySelector(closeBtnClass).onclick = () => modal.style.display = 'none';
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) modal.style.display = 'none';
+        });
+    }
+    setupModal(userModal, '.close-btn');
+    setupModal(groupModal, '.close-btn');
+    setupModal(passwordModal, '.close-btn');
+
+    document.getElementById('add-user-btn').addEventListener('click', () => {
+        openUserModal('Новый пользователь');
+    });
+    document.getElementById('add-group-btn').addEventListener('click', () => {
+        openGroupModal('Новая группа');
+    });
+
+    // --- CHAT VIEW LOGIC ---
+    async function fetchAndRenderChatDetails(chatId) {
+        try {
+            const response = await fetchWithAuth(`/api/chats/${chatId}`);
+            if (!response.ok) throw new Error('Failed to fetch chat details');
+            const chatDetails = await response.json();
+            renderChatDetails(chatDetails);
+        } catch (error) {
+            console.error('Error fetching chat details:', error);
+            alert('Could not load chat.');
+        }
+    }
+
+    function renderChatDetails(chat) {
+        currentChat = chat;
+        mainContentPlaceholder.style.display = 'none';
+        chatView.style.display = 'flex';
+
+        chatTitle.textContent = chat.name;
+
+        const participants = new Set();
+        if (chat.connections) {
+            chat.connections.forEach(conn => {
+                if (conn.user && conn.user.name) {
+                    participants.add(conn.user.name);
+                }
+            });
+        }
+        chatParticipants.textContent = participants.size > 0 ? `Участники: ${[...participants].join(', ')}` : '';
+
+        const activeSupportConnection = chat.connections?.find(c => c.user && c.end === null);
+        const isCurrentUserResponder = activeSupportConnection && activeSupportConnection.user.id === currentUserId;
+        const notificationBlock = document.getElementById('chat-in-work-by-other-user-notification');
+
+        if (chat.is_work && !isCurrentUserResponder && activeSupportConnection) {
+            notificationBlock.textContent = `Чат в работе у пользователя: ${activeSupportConnection.user.name}`;
+            notificationBlock.style.display = 'block';
+        } else {
+            notificationBlock.style.display = 'none';
+        }
+
+        if (chat.is_open && isAdmin) {
+            closeChatBtn.style.display = 'block';
+        } else {
+            closeChatBtn.style.display = 'none';
+        }
+
+        if (chat.is_open && !chat.is_work) {
+            joinChatBtn.style.display = 'block';
+            exitChatBtn.style.display = 'none';
+        } else if (chat.is_work && isCurrentUserResponder) {
+            joinChatBtn.style.display = 'none';
+            exitChatBtn.style.display = 'block';
+        } else {
+            joinChatBtn.style.display = 'none';
+            exitChatBtn.style.display = 'none';
+        }
+
+        setupMessageObserver();
+        messageContainer.innerHTML = '';
+        let allMessages = [];
+        if (chat.connections) {
+            chat.connections.forEach(conn => {
+                if (conn.messages) {
+                    conn.messages.forEach(msg => {
+                        allMessages.push({
+                            ...msg,
+                            senderName: msg.isSupport ? (conn.user ? conn.user.name : 'Support') : chat.name
+                        });
+                    });
+                }
+            });
+        }
+
+        allMessages.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        allMessages.forEach(msg => {
+            const msgDiv = document.createElement('div');
+            msgDiv.setAttribute('data-message-id', msg.id);
+            const isUnreadClientMessage = !msg.isSupport && !msg.is_read;
+            msgDiv.className = `message ${msg.isSupport ? 'support' : 'client'} ${isUnreadClientMessage ? 'unread' : ''}`;
+
+            if (isUnreadClientMessage) {
+                msgDiv.setAttribute('data-unread-message-id', msg.id);
+            }
+
+            const time = new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const readReceiptHtml = msg.isSupport
+                ? `<span class="read-receipt" id="read-receipt-${msg.id}"></span>`
+                : '';
+
+            let messageContent = `<div class="message-text">${msg.text || ''}</div>`;
+
+            // ==== ОТОБРАЖЕНИЕ ФАЙЛОВ ====
+            if (msg.files && msg.files.length > 0) {
+                messageContent += renderMessageFiles(msg.files, msg.files);
+            }
+            // ==== КОНЕЦ ОТОБРАЖЕНИЯ ФАЙЛОВ ====
+
+            msgDiv.innerHTML = `<div class="message-header">${msg.senderName}</div>
+                              ${messageContent}
+                              <div class="message-time">${readReceiptHtml}${time}</div>`;
+
+            messageContainer.appendChild(msgDiv);
+
+            if (msg.isSupport && msg.is_read) {
+                const readReceiptSpan = msgDiv.querySelector(`#read-receipt-${msg.id}`);
+                if (readReceiptSpan) {
+                    readReceiptSpan.textContent = '✓✓';
+                }
+            }
+
+            if (isUnreadClientMessage) {
+                messageObserver.observe(msgDiv);
+            }
+        });
+
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+        setTimeout(() => {
+            loadImagesWithAuth();
+        }, 200);
+    }
+
+    // --- EVENT LISTENERS ---
+    async function loadAndDisplayChats(groupId, chatListContainer) {
+        try {
+            const response = await fetchWithAuth(`/api/chats?groupId=${groupId}`);
+            if (!response.ok) throw new Error('Failed to fetch chats for group');
+            const chats = await response.json();
+
+            const activeChats = chats.filter(chat => chat.is_open);
+            const inactiveChats = chats.filter(chat => !chat.is_open);
+
+            const createChatHtml = (chat, isClosed = false) => `
+                <li class="chat-item-nested ${isClosed ? 'chat-item-closed' : ''}" data-id="${chat.id}">
+                    <div class="chat-name">${chat.name} (${chat.login || 'N/A'})</div>
+                    ${!isClosed && chat.unread_messages_count > 0 ? `<span class="unread-badge">${chat.unread_messages_count}</span>` : ''}
+                </li>`;
+
+            let html = '';
+            if (activeChats.length > 0) {
+                html += '<div class="chat-list-header">Активные</div>';
+                html += activeChats.map(chat => createChatHtml(chat, false)).join('');
+            }
+
+            if (inactiveChats.length > 0) {
+                html += '<div class="chat-list-header">Неактивные</div>';
+                html += inactiveChats.map(chat => createChatHtml(chat, true)).join('');
+            }
+
+            if (html === '') {
+                html = `<li><span style="color: #888; font-style: italic;">Нет чатов</span></li>`;
+            }
+
+            chatListContainer.innerHTML = html;
+            return true;
+        } catch (error) {
+            console.error(error);
+            chatListContainer.innerHTML = `<li><span style="color: red;">Ошибка</span></li>`;
+            return false;
+        }
+    }
+
+    groupList.addEventListener('click', async function(event) {
+        const target = event.target;
+
+        const chatItem = target.closest('.chat-item-nested');
+        if (chatItem) {
+            const chatId = chatItem.dataset.id;
+            fetchAndRenderChatDetails(chatId);
+            return;
+        }
+
+        const groupContainer = target.closest('.group-item-container');
+        if (!groupContainer) return;
+
+        const groupId = groupContainer.dataset.groupId;
+
+        if (target.classList.contains('group-name')) {
+            const chatListContainer = groupContainer.querySelector('.chat-list-nested');
+            const isVisible = chatListContainer.style.display === 'block';
+
+            if (!isVisible && chatListContainer.innerHTML === '') {
+                await loadAndDisplayChats(groupId, chatListContainer);
+            }
+            chatListContainer.style.display = isVisible ? 'none' : 'block';
+        } else if (target.classList.contains('edit-group-btn')) {
+            const groupName = groupContainer.querySelector('.group-name').textContent;
+            const groupResponse = await fetchWithAuth(`/api/groups/${groupId}`);
+            const groupData = await groupResponse.json();
+            openGroupModal('Изменить группу', groupId, groupName, groupData.oper_id);
+        } else if (target.classList.contains('delete-group-btn')) {
+            if (confirm('Вы уверены, что хотите удалить эту группу?')) {
+                try {
+                    const response = await fetchWithAuth(`/api/groups/${groupId}`, { method: 'DELETE' });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Failed to delete group' }));
+                        throw new Error(errorData.message);
+                    }
+                    fetchAndRenderGroups();
+                } catch (error) {
+                    console.error('Error deleting group:', error);
+                    alert('Could not delete group: ' + error.message);
+                }
+            }
+        }
+    });
+
+    joinChatBtn.addEventListener('click', async () => {
+        if (!currentChat) return;
+        try {
+            const response = await fetchWithAuth(`/api/chats/${currentChat.id}/join`, { method: 'POST' });
+            if (!response.ok) throw new Error('Failed to join chat');
+        } catch (error) {
+            console.error('Error joining chat:', error);
+            alert('Could not join chat.');
+        }
+    });
+
+    exitChatBtn.addEventListener('click', async () => {
+        if (!currentChat) return;
+        try {
+            const response = await fetchWithAuth(`/api/chats/${currentChat.id}/exit`, { method: 'POST' });
+            if (!response.ok) throw new Error('Failed to exit chat');
+        } catch (error) {
+            console.error('Error exiting chat:', error);
+            alert('Could not exit chat.');
+        }
+    });
+
+    closeChatBtn.addEventListener('click', async () => {
+        if (!currentChat) return;
+        if (confirm('Вы уверены, что хотите закрыть этот чат? Это действие необратимо.')) {
+            try {
+                const response = await fetchWithAuth(`/api/chats/${currentChat.id}/close`, { method: 'POST' });
+                if (!response.ok) throw new Error('Failed to close chat');
+            } catch (error) {
+                console.error('Error closing chat:', error);
+                alert('Could not close chat.');
+            }
+        }
+    });
+
+    // --- ATTACHMENT LOGIC ---
+    const fileConstraints = {
+        'image': { types: ["image/jpg", "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml"], maxSize: 10 * 1024 * 1024, label: 'Image' },
+        'video': { types: ["video/mp4", "video/mpeg", "video/ogg", "video/webm", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/mp2t"], maxSize: 100 * 1024 * 1024, label: 'Video' },
+        'document': { types: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "text/plain", "application/rtf"], maxSize: 5 * 1024 * 1024, label: 'Document' }
+    };
+    const allAllowedMimeTypes = Object.values(fileConstraints).flatMap(c => c.types);
+    fileInput.accept = allAllowedMimeTypes.join(',');
+
+    function removeAttachment() {
+        fileInput.value = '';
+        attachmentPreviewContainer.style.display = 'none';
+        attachmentFilename.textContent = '';
+    }
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+    removeAttachmentBtn.addEventListener('click', removeAttachment);
+
+    fileInput.addEventListener('change', () => {
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
+
+        // Для нескольких файлов показываем первый
+        const file = files[0];
+        if (!file) return;
+
+        const fileType = Object.values(fileConstraints).find(c => c.types.includes(file.type));
+
+        if (!fileType) {
+            alert(`Неподдерживаемый тип файла: ${file.type}.\n\nДопустимые типы:\nИзображения, Видео, Документы.`);
+            removeAttachment();
+            return;
+        }
+
+        if (file.size > fileType.maxSize) {
+            alert(`Файл слишком большой. Максимальный размер для категории "${fileType.label}" - ${fileType.maxSize / 1024 / 1024} MB.`);
+            removeAttachment();
+            return;
+        }
+
+        const count = files.length > 1 ? ` (+${files.length - 1} файлов)` : '';
+        attachmentFilename.textContent = file.name + count;
+        attachmentPreviewContainer.style.display = 'flex';
+    });
+
+    sendBtn.addEventListener('click', async () => {
+        const messageText = messageInput.value.trim();
+        const files = fileInput.files;
+
+        if ((!messageText && (!files || files.length === 0)) || !currentChat) return;
+
+        const formData = new FormData();
+        const messageCreateDto = { text: messageText };
+        const messageDtoBlob = new Blob([JSON.stringify(messageCreateDto)], { type: 'application/json' });
+        formData.append('data', messageDtoBlob);
+
+        // Добавляем все файлы
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+        }
+
+        try {
+            const response = await fetchWithAuth(`/api/chats/${currentChat.id}/message/support`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to send message' }));
+                throw new Error(errorData.message || 'Failed to send message');
+            }
+
+            messageInput.value = '';
+            removeAttachment();
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Could not send message: ' + error.message);
+        }
+    });
+
+    // --- USER LOGIC ---
+    function openUserModal(title, user = {}) {
+        userModal.querySelector('#userModalTitle').textContent = title;
+        userForm.userId.value = user.id || '';
+        userForm.username.value = user.username || '';
+        userForm.name.value = user.name || '';
+        userForm.email.value = user.email || '';
+        userForm.isDisabled.checked = user.disabled || false;
+        const roleSelect = userForm.role;
+        roleSelect.innerHTML = '';
+        availableRoles.forEach(role => {
+            const option = new Option(role.name, role.id);
+            option.selected = user.role && user.role.id === role.id;
+            roleSelect.add(option);
+        });
+        const passwordRow = document.getElementById('password-row');
+        if (user.id) {
+            passwordRow.style.display = 'none';
+            userForm.password.required = false;
+        } else {
+            passwordRow.style.display = 'block';
+            userForm.password.required = true;
+        }
+        userModal.style.display = 'block';
+    }
+
+    userForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const id = userForm.userId.value;
+        const selectedRole = availableRoles.find(r => r.id === userForm.role.value);
+        const userData = { name: userForm.name.value, username: userForm.username.value, email: userForm.email.value, disabled: userForm.isDisabled.checked, role: selectedRole };
+        const url = id ? `/api/users/${id}` : '/api/users';
+        const method = id ? 'PUT' : 'POST';
+        if (!id) userData.password = userForm.password.value;
+        try {
+            const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(userData) });
+            if (!response.ok) throw new Error('User operation failed');
+            fetchAndRenderUsers();
+            userModal.style.display = 'none';
+        } catch (error) { alert('Error: ' + error.message); }
+    });
+
+    userList.addEventListener('click', async function(event) {
+        const target = event.target;
+        const userLi = target.closest('li');
+        if (!userLi) return;
+        const userId = userLi.dataset.id;
+
+        if (target.classList.contains('edit-user-btn')) {
+            try {
+                const response = await fetchWithAuth(`/api/users`);
+                if (!response.ok) throw new Error('Could not fetch users');
+                const users = await response.json();
+                const userToEdit = users.find(u => u.id === userId);
+                if(userToEdit) openUserModal('Изменить пользователя', userToEdit);
+            } catch (error) { alert('Error: ' + error.message); }
+        } else if (target.classList.contains('change-password-btn')) {
+            openPasswordModal(userId);
+        }
+    });
+
+    function openPasswordModal(userId) {
+        passwordForm.passwordUserId.value = userId;
+        passwordForm.newPassword.value = '';
+        passwordModal.style.display = 'block';
+    }
+
+    passwordForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const userId = passwordForm.passwordUserId.value;
+        const newPassword = passwordForm.newPassword.value;
+
+        if (!userId || !newPassword) {
+            alert('User ID or password missing.');
+            return;
+        }
+
+        try {
+            const response = await fetchWithAuth(`/api/users/${userId}/password`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: newPassword })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to change password' }));
+                throw new Error(errorData.message);
+            }
+
+            alert('Password changed successfully!');
+            passwordModal.style.display = 'none';
+        } catch (error) {
+            console.error('Error changing password:', error);
+            alert('Could not change password: ' + error.message);
+        }
+    });
+
+    // --- GROUP LOGIC ---
+    function openGroupModal(title, id = '', name = '', oper_id = null) {
+        groupModal.querySelector('#groupModalTitle').textContent = title;
+        groupForm.groupId.value = id;
+        groupForm.groupName.value = name;
+        groupForm.groupOperId.value = oper_id || '';
+        groupModal.style.display = 'block';
+    }
+
+    groupForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const id = groupForm.groupId.value;
+        const name = groupForm.groupName.value;
+        const operId = groupForm.groupOperId.value;
+        const url = id ? `/api/groups/${id}` : '/api/groups';
+        const method = id ? 'PUT' : 'POST';
+        try {
+            const response = await fetchWithAuth(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, oper_id: operId }) });
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert('Ошибка: ' + errorData.message);
+                return;
+            }
+            fetchAndRenderGroups();
+            groupModal.style.display = 'none';
+        } catch (error) { alert('Error: ' + error.message); }
+    });
+
+    // --- DATA FETCHING & RENDERING ---
+    async function fetchAndRenderUsers() {
+        try {
+            const response = await fetchWithAuth('/api/users');
+            if (!response.ok) throw new Error(response.statusText);
+            allUsers = await response.json();
+            userList.innerHTML = '';
+
+            const filteredUsers = allUsers.filter(user =>
+                user.role && (user.role.name === 'ADMIN' || user.role.name === 'SUPPORT')
+            );
+
+            filteredUsers.forEach(user => {
+                const listItem = document.createElement('li');
+                listItem.className = 'user-item';
+                listItem.setAttribute('data-id', user.id);
+
+                let actionsHtml = '';
+                if (isAdmin) {
+                    actionsHtml = `<div class="actions">
+                                       <span class="edit-user-btn" title="Редактировать">✏️</span>
+                                       <span class="change-password-btn" title="Сменить пароль">🔑</span>
+                                   </div>`;
+                }
+
+                listItem.innerHTML = `<div class="user-name">${user.name} (${user.username})</div>${actionsHtml}`;
+                userList.appendChild(listItem);
+            });
+        } catch (error) { document.getElementById('user-error').textContent = 'Error fetching users: ' + error.message; }
+    }
+
+    async function fetchAndRenderGroups() {
+        const expandedGroupIds = [];
+        document.querySelectorAll('#group-list .group-item-container').forEach(container => {
+            const chatList = container.querySelector('.chat-list-nested');
+            if (chatList && chatList.style.display === 'block') {
+                expandedGroupIds.push(container.dataset.groupId);
+            }
+        });
+
+        try {
+            const response = await fetchWithAuth('/api/groups');
+            if (!response.ok) throw new Error(response.statusText);
+            const groups = await response.json();
+            groupList.innerHTML = '';
+            groups.forEach(group => {
+                const listItem = document.createElement('li');
+                listItem.className = 'group-item-container';
+                listItem.setAttribute('data-group-id', group.id);
+
+                let actionsHtml = '';
+                if (isAdmin) {
+                    actionsHtml = '<div class="actions"><span class="edit-group-btn">✏️</span><span class="delete-group-btn">🗑️</span></div>';
+                }
+
+                const chatsHtml = '<ul class="chat-list-nested"></ul>';
+                listItem.innerHTML = `<div class="group-item"><div class="group-name">${group.name}</div>${actionsHtml}</div>${chatsHtml}`;
+                groupList.appendChild(listItem);
+            });
+
+            for (const groupId of expandedGroupIds) {
+                const groupContainer = groupList.querySelector(`[data-group-id='${groupId}']`);
+                if (groupContainer) {
+                    const chatListContainer = groupContainer.querySelector('.chat-list-nested');
+                    if (chatListContainer) {
+                        await loadAndDisplayChats(groupId, chatListContainer);
+                        chatListContainer.style.display = 'block';
+                    }
+                }
+            }
+
+        } catch (error) { document.getElementById('group-error').textContent = 'Error fetching groups: ' + error.message; }
+    }
+
+    // --- INITIAL LOAD ---
+    await fetchAndRenderUsers();
+    fetchAndRenderGroups();
+    connectWebSocket();
+    // initializeFirebase();
+
+    // --- NOTIFICATION LOGIC ---
+    const NOTIFICATION_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) {
+            console.log("This browser does not support desktop notification");
+            return;
+        }
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    console.log("Notification permission granted.");
+                } else {
+                    console.log("Notification permission denied.");
+                }
+            });
+        }
+    }
+
+    function showNotification(title, body) {
+        if (Notification.permission === "granted") {
+            new Notification(title, { body: body, icon: '/path/to/your/icon.png' }); // Optional: add an icon
+        }
+    }
+
+    async function checkForUnreadMessages() {
+        console.log("Checking for unread messages...");
+        try {
+            const unassignedChatsPromise = fetchWithAuth('/api/chats?isOpen=true&isWork=false');
+            const myChatsPromise = fetchWithAuth('/api/chats?isOpen=true&isWork=true&isMy=true');
+            const [unassignedResponse, myChatsResponse] = await Promise.all([unassignedChatsPromise, myChatsPromise]);
+
+            if (!unassignedResponse.ok || !myChatsResponse.ok) {
+                console.error("Failed to fetch chat data for notifications.");
+                return;
+            }
+
+            const unassignedChats = await unassignedResponse.json();
+            const myChats = await myChatsResponse.json();
+            const allChats = [...unassignedChats, ...myChats];
+
+            let hasUnread = false;
+            for (const chat of allChats) {
+                if (chat.connections && chat.connections.length > 0) {
+                    for (const connection of chat.connections) {
+                        if (connection.messages && connection.messages.length > 0) {
+                            const unreadClientMessage = connection.messages.find(msg => !msg.isSupport && !msg.is_read);
+                            if (unreadClientMessage) {
+                                hasUnread = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (hasUnread) break;
+            }
+
+            if (hasUnread) {
+                console.log("Found unread client messages. Showing notification.");
+                showNotification("Новые сообщения", "У вас есть непрочитанные сообщения от клиентов.");
+            } else {
+                console.log("No unread client messages found.");
+            }
+        } catch (error) {
+            console.error("Error checking for unread messages:", error);
+        }
+    }
+
+    // Initial setup for notifications
+    requestNotificationPermission();
+    setInterval(checkForUnreadMessages, NOTIFICATION_INTERVAL);
+});

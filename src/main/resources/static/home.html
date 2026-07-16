@@ -1800,5 +1800,88 @@
         // initializeFirebase();
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const NOTIFICATION_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+        // 1. Request notification permission on load
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("This browser does not support desktop notification");
+                return;
+            }
+
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        console.log("Notification permission granted.");
+                    } else {
+                        console.log("Notification permission denied.");
+                    }
+                });
+            }
+        }
+
+        // 2. Function to show a notification
+        function showNotification(title, body) {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body: body, icon: '/path/to/your/icon.png' }); // Optional: add an icon
+            }
+        }
+
+        // 3. Function to check for unread messages
+        async function checkForUnreadMessages() {
+            console.log("Checking for unread messages...");
+            try {
+                // Fetch unassigned chats and chats assigned to the current user
+                const unassignedChatsPromise = fetchWithAuth('/api/chats?isOpen=true&isWork=false');
+                const myChatsPromise = fetchWithAuth('/api/chats?isOpen=true&isWork=true&isMy=true');
+
+                const [unassignedResponse, myChatsResponse] = await Promise.all([unassignedChatsPromise, myChatsPromise]);
+
+                if (!unassignedResponse.ok || !myChatsResponse.ok) {
+                    console.error("Failed to fetch chat data for notifications.");
+                    return;
+                }
+
+                const unassignedChats = await unassignedResponse.json();
+                const myChats = await myChatsResponse.json();
+                const allChats = [...unassignedChats, ...myChats];
+
+                let hasUnread = false;
+                for (const chat of allChats) {
+                    if (chat.connections && chat.connections.length > 0) {
+                        for (const connection of chat.connections) {
+                            if (connection.messages && connection.messages.length > 0) {
+                                const unreadClientMessage = connection.messages.find(msg => !msg.isSupport && !msg.is_read);
+                                if (unreadClientMessage) {
+                                    hasUnread = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (hasUnread) break;
+                }
+
+                if (hasUnread) {
+                    console.log("Found unread client messages. Showing notification.");
+                    showNotification("Новые сообщения", "У вас есть непрочитанные сообщения от клиентов.");
+                } else {
+                    console.log("No unread client messages found.");
+                }
+
+            } catch (error) {
+                console.error("Error checking for unread messages:", error);
+            }
+        }
+
+        // Initial setup
+        requestNotificationPermission();
+        setInterval(checkForUnreadMessages, NOTIFICATION_INTERVAL);
+        // Optional: run the check once on page load as well
+        // checkForUnreadMessages();
+    });
+</script>
 </body>
 </html>

@@ -1,0 +1,423 @@
+body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+#header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid #ccc; height: 70px; box-sizing: border-box; flex-shrink: 0; }
+#header-title { flex-grow: 1; text-align: center; }
+#header-title h1, #header-title p { margin: 0; }
+#logout-btn { width: 85px; padding: 8px 12px; cursor: pointer; background-color: #f44336; color: white; border: none; border-radius: 4px; }
+.header-spacer { width: 85px; flex-shrink: 0; }
+.container { display: flex; flex-grow: 1; overflow: hidden; }
+#side-panel { width: 300px; border-right: 1px solid #ccc; padding: 20px; box-sizing: border-box; overflow-y: auto; flex-shrink: 0; }
+#main-panel { flex-grow: 1; display: flex; flex-direction: column; }
+#main-content-placeholder { text-align: center; padding: 20px; }
+#chat-view { display: none; flex-direction: column; height: 100%; }
+#chat-header { padding: 10px; border-bottom: 1px solid #ccc; text-align: center; position: relative; }
+#chat-title { font-size: 1.2em; font-weight: bold; }
+#chat-participants { font-size: 0.8em; color: #555; margin-top: 4px; }
+#join-chat-btn, #exit-chat-btn, #close-chat-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; }
+#close-chat-btn { right: 120px; background-color: #dc3545; border-color: #dc3545; color: white; border-radius: 4px; }
+#message-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; }
+.message { max-width: 70%; min-width: 20%; padding: 10px; padding-bottom: 25px; border-radius: 10px; margin-bottom: 10px; word-wrap: break-word; position: relative; }
+.message-header { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+.message-text { font-size: 1em; }
+.message-time { font-size: 0.75em; color: #888; position: absolute; bottom: 5px; right: 10px; }
+.message.support { background-color: #dcf8c6; align-self: flex-end; }
+.message.client { background-color: #f1f0f0; align-self: flex-start; }
+.message.unread { border-left: 3px solid #007bff; }
+.read-receipt { color: #007bff; margin-right: 4px; font-weight: bold; }
+#message-input-container { padding: 10px; border-top: 1px solid #ccc; display: flex; flex-direction: column; }
+#message-input-row { display: flex; width: 100%; }
+#message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+#send-btn { width: 100px; padding: 10px; margin-left: 10px; }
+#attach-btn { padding: 10px; margin-left: 10px; font-size: 1.2em; line-height: 1; border-radius: 5px; border: 1px solid #ccc; background-color: #f8f8f8; cursor: pointer; }
+#attachment-preview-container { display: none; justify-content: space-between; align-items: center; padding: 5px 10px; background-color: #f1f1f1; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; }
+#attachment-filename { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
+#remove-attachment-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+.collapsible-header { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+.add-btn { cursor: pointer; font-size: 20px; padding: 0 10px; }
+ul { list-style-type: none; padding: 0; }
+li { margin-bottom: 5px; }
+.group-item-container, .user-item { padding: 4px 0; }
+.group-item, .subgroup-item, .user-item { display: flex; justify-content: space-between; align-items: center; }
+.group-name, .user-name, .chat-name { cursor: pointer; flex-grow: 1; }
+.actions { margin-left: auto; white-space: nowrap; }
+.actions span { cursor: pointer; margin-left: 8px; font-size: 16px; }
+.subgroup-list { display: none; padding-left: 20px; margin-top: 5px; }
+.chat-list-nested { padding-left: 20px; display: none; }
+.chat-item-nested { display: flex; align-items: center; padding-left: 10px; cursor: pointer; border-radius: 4px; }
+.chat-item-closed { background-color: #f0f0f0; color: #888; }
+.chat-item-closed .chat-name { text-decoration: line-through; }
+.subgroup-item > span { cursor: pointer; flex-grow: 1; }
+.chat-list-header { font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #333; }
+.unread-badge { background-color: #dc3545; color: white; border-radius: 10px; padding: 1px 6px; font-size: 0.75em; margin-left: 8px; min-width: 10px; text-align: center; line-height: 1.5; }
+.modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+.modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
+.close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+.close-btn:hover, .close-btn:focus { color: black; text-decoration: none; cursor: pointer; }
+.form-row { margin-bottom: 10px; }
+.form-row label { display: block; margin-bottom: 5px; }
+.form-row input[type="text"], .form-row input[type="email"], .form-row input[type="password"], .form-row input[type="number"], .form-row select { width: 95%; padding: 8px; }
+#chat-in-work-by-other-user-notification { display: none; padding: 10px; background-color: #ffc107; color: #333; text-align: center; border-bottom: 1px solid #ccc; }
+
+.message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.message-attachment {
+    width: 140px;
+    height: 180px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.message-attachment:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.attachment-link {
+    display: block;
+    text-decoration: none;
+    color: #333;
+    height: 100%;
+}
+
+.attachment-preview {
+    position: relative;
+    height: 130px;
+    overflow: hidden;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===== ИЗОБРАЖЕНИЯ - ПОЛНОСТЬЮ ВИДНЫ ===== */
+.attachment-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #fafafa;
+}
+
+/* Для видео затемнение */
+.attachment-preview.video-preview .attachment-thumbnail {
+    filter: brightness(0.7);
+    object-fit: contain;
+}
+
+.attachment-preview.image-preview .attachment-thumbnail {
+    object-fit: contain;
+    background: #f5f5f5;
+}
+
+/* ===== ОСТАЛЬНЫЕ СТИЛИ ===== */
+.attachment-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message-attachment:hover .attachment-overlay {
+    opacity: 1;
+}
+
+.play-icon {
+    font-size: 32px;
+    color: white;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.document-icon-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.92);
+}
+
+.doc-icon {
+    font-size: 48px;
+    margin-bottom: 4px;
+}
+
+.doc-type {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    background: #f0f0f0;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+.attachment-info {
+    padding: 4px 8px;
+    background: white;
+    height: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.attachment-info .file-name {
+    font-size: 11px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-info .file-size {
+    font-size: 10px;
+    color: #888;
+}
+
+/* Галерея в сообщении */
+.message .message-attachments {
+    justify-content: flex-start;
+}
+
+.message.support .message-attachments {
+    justify-content: flex-end;
+}
+
+/* Ссылка на файл (запасной вариант) */
+.file-link-simple {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #e9ecef;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+    font-size: 13px;
+}
+
+.file-link-simple:hover {
+    background: #dee2e6;
+}
+
+/* Кнопка скачивания */
+.download-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    color: #555;
+}
+
+.download-btn:hover {
+    background: #e9ecef;
+    transform: scale(1.1);
+}
+
+.download-btn:active {
+    transform: scale(0.9);
+}
+
+.download-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Кнопка скачивания для видео */
+.attachment-preview.video-preview .download-btn {
+    color: white;
+    background: rgba(0,0,0,0.3);
+}
+
+.attachment-preview.video-preview .download-btn:hover {
+    background: rgba(0,0,0,0.5);
+}
+
+/* Анимация загрузки */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.download-btn.loading {
+    animation: spin 1s linear infinite;
+}
+
+/* ===== МОДАЛЬНОЕ ОКНО ПРОСМОТРА МЕДИА ===== */
+#media-viewer-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#media-viewer-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-viewer-content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-viewer-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.media-viewer-video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.media-viewer-close {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    color: #f1f1f1;
+    font-size: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 10000;
+}
+
+.media-viewer-close:hover,
+.media-viewer-close:focus {
+    color: #bbb;
+}
+
+.media-viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 50px;
+    color: #f1f1f1;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-viewer-nav:hover {
+    color: #bbb;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.media-viewer-prev {
+    left: 20px;
+}
+
+.media-viewer-next {
+    right: 20px;
+}
+
+.media-viewer-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f1f1f1;
+    font-size: 18px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 16px;
+    border-radius: 20px;
+    z-index: 10000;
+}
+
+.media-viewer-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #f1f1f1;
+    font-size: 24px;
+    z-index: 10001;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .media-viewer-content {
+        width: 100%;
+        height: 80%;
+    }
+
+    .media-viewer-close {
+        top: 10px;
+        right: 20px;
+        font-size: 35px;
+    }
+
+    .media-viewer-nav {
+        font-size: 35px;
+        width: 45px;
+        height: 45px;
+    }
+    .media-viewer-content iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 4px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Стили для PDF превью в сообщении */
+    .attachment-preview.pdf-preview {
+        background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    }
+}
