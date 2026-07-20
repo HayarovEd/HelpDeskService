@@ -7,7 +7,7 @@ import ru.impuls.helpdeskservice.dto.response.ValidateToken;
 
 @FeignClient(
         name = "external-service",
-        url = "http://10.222.222.174:9998/api"  // читаем из application.yml
+        url = "${external.service.base-url}"  // читаем из application.yml
 )
 public interface ExternalServiceClient {
 
