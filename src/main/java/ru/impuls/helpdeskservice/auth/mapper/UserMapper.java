@@ -12,10 +12,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.event.UserEvent;
 
+import java.util.ArrayList;
+
 @Mapper(
         componentModel = "spring",
-        imports = {TokenGeneratorUtil.class},
-        unmappedTargetPolicy = ReportingPolicy.ERROR)
+        imports = {TokenGeneratorUtil.class, ArrayList.class},
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
     UserResponse toDto(User user);
@@ -27,6 +29,7 @@ public interface UserMapper {
     @Mapping(target = "password", expression = "java(passwordEncoder.encode(userCreateRequest.password()))")
     @Mapping(target = "tokenVersion", expression = "java(TokenGeneratorUtil.generateNumericToken(8))")
     @Mapping(target = "role", source = "role")
+    @Mapping(target = "firebaseTokens", ignore = true)
     User toEntity(UserCreateRequest userCreateRequest, Role role, @Context PasswordEncoder passwordEncoder);
 
     @Mapping(target = "id", ignore = true)
@@ -39,6 +42,7 @@ public interface UserMapper {
     @Mapping(target = "email", source = "userEditRequest.email")
     @Mapping(target = "disabled", source = "userEditRequest.disabled")
     @Mapping(target = "role", source = "role")
+    @Mapping(target = "firebaseTokens", ignore = true)
     void updateEntity(@MappingTarget User user, UserEditRequest userEditRequest, Role role);
 
     @Mapping(target = "id", ignore = true)
@@ -51,6 +55,7 @@ public interface UserMapper {
     @Mapping(target = "username", ignore = true)
     @Mapping(target = "password", expression = "java(passwordEncoder.encode(passwordRequest.password()))")
     @Mapping(target = "tokenVersion", expression = "java(TokenGeneratorUtil.generateNumericToken(8))")
+    @Mapping(target = "firebaseTokens", ignore = true)
     void updatePassword(@MappingTarget User user, PasswordRequest passwordRequest, @Context PasswordEncoder passwordEncoder);
 
     UserEvent toEvent(User user);

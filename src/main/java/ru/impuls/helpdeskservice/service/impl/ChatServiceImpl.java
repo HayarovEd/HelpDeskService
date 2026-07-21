@@ -20,6 +20,7 @@ import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
+import ru.impuls.helpdeskservice.firebase.service.FcmService;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
@@ -32,6 +33,7 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 import static ru.impuls.helpdeskservice.constant.ErrorMessage.*;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
@@ -43,7 +45,7 @@ import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepo chatRepository;
-   // private final SubgroupRepo subgroupRepo;
+    // private final SubgroupRepo subgroupRepo;
     private final MessageRepo messageRepo;
     private final ChatMapper chatMapper;
     private final ConnectionService connectionService;
@@ -53,12 +55,13 @@ public class ChatServiceImpl implements ChatService {
     private final ConnectionRepo connectionRepo;
     private final UserRepo userRepo;
     private final MessageMapper messageMapper;
+    private final FcmService fcmService;
 
     @Override
     @Transactional(readOnly = true)
     public List<ChatDto> getAll(
             UUID groupId,
-          //  UUID subgroupId,
+            //  UUID subgroupId,
             Instant to,
             String search,
             Boolean isOpen,
@@ -224,7 +227,6 @@ public class ChatServiceImpl implements ChatService {
 
         var user = AuthUtil.getAuthenticatedUser();
         Message newMessage = connectionService.addClientMessage(chat, messageCreateDto.getText(), user, files);
-
         setActiveChat(chat);
         notifyChatUpdated(chat, newMessage);
     }
@@ -232,11 +234,25 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto, List<MultipartFile> files) {
         var userId = AuthUtil.getAuthenticatedUser().getId();
-
+        var user = userRepo.findById(userId).orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
         Message newMessage = connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         setActiveChat(chat);
+        user.getFirebaseTokens().forEach(fcmToken ->
+                {
+                    try {
+                        fcmService.sendNotificationByToken(
+                                fcmToken.getToken(),
+                                "Новое сообщение",
+                                messageCreateDto.getText(),
+                                chat.getId()
+                        );
+                    } catch (ExecutionException | InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+        );
         notifyChatUpdated(chat, newMessage);
     }
 
@@ -259,7 +275,7 @@ public class ChatServiceImpl implements ChatService {
                                                    Boolean isOpen, Boolean isWork,
                                                    User currentUser) {
         return Specification.allOf(
-           //  subgroupId != null ? ChatSpecifications.hasSubgroupId(subgroupId) : null,
+                //  subgroupId != null ? ChatSpecifications.hasSubgroupId(subgroupId) : null,
                 /*subgroupId == null && */groupId != null ? ChatSpecifications.hasGroupId(groupId) : null,
                 to != null ? ChatSpecifications.hasLastMessageBefore(to) : null,
                 search != null && !search.isEmpty() ? ChatSpecifications.matchesSearch(search) : null,
