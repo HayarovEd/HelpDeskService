@@ -5,3 +5,5 @@ databaseChangeLog:
           type: postgresql
   - include:
       file: db/changelog/2025/00_changelog_init.xml
+  - include:
+      file: db/changelog/2026/00_changelog_2026.xml

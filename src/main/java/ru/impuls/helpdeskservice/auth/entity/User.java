@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import ru.impuls.helpdeskservice.entity.BaseEntity;
+import ru.impuls.helpdeskservice.entity.FireBaseToken;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +41,10 @@ public class User extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Singular
     List<Token> tokens;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Singular
+    List<FireBaseToken> firebaseTokens;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

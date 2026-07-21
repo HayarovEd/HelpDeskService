@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "impuls-help-desk",
+  "private_key_id": "5061e154a6ccf152a0f87d5e2726c225a9ed7a18",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDITosliR6sXSed\n5RA/whsowIAw3t2D8PQTDy2ELRNrzZHkdd3U/M8FYGLXsTV+dKSPTwRvzMGb+dZr\n/Ca3k7lcahSoOvjduscOuRkW+1yl6DnYP0vfnJAiCiEhzJtBKDys7sUcNQ7w1gY8\nHEdmzsgol72k+yPMqRE6qDvlnhsvEJm+hGsepxxAorifCepKLbHXDGo5UySvDN0H\nHuz9AXp1xpxMKc02/xD7wSUAWa449Jm2VuGzeJipXOQtK3N+7kQ/fFKviZbwMTT/\nqRp+SJ75pDeXs7ox9x+auA40ihPhgwgXGB+Xon0GtYXgewShczVxEz7J66YyWjjA\nNkEGtzplAgMBAAECggEAAcpP7JE17Lj1bHAabdN0ji/wRV+Mj8wUxmHVmI+Vk5pW\nAjp6ddefmw7yOzbKgVuWB/DfG4ezOEtqmvL5Pp1LpBOPpTRHuqWbd1p4qq+q85Go\niLICIdjCogdApg5v2cx8BFiq+tZPkJ/9FMb07WqON+ypRYL4HjFppcJQrLv1xr0l\nbn+7k55SmOgKY0as8RJz85icd0IUfwt1iYp4OXb7XZvayUn1r0yagxTDBIlAqxtz\nhO4G4a++gibuhEw/cOCwoWJWV8ZVboqYJSkFNvLEMjtOZbwU0UihLqBi8lVvx16j\ng8yagG5106NFXGBy7BW/VEDDVuH/W6q20VvGSM1y+QKBgQD24sxjUJIjfqy3r5L5\nOyaXBMWNFg5HAtuzyYuC0CcF8wwo3+aonlJoSdLWVGmOlAAkuyjCLRNB3q+aSaaq\ngndpCcabEpRaIHGnloVLRAeqdZxCSaOTviFJx47VYbXPIqa6rQyJVANIS6ENRci/\nUmg85YG3qFzcCLZFjxdxTDGMWQKBgQDPs4xK9OnwBqBSvkTp9S3F51Y+HCWde0Mn\nRhhhIpoQmxtNckX+ybdW/vMuTyp9O8r91CdSdPfiCU9b7QSgSTfPDKQ+1H61KcS3\nJYs5xXYaNjxY7wPH5BHxrxMegScKKB2VAfn5PWkeLhb8Fzp/o8F5sTk0Pz0s3QQ3\nVuJvw2Es7QKBgQC9AQvvzDLUsZmQVf1yh/IXEzQZupTbkDiZ/uWrE6eMSnE4qZBv\n7iSwajPamWzmFi+17wJZBSEFAHH28AOD7bV02GMPPL4N8WCRKA6LfF1SBg/GP5HW\n/WuGjBuxB8ij9qclqm06hPKuWhfFjXMN5Qyf8iPIckAEwzanMdCEkAwuoQKBgQCT\ne6L69r3Gum3NU14L4xUFmicbI1FyabxdfuCA2NkdQYY5kBMzwHh3RcHX+E7rbjHN\n23+whW4fCw1W8Q5/4n3Gf+uA0dLHQUl14yrhct1R74EahV3h6ojzXKXu2zald6bJ\n0AV4farOy1t21eesCtOvXbCI8P63hJkh0ognZEz0YQKBgBPgaqcCvNYzNYOEA+wK\n6x1LN7gvvobC2K4Uw4wNBDOviYYu8W+rX7bWFprjYXilxmd9j47MGFadbtDSMUhV\nfcTdk0DaOEVLTbvnO+rTbd6uLC4N4LhdUfaIo0wBAp4zwrdeKgp1WgbhL2nm2hAz\n3jYV72HGwr/vMG0SQE2V3in/\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@impuls-help-desk.iam.gserviceaccount.com",
+  "client_id": "108176077213113939115",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40impuls-help-desk.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
