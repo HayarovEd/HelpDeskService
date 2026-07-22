@@ -33,7 +33,6 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 import static ru.impuls.helpdeskservice.constant.ErrorMessage.*;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
@@ -234,25 +233,30 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto, List<MultipartFile> files) {
         var userId = AuthUtil.getAuthenticatedUser().getId();
-        var user = userRepo.findById(userId).orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
         Message newMessage = connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         setActiveChat(chat);
-        user.getFirebaseTokens().forEach(fcmToken ->
-                {
-                    try {
-                        fcmService.sendNotificationByToken(
-                                fcmToken.getToken(),
-                                "Новое сообщение",
-                                messageCreateDto.getText(),
-                                chat.getId()
+        var users = chat.getConnections().stream()
+                .map(Connection::getUser)
+                .filter(Objects::nonNull)
+                .distinct() // Если нужны уникальные пользователи
+                .toList();
+        users.forEach(user -> {
+                    if (user.getId() != userId) {
+                        user.getFirebaseTokens().forEach(fcmToken -> {
+                                    fcmService.sendNotificationByToken(
+                                            fcmToken.getToken(),
+                                            "Новое сообщение",
+                                            messageCreateDto.getText(),
+                                            chat.getId()
+                                    );
+                                }
                         );
-                    } catch (ExecutionException | InterruptedException e) {
-                        throw new RuntimeException(e);
                     }
                 }
         );
+
         notifyChatUpdated(chat, newMessage);
     }
 
