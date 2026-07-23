@@ -16,4 +16,22 @@
                  splitStatements="false"/>
     </changeSet>
 
+    <changeSet author="Your Name" id="23072026-update-firebase-tokens-table">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="firebase_tokens"/>
+        </preConditions>
+        <sqlFile path="07_update_fire_base_tokens_tb.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
+    <changeSet author="Your Name" id="23072026-add-platform-enum">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="firebase_tokens"/>
+        </preConditions>
+        <sqlFile path="08_add_platform_enum.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>
