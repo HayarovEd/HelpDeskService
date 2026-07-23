@@ -38,7 +38,7 @@ public class FcmService {
         var user = AuthUtil.getAuthenticatedUser();
         User currentUser = userRepo.findById(user.getId())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
-        var fcmToken = fcmMapper.toEntity(tokenRegistrationRequest.token(), currentUser);
+        var fcmToken = fcmMapper.toEntity(tokenRegistrationRequest, currentUser);
         tokenRepo.save(fcmToken);
     }
 

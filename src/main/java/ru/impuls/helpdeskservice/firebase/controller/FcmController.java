@@ -32,7 +32,7 @@ public class FcmController {
             @RequestParam String token,
             @RequestParam String title,
             @RequestParam String body
-    ) throws ExecutionException, InterruptedException {
+    ) {
         fcmService.sendNotificationByToken(token, title, body, null);
     }
 
@@ -42,7 +42,7 @@ public class FcmController {
             @RequestParam String topic,
             @RequestParam String title,
             @RequestParam String body
-    ) throws ExecutionException, InterruptedException {
+    )  {
         fcmService.sendNotificationToTopic(topic, title, body);
     }
 }
