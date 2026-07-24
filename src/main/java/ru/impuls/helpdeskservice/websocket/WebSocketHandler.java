@@ -96,10 +96,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         sessions.forEach(session -> {
             try {
-                if (shouldReceiveMessage(session, path) && shouldSendMessage(session, data)) {
-                    if (session.isOpen()) {
-                        session.sendMessage(new TextMessage(message));
-                    }
+                if (session.isOpen() && shouldReceiveMessage(session, path) && shouldSendMessage(session, data)) {
+                    session.sendMessage(new TextMessage(message));
                 }
             } catch (IOException e) {
                 log.error("Error sending WebSocket message", e);

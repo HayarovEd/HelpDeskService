@@ -20,13 +20,13 @@ import ru.impuls.helpdeskservice.entity.Chat;
 import ru.impuls.helpdeskservice.entity.Connection;
 import ru.impuls.helpdeskservice.entity.Message;
 import ru.impuls.helpdeskservice.exception.AppException;
-import ru.impuls.helpdeskservice.firebase.service.FcmService;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
 import ru.impuls.helpdeskservice.mapper.MessageMapper;
 import ru.impuls.helpdeskservice.repository.*;
 import ru.impuls.helpdeskservice.service.ChatService;
 import ru.impuls.helpdeskservice.service.ConnectionService;
+import ru.impuls.helpdeskservice.service.notification.NotificationService;
 import ru.impuls.helpdeskservice.util.AuthUtil;
 import ru.impuls.helpdeskservice.util.ChatSpecifications;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
@@ -54,7 +54,7 @@ public class ChatServiceImpl implements ChatService {
     private final ConnectionRepo connectionRepo;
     private final UserRepo userRepo;
     private final MessageMapper messageMapper;
-    private final FcmService fcmService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -244,14 +244,8 @@ public class ChatServiceImpl implements ChatService {
                 .toList();
         users.forEach(user -> {
                     if (user.getId() != userId) {
-                        user.getFirebaseTokens().forEach(fcmToken -> {
-                                    fcmService.sendNotificationByToken(
-                                            fcmToken.getToken(),
-                                            "Новое сообщение",
-                                            messageCreateDto.getText(),
-                                            chat.getId()
-                                    );
-                                }
+                        user.getFirebaseTokens().forEach(fcmToken ->
+                                notificationService.sendNotification(fcmToken.getToken(), messageCreateDto.getText(), chat.getId())
                         );
                     }
                 }
@@ -353,7 +347,7 @@ public class ChatServiceImpl implements ChatService {
             ConnectionDto connectionDto = connectionMapper.toDto(message.getConnection(), messageDto);
             chatDto.setConnections(List.of(connectionDto));
         }
-        var chatEvent = chatMapper.toEvent(chatDto);
+        var chatEvent = chatMapper.toEvent(chatMapper.toDto(chat));
         webSocketHandler.notifyChangeAfterCommit("/chats", chatEvent, UPDATED);
         webSocketHandler.notifyChatMessages(chat.getId(), chatEvent);
     }
