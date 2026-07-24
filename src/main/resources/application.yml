@@ -83,6 +83,13 @@ logging:
     org.springframework.web: DEBUG
     org.apache.tomcat.util.http: DEBUG
 
+huawei:
+  push:
+    app-id: ${HMS_APP_ID}
+    client-id: ${HMS_CLIENT_ID}
+    client-secret: ${HMS_CLIENT_SECRET}
+  oauth-url: https://oauth-login.cloud.huawei.com/
+  push-url: https://push-api.cloud.huawei.com/
 
 ---
 # ===================================================================

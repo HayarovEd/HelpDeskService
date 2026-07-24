@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.persistence.Cacheable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -11,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaAuditing
 @EnableFeignClients
 @EnableScheduling // Enable scheduling
+@Cacheable
 public class Main {
 
     public static void main(String[] args) {
