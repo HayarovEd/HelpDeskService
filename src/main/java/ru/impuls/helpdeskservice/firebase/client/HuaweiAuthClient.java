@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import ru.impuls.helpdeskservice.firebase.model.HmsAccessTokenRequest;
 import ru.impuls.helpdeskservice.firebase.model.HmsTokenResponse;
 
-@FeignClient(name = "huawei-auth-client", url = "${huawei.push.oauth-url}")
+@FeignClient(name = "huawei-auth-client", url = "${huawei.oauth-url}")
 public interface HuaweiAuthClient {
 
     // Используем Spring-совместимый парсер форм через Spring MVC аннотации

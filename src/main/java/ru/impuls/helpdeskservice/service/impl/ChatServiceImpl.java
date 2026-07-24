@@ -16,9 +16,7 @@ import ru.impuls.helpdeskservice.dto.internal.MessageDto;
 import ru.impuls.helpdeskservice.dto.request.ChatCreateRequest;
 import ru.impuls.helpdeskservice.dto.request.MessageCreateDto;
 import ru.impuls.helpdeskservice.dto.response.ChatDto;
-import ru.impuls.helpdeskservice.entity.Chat;
-import ru.impuls.helpdeskservice.entity.Connection;
-import ru.impuls.helpdeskservice.entity.Message;
+import ru.impuls.helpdeskservice.entity.*;
 import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.mapper.ChatMapper;
 import ru.impuls.helpdeskservice.mapper.ConnectionMapper;
@@ -33,6 +31,7 @@ import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static ru.impuls.helpdeskservice.constant.ErrorMessage.*;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
@@ -237,18 +236,28 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
         Message newMessage = connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         setActiveChat(chat);
+
         var users = chat.getConnections().stream()
                 .map(Connection::getUser)
                 .filter(Objects::nonNull)
-                .distinct() // Если нужны уникальные пользователи
+                .distinct()
                 .toList();
-        users.forEach(user -> {
-                    if (user.getId() != userId) {
-                        user.getFirebaseTokens().forEach(fcmToken ->
-                                notificationService.sendNotification(fcmToken.getToken(), messageCreateDto.getText(), chat.getId())
-                        );
-                    }
-                }
+
+        Map<Platform, List<String>> tokensByPlatform = users.stream()
+                .filter(user -> user.getId() != userId)
+                .flatMap(user -> user.getFirebaseTokens().stream())
+                .collect(Collectors.groupingBy(
+                        FireBaseToken::getPlatform,
+                        Collectors.mapping(FireBaseToken::getToken, Collectors.toList())
+                ));
+
+        tokensByPlatform.forEach((platform, tokens) ->
+                notificationService.sendNotifications(
+                        platform,
+                        tokens,
+                        messageCreateDto.getText(),
+                        chat.getId()
+                )
         );
 
         notifyChatUpdated(chat, newMessage);

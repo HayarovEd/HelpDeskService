@@ -19,6 +19,7 @@ import ru.impuls.helpdeskservice.repository.FireBaseRepo;
 import ru.impuls.helpdeskservice.util.AuthUtil;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -58,7 +59,7 @@ public class FcmService {
             chatMap.put("chat_id", chatId.toString());
         }
 
-        Message message = Message.builder().setFid(token)
+        Message message = Message.builder().setToken(token)
                 .putAllData(chatMap)
                 .setNotification(notification)
                 .build();
@@ -69,6 +70,36 @@ public class FcmService {
             log.error("Failed to send notification to token {}: {}", token, e.getMessage());
             Thread.currentThread().interrupt();
         }
+    }
+
+    public void sendNotificationByTokens(
+            List<String> tokens,
+            String title,
+            String body,
+            @Nullable String chatId
+    ) {
+        Notification notification = Notification.builder()
+                .setTitle(title)
+                .setBody(body)
+                .build();
+        Map<String, String> chatMap = new java.util.HashMap<>(Collections.emptyMap());
+        if (chatId != null) {
+            chatMap.put("chat_id", chatId);
+        }
+
+        tokens.forEach(token -> {
+            Message message = Message.builder().setToken(token)
+                    .putAllData(chatMap)
+                    .setNotification(notification)
+                    .build();
+
+            try {
+                firebaseMessaging.sendAsync(message).get();
+            } catch (InterruptedException | ExecutionException e) {
+                log.error("Failed to send notification to token {}: {}", token, e.getMessage());
+                Thread.currentThread().interrupt();
+            }
+        });
     }
 
     public void sendNotificationToTopic(

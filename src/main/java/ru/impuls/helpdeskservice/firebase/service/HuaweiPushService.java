@@ -10,7 +10,6 @@ import ru.impuls.helpdeskservice.firebase.model.HmsMessage;
 import ru.impuls.helpdeskservice.firebase.model.HmsNotification;
 import ru.impuls.helpdeskservice.firebase.model.HmsPushRequest;
 import ru.impuls.helpdeskservice.firebase.model.HmsPushResponse;
-import ru.impuls.helpdeskservice.repository.FireBaseRepo;
 
 import java.util.List;
 
@@ -25,11 +24,11 @@ public class HuaweiPushService {
     @Value("${huawei.push.app-id}")
     private String appId;
 
-    public boolean sendNotification(List<String> deviceTokens, String title, String body) {
+    public void sendNotification(List<String> deviceTokens, String title, String body) {
         String token = tokenService.getAccessToken();
         if (token == null) {
             log.error("Отмена отправки: токен авторизации пустой.");
-            return false;
+            return;
         }
 
         // Построение строго типизированного запроса
@@ -44,11 +43,9 @@ public class HuaweiPushService {
 
             if (response != null) {
                 log.info("Ответ Huawei API. Код: {}, Текст: {}", response.code(), response.msg());
-                return "80000000".equals(response.code());
             }
         } catch (Exception e) {
             log.error("Критическая ошибка при отправке пуша через OpenFeign: ", e);
         }
-        return false;
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import ru.impuls.helpdeskservice.firebase.model.HmsPushRequest;
 import ru.impuls.helpdeskservice.firebase.model.HmsPushResponse;
 
-@FeignClient(name = "huawei-push-client", url = "${huawei.push.push-url}")
+@FeignClient(name = "huawei-push-client", url = "${huawei.push-url}")
 public interface HuaweiPushClient {
 
     @PostMapping(
