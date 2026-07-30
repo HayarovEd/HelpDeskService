@@ -19,9 +19,6 @@ public class HmsTokenService {
     private final HuaweiAuthClient authClient;
 
 
-    @Value("${huawei.push.app-id}")
-    private String appId;
-
     @Value("${huawei.push.client-id}")
     private String clientId;
 
