@@ -356,7 +356,7 @@ public class ChatServiceImpl implements ChatService {
             ConnectionDto connectionDto = connectionMapper.toDto(message.getConnection(), messageDto);
             chatDto.setConnections(List.of(connectionDto));
         }
-        var chatEvent = chatMapper.toEvent(chatMapper.toDto(chat));
+        var chatEvent = chatMapper.toEvent(chatDto);
         webSocketHandler.notifyChangeAfterCommit("/chats", chatEvent, UPDATED);
         webSocketHandler.notifyChatMessages(chat.getId(), chatEvent);
     }
