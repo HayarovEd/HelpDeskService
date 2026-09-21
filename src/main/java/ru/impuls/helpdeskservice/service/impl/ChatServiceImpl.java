@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +41,7 @@ import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepo chatRepository;
@@ -229,6 +231,7 @@ public class ChatServiceImpl implements ChatService {
         notifyChatUpdated(chat, newMessage);
     }
 
+    @Transactional
     @Override
     public void sendSupportMessage(UUID chatId, MessageCreateDto messageCreateDto, List<MultipartFile> files) {
         var userId = AuthUtil.getAuthenticatedUser().getId();
@@ -237,27 +240,38 @@ public class ChatServiceImpl implements ChatService {
         Message newMessage = connectionService.addSupportMessage(chat, userId, messageCreateDto.getText(), files);
         setActiveChat(chat);
 
+        log.info("sendSupportMessage: chatId={}, userId={}, connections={}",
+                chatId, userId, chat.getConnections().size());
+
         var users = chat.getConnections().stream()
                 .map(Connection::getUser)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
+        users.forEach(u -> log.info("User {} has {} firebaseTokens",
+                u.getId(), u.getFirebaseTokens() == null ? "null" : u.getFirebaseTokens().size()));
+
         Map<Platform, List<String>> tokensByPlatform = users.stream()
-                .filter(user -> user.getId() != userId)
+                .filter(user -> !user.getId().equals(userId))
                 .flatMap(user -> user.getFirebaseTokens().stream())
                 .collect(Collectors.groupingBy(
                         FireBaseToken::getPlatform,
                         Collectors.mapping(FireBaseToken::getToken, Collectors.toList())
                 ));
 
+        log.info("tokensByPlatform={}", tokensByPlatform);
+
         tokensByPlatform.forEach((platform, tokens) ->
-                notificationService.sendNotifications(
-                        platform,
-                        tokens,
-                        messageCreateDto.getText(),
-                        chat.getId()
-                )
+                {
+                    log.info("Triggering push for chatId={}, tokens={}", chatId, tokens.size());
+                    notificationService.sendNotifications(
+                            platform,
+                            tokens,
+                            messageCreateDto.getText(),
+                            chat.getId()
+                    );
+                }
         );
 
         notifyChatUpdated(chat, newMessage);

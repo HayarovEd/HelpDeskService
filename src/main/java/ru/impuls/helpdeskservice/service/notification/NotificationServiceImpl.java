@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.service.notification;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import ru.impuls.helpdeskservice.entity.Platform;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private final FcmService fcmService;
@@ -20,22 +22,16 @@ public class NotificationServiceImpl implements NotificationService {
     @Async
     @Override
     public void sendNotifications(Platform platform, List<String> tokens, String text, UUID chatId) {
+        log.info("sendNotifications called: platform={}, tokensCount={}, chatId={}",
+                platform, tokens == null ? "null" : tokens.size(), chatId);
         try {
             switch (platform) {
-                case FCM -> fcmService.sendNotificationByTokens(
-                        tokens,
-                        "Новое сообщение",
-                        text,
-                        chatId.toString()
-                );
-                case HMS -> hmsService.sendNotification(
-                        tokens,
-                        "Новое сообщение",
-                        text
-                );
+                case FCM -> fcmService.sendNotificationByTokens(tokens, "Новое сообщение", text, chatId.toString());
+                case HMS -> hmsService.sendNotification(tokens, "Новое сообщение", text);
             }
+            log.info("sendNotifications finished for platform={}", platform);
         } catch (Exception e) {
-            System.err.println("Failed to send notification for platform " + platform + ": " + e.getMessage());
+            log.error("Failed to send notification for platform {}: {}", platform, e.getMessage(), e);
         }
     }
 }

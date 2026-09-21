@@ -5,7 +5,7 @@ spring:
   application:
     name: help-desk-service
   profiles:
-    active: dev # The 'dev' profile is active by default
+    active: prod # The 'dev' profile is active by default
   servlet:
     multipart:
       enabled: true
@@ -155,8 +155,14 @@ server:
 logging:
   level:
     org.springframework: INFO
-    ru.impuls.helpdeskservice: INFO
+    ru.impuls.helpdeskservice: DEBUG
+
 
 external:
   service:
     base-url: http://77.236.64.205:9998/api/
+
+app:
+  firebase-configuration-file: impuls_help_desk.json
+
+

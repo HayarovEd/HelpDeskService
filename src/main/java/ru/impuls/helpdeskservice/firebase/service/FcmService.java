@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.firebase.service;
 
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
@@ -50,25 +51,32 @@ public class FcmService {
             String body,
             @Nullable UUID chatId
     ) {
+        log.info("Sending FCM notification: token={}, title={}, chatId={}", token, title, chatId);
+
         Notification notification = Notification.builder()
                 .setTitle(title)
                 .setBody(body)
                 .build();
-        Map<String, String> chatMap = new java.util.HashMap<>(Collections.emptyMap());
+
+        Map<String, String> chatMap = new java.util.HashMap<>();
         if (chatId != null) {
             chatMap.put("chat_id", chatId.toString());
         }
 
-        Message message = Message.builder().setToken(token)
+        Message message = Message.builder()
+                .setToken(token)
                 .putAllData(chatMap)
                 .setNotification(notification)
                 .build();
 
         try {
-            firebaseMessaging.sendAsync(message).get();
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("Failed to send notification to token {}: {}", token, e.getMessage());
-            Thread.currentThread().interrupt();
+            String response = firebaseMessaging.send(message); // синхронный вызов, проще
+            log.info("FCM sent successfully to token={}: {}", token, response);
+        } catch (FirebaseMessagingException e) {
+            log.error("FCM failed for token={}: code={}, message={}",
+                    token, e.getMessagingErrorCode(), e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending FCM to token={}: {}", token, e.getMessage(), e);
         }
     }
 
@@ -78,6 +86,7 @@ public class FcmService {
             String body,
             @Nullable String chatId
     ) {
+        log.info("FCM: sending to {} tokens, chatId={}", tokens.size(), chatId);
         Notification notification = Notification.builder()
                 .setTitle(title)
                 .setBody(body)
