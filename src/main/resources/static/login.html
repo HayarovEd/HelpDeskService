@@ -90,7 +90,7 @@
                 // If role is not USER or roles are not defined, proceed
                 messageDiv.textContent = 'Login successful!';
                 localStorage.setItem('accessToken', token);
-                window.location.href = '/home.html';
+                window.location.href = '/bc/home.html';
             })
             .catch(error => {
                 messageDiv.textContent = error.message;

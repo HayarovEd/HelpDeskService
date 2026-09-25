@@ -517,7 +517,7 @@
     async function fetchWithAuth(url, options = {}) {
         let token = localStorage.getItem('accessToken');
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = '/bc/login.html';
             throw new Error('No token found');
         }
 
@@ -535,7 +535,7 @@
             } catch (error) {
                 console.error('Session expired, redirecting to login.', error);
                 localStorage.removeItem('accessToken');
-                window.location.href = '/login.html';
+                window.location.href = '/bc/login.html';
                 throw new Error('Session expired');
             }
         }
@@ -1107,7 +1107,7 @@
 
     document.addEventListener('DOMContentLoaded', async function() {
         if (!localStorage.getItem('accessToken')) {
-            window.location.href = '/login.html';
+            window.location.href = '/bc/login.html';
             return;
         }
 
@@ -1210,13 +1210,43 @@
             socket.onerror = (error) => console.error("WebSocket error:", error);
         }
 
+        let chatSocket = null;
+
+        function connectChatWebSocket(chatId) {
+            if (chatSocket) {
+                chatSocket.close();
+                chatSocket = null;
+            }
+            const token = localStorage.getItem('accessToken');
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/chats/${chatId}/messages?token=${token}`;
+            chatSocket = new WebSocket(wsUrl);
+
+            chatSocket.onopen = () => console.log(`Chat WS connected: ${chatId}`);
+            chatSocket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('Chat WS message:', message);
+                    if (currentChat && currentChat.id === chatId) {
+                        fetchAndRenderChatDetails(chatId);
+                    }
+                } catch (e) { console.error('Chat WS parse error:', e); }
+            };
+            chatSocket.onclose = () => {
+                console.log(`Chat WS closed: ${chatId}`);
+                chatSocket = null;
+            };
+            chatSocket.onerror = (err) => console.error('Chat WS error:', err);
+        }
+
+
         // --- LOGOUT ---
         document.getElementById('logout-btn').addEventListener('click', async function() {
             try {
                 await fetchWithAuth('/api/auth/logout', { method: 'POST' });
             } finally {
                 localStorage.removeItem('accessToken');
-                window.location.href = '/login.html';
+                window.location.href = '/bc/login.html';
             }
         });
 
@@ -1279,6 +1309,10 @@
 
         // --- CHAT VIEW LOGIC ---
         async function fetchAndRenderChatDetails(chatId) {
+            if (chatSocket) {
+                chatSocket.close();
+                chatSocket = null;
+            }
             try {
                 const response = await fetchWithAuth(`/api/chats/${chatId}`);
                 if (!response.ok) throw new Error('Failed to fetch chat details');
@@ -1399,6 +1433,7 @@
             setTimeout(() => {
                 loadImagesWithAuth();
             }, 200);
+            connectChatWebSocket(chat.id);
         }
 
         // --- EVENT LISTENERS ---

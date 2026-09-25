@@ -50,7 +50,17 @@ public class SecurityConfig {
                                     "/v3/api-docs/**",
                                     "/v3/api-docs",
                                     "/swagger-resources/**",
-                                    "/webjars/**"
+                                    "/webjars/**",
+                                    "/bc/ws/**",
+                                    "/bc/api/ws/**",
+                                    "/bc/websocket/**",
+                                    "/bc/api/auth/**",
+                                    "/bc/swagger-ui.html",
+                                    "/bc/swagger-ui/**",
+                                    "/bc/v3/api-docs/**",
+                                    "/bc/v3/api-docs",
+                                    "/bc/swagger-resources/**",
+                                    "/bc/webjars/**"
                             ).permitAll();
                     auth.anyRequest().authenticated();
                 })

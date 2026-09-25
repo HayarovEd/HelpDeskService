@@ -107,7 +107,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private boolean shouldReceiveMessage(WebSocketSession session, String messagePath) {
         String sessionPath = getSessionPath(session);
-        if ("/ws".equals(sessionPath)) {
+        if (sessionPath != null && sessionPath.endsWith("/ws")) {
             return true;
         }
         if (sessionPath != null && sessionPath.contains("/chats/")) {

@@ -46,7 +46,7 @@ application:
     public-endpoints:
       # api
       - method: POST
-        path: /api/auth/*
+        path: /api/auth/**
       - method: GET
         path: /api/chats/*
       - method: POST
@@ -77,6 +77,36 @@ application:
         path: /swagger-ui/**
       - method: GET
         path: /webjars/**
+      - method: POST
+        path: /bc/api/auth/**
+      - method: GET
+        path: /bc/api/chats/*
+      - method: POST
+        path: /bc/api/chats/{id}/messages
+      - method: POST
+        path: /bc/api/chats/{id}/connections
+      - method: POST
+        path: /bc/api/chats/{id}/close
+      - method: GET
+        path: /bc/login.html
+      - method: GET
+        path: /bc/home.html
+      - method: GET
+        path: /bc/login
+      - method: GET
+        path: /bc/ws/**
+      - method: GET
+        path: /bc/v2/api-docs
+      - method: GET
+        path: /bc/v3/api-docs/**
+      - method: GET
+        path: /bc/swagger-resources/**
+      - method: GET
+        path: /bc/configuration/**
+      - method: GET
+        path: /bc/swagger-ui/**
+      - method: GET
+        path: /bc/webjars/**
 
 logging:
   level:
@@ -90,6 +120,7 @@ huawei:
     client-secret: ${HMS_CLIENT_SECRET}
   oauth-url: https://oauth-login.cloud.huawei.com/
   push-url: https://push-api.cloud.huawei.com/
+
 
 ---
 # ===================================================================
@@ -141,7 +172,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD_PROD}
   jpa:
     hibernate:
-      ddl-auto: validate # Safer for production
+      ddl-auto: update # Safer for production
   liquibase:
     change-log: classpath:/db/changelog/master.yml
     enabled: true # Enabled for production
@@ -150,6 +181,8 @@ debug: false
 
 server:
   port: 9092
+  servlet:
+    context-path: /bc
   #address: 10.222.222.43 # Listen on all interfaces in production
 
 logging:

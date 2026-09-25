@@ -24,15 +24,19 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    @NotNull Map<String, Object> attributes) {
 
         String path = request.getURI().getPath();
+        String query = request.getURI().getQuery();
+        System.out.println("WS handshake: path=" + path + ", query=" + query);
 
-        if (path.matches("/ws/chats/[a-fA-F0-9-]{36}/connections")
-                || path.matches("/ws/chats/[a-fA-F0-9-]{36}/messages")) {
+        if (path.matches(".*/ws/chats/[a-fA-F0-9-]{36}/connections")
+                || path.matches(".*/ws/chats/[a-fA-F0-9-]{36}/messages")) {
             return true;
         }
 
         String token = extractToken(request);
+        System.out.println("WS handshake: token=" + (token != null ? "present" : "null"));
 
         if (token == null || jwtService.isTokenExpired(token)) {
+            System.out.println("WS handshake: token invalid or expired, rejecting");
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
@@ -41,16 +45,20 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         attributes.put("role", jwtService.extractRole(token).getName());
         attributes.put("userId", jwtService.extractId(token));
 
+        System.out.println("WS handshake: accepted");
         return true;
     }
 
     private String extractToken(ServerHttpRequest request) {
-        // 1. Проверяем параметр запроса
-        if (request instanceof ServletServerHttpRequest) {
-            String token = ((ServletServerHttpRequest) request)
-                    .getServletRequest()
-                    .getParameter("token");
-            if (token != null) return token;
+        // 1. Извлекаем токен из query string
+        String query = request.getURI().getQuery();
+        if (query != null) {
+            for (String param : query.split("&")) {
+                String[] pair = param.split("=", 2);
+                if (pair.length == 2 && "token".equals(pair[0])) {
+                    return pair[1];
+                }
+            }
         }
 
         // 2. Проверяем заголовки
