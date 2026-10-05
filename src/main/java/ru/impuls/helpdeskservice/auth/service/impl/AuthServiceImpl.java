@@ -30,6 +30,7 @@ import ru.impuls.helpdeskservice.util.CookieParser;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,9 +66,12 @@ public class AuthServiceImpl implements AuthService {
                 .token()
                 .trim()
                 .startsWith("YII_CSRF_TOKEN=")) {
-            var cookie = cookieParser.parseCookies(userBillingRequest.token());
-            Instant expiresAt = cookie.session().timeLastLogin().plusSeconds(cookie.session().ttl());
-            if (!Instant.now().isBefore(expiresAt)) {
+            var cookie = cookieParser.parse(userBillingRequest.token());
+            if (cookie.timeLastLogin() == null) {
+                throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
+            }
+            LocalDateTime expirationTime = cookie.timeLastLogin().plusSeconds(cookie.durationSeconds());
+            if (LocalDateTime.now().isAfter(expirationTime)) {
                 throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
             }
         } else {

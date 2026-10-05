@@ -1,7 +1,10 @@
 package ru.impuls.helpdeskservice.dto.internal;
 
+import java.time.LocalDateTime;
+
 public record BillingCookie(
-        String yiiCsrfToken,
-        String nameSession,
-        BillingSession session
+        int uid,
+        LocalDateTime timeLastLogin,
+        String sessionToken,
+        int durationSeconds
 ) {}
