@@ -26,6 +26,7 @@ import ru.impuls.helpdeskservice.constant.ErrorMessage;
 import ru.impuls.helpdeskservice.constant.RefreshTokenPosition;
 import ru.impuls.helpdeskservice.constant.TokenType;
 import ru.impuls.helpdeskservice.exception.AppException;
+import ru.impuls.helpdeskservice.util.CookieParser;
 import ru.impuls.helpdeskservice.util.CookieUtil;
 
 import java.time.Instant;
@@ -45,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenRepo tokenRepo;
     private final UserHelperService userHelperService;
     private final ExternalServiceClient externalServiceClient;
+    private final CookieParser cookieParser;
 
     /************************ login ***************************/
     @Override
@@ -59,10 +61,22 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponse loginUserByOutApp(UserBillingRequest userBillingRequest, HttpServletResponse servletResponse) {
-        var isValidToken = externalServiceClient.validateToken(userBillingRequest.token()).isValid();
-        if (!isValidToken) {
-            throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
+        if (userBillingRequest
+                .token()
+                .trim()
+                .startsWith("YII_CSRF_TOKEN=")) {
+            var cookie = cookieParser.parseCookies(userBillingRequest.token());
+            Instant expiresAt = cookie.session().timeLastLogin().plusSeconds(cookie.session().ttl());
+            if (!Instant.now().isBefore(expiresAt)) {
+                throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
+            }
+        } else {
+            var isValidToken = externalServiceClient.validateToken(userBillingRequest.token()).isValid();
+            if (!isValidToken) {
+                throw new AppException(ErrorMessage.INVALID_TOKEN, HttpStatus.UNAUTHORIZED);
+            }
         }
+
         var user = userRepo.findByUsername(userBillingRequest.username());
         User newUser;
         if (user.isPresent()) {

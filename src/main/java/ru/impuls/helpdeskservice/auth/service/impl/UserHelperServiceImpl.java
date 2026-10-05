@@ -18,6 +18,7 @@ import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
+import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
 
@@ -46,10 +47,7 @@ public class UserHelperServiceImpl implements UserHelperService {
 
     @Override
     public User createNewUser(UserBillingRequest response) {
-
-        //   User savedUser = userRepo.save(newUser);
-      //  webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
-        return User.builder()
+        User newUser = User.builder()
                 .name(response.name())
                 .username(response.username())
                 .email(response.email())
@@ -58,6 +56,11 @@ public class UserHelperServiceImpl implements UserHelperService {
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getDefaultRole())
                 .build();
+
+        User savedUser = userRepo.save(newUser);
+
+        webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
+        return savedUser;
     }
 
     @Override
