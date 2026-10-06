@@ -1,6 +1,7 @@
 package ru.impuls.helpdeskservice.config;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -84,6 +85,13 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/ws/**", wsConfig);
 
         // Остальные — с ограничениями
+        CorsConfiguration securedConfig = createSecuredConfig();
+        source.registerCorsConfiguration("/**", securedConfig);
+
+        return source;
+    }
+
+    private static @NonNull CorsConfiguration createSecuredConfig() {
         CorsConfiguration securedConfig = new CorsConfiguration();
         //securedConfig.setAllowedOrigins(securityProperties.getCorsAllowedOrigins()); // для прод
         securedConfig.setAllowedOriginPatterns(List.of("*")); // для тестирования вместо setAllowedOrigins
@@ -92,8 +100,6 @@ public class SecurityConfig {
         securedConfig.setAllowedHeaders(List.of("*"));
         securedConfig.setExposedHeaders(List.of("Content-Disposition", "Authorization"));
         securedConfig.setMaxAge(3600L);
-        source.registerCorsConfiguration("/**", securedConfig);
-
-        return source;
+        return securedConfig;
     }
 }
