@@ -14,7 +14,7 @@ public interface ChatRepo extends JpaRepository<Chat, UUID>, JpaSpecificationExe
 
     @Query("SELECT c FROM Chat c WHERE c.active = true AND " +
            "(SELECT COUNT(m) FROM Message m WHERE m.connection.chat = c AND (m.isRead = false OR m.isRead IS NULL) AND m.isSupport = false) = 0 AND " +
-           "(SELECT MAX(m.createdDate) FROM Message m WHERE m.connection.chat = c) < :thirtyMinutesAgo")
+           "(COALESCE((SELECT MAX(m.createdDate) FROM Message m WHERE m.connection.chat = c), c.createdDate) < :thirtyMinutesAgo)")
     List<Chat> findChatsToDeactivate(@Param("thirtyMinutesAgo") Instant thirtyMinutesAgo);
 
     @Query("SELECT c FROM Chat c WHERE c.open = true AND c.login LIKE %:login%")

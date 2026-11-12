@@ -91,11 +91,15 @@ public class SecurityConfig {
         return source;
     }
 
-    private static @NonNull CorsConfiguration createSecuredConfig() {
+    private @NonNull CorsConfiguration createSecuredConfig() {
         CorsConfiguration securedConfig = new CorsConfiguration();
-        //securedConfig.setAllowedOrigins(securityProperties.getCorsAllowedOrigins()); // для прод
-        securedConfig.setAllowedOriginPatterns(List.of("*")); // для тестирования вместо setAllowedOrigins
-        securedConfig.setAllowedMethods(List.of("*"));
+        List<String> allowedOrigins = securityProperties.getCorsAllowedOrigins();
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            securedConfig.setAllowedOrigins(allowedOrigins);
+        } else {
+            securedConfig.setAllowedOriginPatterns(List.of("*"));
+        }
+        securedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         securedConfig.setAllowCredentials(true);
         securedConfig.setAllowedHeaders(List.of("*"));
         securedConfig.setExposedHeaders(List.of("Content-Disposition", "Authorization"));

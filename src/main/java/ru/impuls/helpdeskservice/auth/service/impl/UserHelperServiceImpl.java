@@ -18,6 +18,8 @@ import ru.impuls.helpdeskservice.exception.AppException;
 import ru.impuls.helpdeskservice.util.TokenGeneratorUtil;
 import ru.impuls.helpdeskservice.websocket.WebSocketHandler;
 
+import java.util.UUID;
+
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.CREATED;
 import static ru.impuls.helpdeskservice.constant.WebsocketEventType.UPDATED;
 
@@ -47,11 +49,15 @@ public class UserHelperServiceImpl implements UserHelperService {
 
     @Override
     public User createNewUser(UserBillingRequest response) {
+        String rawPassword = (response.password() != null && !response.password().isBlank())
+                ? response.password()
+                : UUID.randomUUID().toString();
+
         User newUser = User.builder()
                 .name(response.name())
                 .username(response.username())
                 .email(response.email())
-                .password(passwordEncoder.encode(response.password()))
+                .password(passwordEncoder.encode(rawPassword))
                 .disabled(false)
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getDefaultRole())
@@ -65,13 +71,20 @@ public class UserHelperServiceImpl implements UserHelperService {
 
     @Override
     public User createUnregisteredNewUser(UnregisteredUserRequest response) {
-        //   User savedUser = userRepo.save(newUser);
-        //  webSocketHandler.notifyChangeAfterCommit("/users", userMapper.toEvent(savedUser), CREATED);
-        var newUser =  User.builder()
+        var existing = userRepo.findByUsername(response.phone());
+        if (existing.isPresent()) {
+            User user = existing.get();
+            user.setName(response.name());
+            user.setEmail(response.email());
+            return userRepo.save(user);
+        }
+
+        var randomPassword = UUID.randomUUID().toString();
+        var newUser = User.builder()
                 .name(response.name())
                 .username(response.phone())
                 .email(response.email())
-                .password(passwordEncoder.encode("12345"))
+                .password(passwordEncoder.encode(randomPassword))
                 .disabled(false)
                 .tokenVersion(TokenGeneratorUtil.generateNumericToken(8))
                 .role(getUnregisteredRole())

@@ -23,26 +23,35 @@ public class FirebaseInitializer {
     @PostConstruct
     public void initialize() {
         try {
-            log.info("Initializing Firebase SDK...");
+            log.info("Initializing Firebase SDK with config: {}...", firebaseConfigPath);
+            var resource = new ClassPathResource(firebaseConfigPath);
+            if (!resource.exists()) {
+                log.warn("⚠️ Firebase configuration file not found: {}. Firebase features will be disabled.", firebaseConfigPath);
+                return;
+            }
+
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(
-                            new ClassPathResource(firebaseConfigPath).getInputStream()))
+                    .setCredentials(GoogleCredentials.fromStream(resource.getInputStream()))
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {
                 log.info("Initializing Firebase app...");
                 FirebaseApp.initializeApp(options);
-                log.info("✅ Firebase initialized!");
+                log.info("✅ Firebase initialized successfully!");
             } else {
                 log.info("Firebase app is already initialized, skipping initialization.");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("❌ Firebase initialization failed: {}", e.getMessage());
         }
     }
 
     @Bean
     public FirebaseMessaging firebaseMessaging() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            log.warn("⚠️ FirebaseApp is not initialized. FirebaseMessaging will not be available.");
+            return null;
+        }
         return FirebaseMessaging.getInstance();
     }
 }

@@ -1,7 +1,7 @@
 package ru.impuls.helpdeskservice;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import jakarta.persistence.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -11,33 +11,27 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableFeignClients
-@EnableScheduling // Enable scheduling
-@Cacheable
+@EnableScheduling
+@EnableCaching
 public class Main {
 
     public static void main(String[] args) {
         try {
-            System.out.println("Текущая директория: " + System.getProperty("user.dir"));
-            System.out.println("Пытаюсь загрузить .env из: ./");
-
             Dotenv dotenv = Dotenv.configure()
                     .directory(".")
                     .filename(".env")
+                    .ignoreIfMissing()
                     .load();
 
-            System.out.println(".env успешно загружен!");
-
             dotenv.entries().forEach(entry -> {
-                System.setProperty(entry.getKey(), entry.getValue());
-                System.out.println("Установлено свойство: " + entry.getKey());
+                if (System.getProperty(entry.getKey()) == null && System.getenv(entry.getKey()) == null) {
+                    System.setProperty(entry.getKey(), entry.getValue());
+                }
             });
-
-            SpringApplication.run(Main.class, args);
-
         } catch (Exception e) {
-            System.err.println("ОШИБКА при загрузке .env: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Notice: .env file not loaded: " + e.getMessage());
         }
-    }
 
+        SpringApplication.run(Main.class, args);
+    }
 }

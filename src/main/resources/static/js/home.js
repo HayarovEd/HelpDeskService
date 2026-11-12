@@ -1,4 +1,13 @@
 // --- AUTH & FETCH WRAPPER ---
+const BASE_PATH = window.location.pathname.startsWith('/bc') ? '/bc' : '';
+
+function resolveUrl(url) {
+    if (BASE_PATH && url && url.startsWith('/') && !url.startsWith(BASE_PATH)) {
+        return BASE_PATH + url;
+    }
+    return url;
+}
+
 function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -11,7 +20,7 @@ function parseJwt(token) {
 async function fetchWithAuth(url, options = {}) {
     let token = localStorage.getItem('accessToken');
     if (!token) {
-        window.location.href = '/login.html';
+        window.location.href = BASE_PATH + '/login.html';
         throw new Error('No token found');
     }
 
@@ -19,7 +28,7 @@ async function fetchWithAuth(url, options = {}) {
     if (decodedToken && decodedToken.exp * 1000 < Date.now() + 30000) {
         console.log('Access token expired, refreshing...');
         try {
-            const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+            const refreshResponse = await fetch(resolveUrl('/api/auth/refresh'), { method: 'POST' });
             if (!refreshResponse.ok) throw new Error('Refresh failed');
 
             const newTokenData = await refreshResponse.json();
@@ -29,7 +38,7 @@ async function fetchWithAuth(url, options = {}) {
         } catch (error) {
             console.error('Session expired, redirecting to login.', error);
             localStorage.removeItem('accessToken');
-            window.location.href = '/login.html';
+            window.location.href = BASE_PATH + '/login.html';
             throw new Error('Session expired');
         }
     }
@@ -41,12 +50,12 @@ async function fetchWithAuth(url, options = {}) {
     }
     newOptions.headers = { ...newOptions.headers, 'Authorization': 'Bearer ' + token };
 
-    return fetch(url, newOptions);
+    return fetch(resolveUrl(url), newOptions);
 }
 
 async function downloadFile(storedName, fileName) {
     const token = localStorage.getItem('accessToken');
-    const fileUrl = `/api/files/${storedName}`;
+    const fileUrl = resolveUrl(`/api/files/${storedName}`);
 
     // Показываем индикатор загрузки
     showDownloadingIndicator(storedName);
@@ -667,7 +676,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function connectWebSocket() {
         const token = localStorage.getItem('accessToken');
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.host}/ws?token=${token}`;
+        const wsUrl = `${wsProtocol}//${window.location.host}${BASE_PATH}/ws?token=${token}`;
         const socket = new WebSocket(wsUrl);
 
         socket.onopen = () => console.log("WebSocket connection established.");

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.impuls.helpdeskservice.firebase.model.TokenRegistrationRequest;
 import ru.impuls.helpdeskservice.firebase.service.FcmService;
@@ -26,6 +27,7 @@ public class FcmController {
         fcmService.registerToken(tokenRegistrationRequest);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/send-notification")
     @ResponseStatus(HttpStatus.OK)
     public void sendNotificationToUser(
@@ -36,6 +38,7 @@ public class FcmController {
         fcmService.sendNotificationByToken(token, title, body, null);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/send-topic-notification")
     @ResponseStatus(HttpStatus.OK)
     public void sendNotificationTopic(

@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS connections
 CREATE TABLE IF NOT EXISTS logs
 (
     id           UUID PRIMARY KEY,
-    text         VARCHAR(255),
+    text         TEXT,
     created_date TIMESTAMP,
     user_id      UUID NOT NULL,
 
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS logs
 CREATE TABLE IF NOT EXISTS messages
 (
     id            UUID PRIMARY KEY,
-    text          VARCHAR(255),
+    text          TEXT,
     is_support    BOOLEAN,
     is_read       BOOLEAN,
     created_date  TIMESTAMP,
@@ -105,3 +105,4 @@ CREATE TABLE IF NOT EXISTS messages
 
     FOREIGN KEY (connection_id) REFERENCES connections (id) ON DELETE CASCADE
 );
+

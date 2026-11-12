@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -20,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import java.io.IOException;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -33,7 +35,10 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
+        if (path == null || path.isEmpty()) {
+            path = request.getRequestURI();
+        }
         String method = request.getMethod();
 
         // 1. Пропускаем OPTIONS запросы (CORS preflight)
@@ -44,53 +49,55 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         // 2. Пропускаем WebSocket handshake запросы
-        if (isWebSocketPath(path)) {
-            System.out.println("JwtFilter: Пропускаем WebSocket handshake: " + method + " " + path);
+        if (isWebSocketPath(path) || isWebSocketPath(request.getRequestURI())) {
+            log.debug("JwtFilter: Пропускаем WebSocket handshake: {} {}", method, path);
 
-            // Опционально: извлекаем токен из параметров и сохраняем для WebSocket сессии
             String token = request.getParameter("token");
             if (token != null) {
                 request.setAttribute("ws_token", token);
-                System.out.println("JwtFilter: Найден токен в параметрах: " + token.substring(0, Math.min(20, token.length())) + "...");
             }
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 3. Проверяем публичные endpoints из конфигурации
+        // 3. Проверяем, является ли эндпоинт публичным
+        boolean isPublicEndpoint = false;
         try {
             HttpMethod httpMethod = HttpMethod.valueOf(method.toUpperCase());
-            if (securityProperties.isPublicEndpoint(httpMethod, path)) {
-                System.out.println("JwtFilter: Пропускаем публичный endpoint: " + path);
+            isPublicEndpoint = securityProperties.isPublicEndpoint(httpMethod, path)
+                    || securityProperties.isPublicEndpoint(httpMethod, request.getRequestURI());
+        } catch (IllegalArgumentException e) {
+            // Неизвестный метод
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+
+        // 4. Если заголовка Authorization нет (или не Bearer)
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (isPublicEndpoint) {
+                log.debug("JwtFilter: Пропускаем неавторизованный запрос к публичному endpoint: {}", path);
                 filterChain.doFilter(request, response);
                 return;
             }
-        } catch (IllegalArgumentException e) {
-            // Неизвестный метод, продолжаем проверку
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"" + ErrorMessage.UNAUTHORIZED + "\"}");
+            response.getWriter().flush();
+            return;
         }
 
-        // 4. Для остальных запросов проверяем JWT
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-
+        // 5. Заголовок передан (включая публичные эндпоинты) — проверяем JWT и устанавливаем аутентификацию
         try {
-            if(authHeader == null || !authHeader.startsWith("Bearer ")){
-                throw new AppException(
-                        ErrorMessage.UNAUTHORIZED,
-                        HttpStatus.UNAUTHORIZED
-                );
-            }
-
-            jwt = authHeader.substring(7);
+            String jwt = authHeader.substring(7);
 
             var userId = jwtService.extractId(jwt);
             var jwtTokenVersion = jwtService.extractTokenVersion(jwt);
             var userTokenVersion = userService.getTokenVersionByUserId(UUID.fromString(userId));
 
-            if(userTokenVersion != null
+            if (userTokenVersion != null
                     && !userTokenVersion.isEmpty()
-                    && !userTokenVersion.equals(jwtTokenVersion)){
+                    && !userTokenVersion.equals(jwtTokenVersion)) {
                 throw new AppException(
                         "invalid_token",
                         HttpStatus.UNAUTHORIZED
@@ -114,25 +121,34 @@ public class JwtFilter extends OncePerRequestFilter {
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
             response.getWriter().flush();
+        } catch (Exception e) {
+            log.error("JwtFilter: Ошибка при обработке токена", e);
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"" + ErrorMessage.UNAUTHORIZED + "\"}");
+            response.getWriter().flush();
         }
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
+        if (path == null || path.isEmpty()) {
+            path = request.getRequestURI();
+        }
         return path.startsWith("/swagger-ui") ||
                 path.equals("/swagger-ui.html") ||
                 path.startsWith("/v3/api-docs") ||
                 path.startsWith("/swagger-resources") ||
                 path.startsWith("/webjars") ||
-                path.startsWith("/ws") ||
-                path.startsWith("/api/ws") ||
-                path.startsWith("/websocket") ||
-                path.startsWith("/api/auth");
+                isWebSocketPath(path) ||
+                isWebSocketPath(request.getRequestURI()) ||
+                path.startsWith("/api/auth") ||
+                request.getRequestURI().contains("/api/auth");
     }
 
-
     private boolean isWebSocketPath(String path) {
+        if (path == null) return false;
         return path.startsWith("/ws") ||
                 path.startsWith("/api/ws") ||
                 path.startsWith("/websocket") ||

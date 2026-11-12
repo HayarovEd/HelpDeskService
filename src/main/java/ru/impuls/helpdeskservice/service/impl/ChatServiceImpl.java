@@ -135,10 +135,50 @@ public class ChatServiceImpl implements ChatService {
     public ChatDto create(UUID groupId, ChatCreateRequest chatRequest) {
         var group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new AppException(GROUP_NOT_FOUND, HttpStatus.NOT_FOUND));
-        User currentUser = userRepo.findById(AuthUtil.getAuthenticatedUser().getId())
-                .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        var chat = chatMapper.toEntity(chatRequest, group);
+        User currentUser = AuthUtil.getOptionalAuthenticatedUser()
+                .flatMap(u -> userRepo.findById(u.getId()))
+                .orElse(null);
+
+        String name = chatRequest.name();
+        String login = chatRequest.login();
+        String email = chatRequest.email();
+        String phone = chatRequest.phone();
+
+        if (currentUser != null) {
+            if (name == null || name.isBlank()) {
+                name = currentUser.getName();
+            }
+            if (login == null || login.isBlank()) {
+                login = currentUser.getUsername();
+            }
+            if (email == null || email.isBlank()) {
+                email = currentUser.getEmail();
+            }
+        } else {
+            // Анонимный посетитель сайта
+            if ((name == null || name.isBlank()) && (login == null || login.isBlank()) && (phone == null || phone.isBlank())) {
+                throw new AppException("Name, login or phone is required", HttpStatus.BAD_REQUEST);
+            }
+            if (login == null || login.isBlank()) {
+                login = (phone != null && !phone.isBlank()) ? phone : name;
+            }
+            if (name == null || name.isBlank()) {
+                name = login;
+            }
+        }
+
+        var chat = Chat.builder()
+                .group(group)
+                .name(name)
+                .login(login)
+                .email(email)
+                .phone(phone)
+                .open(true)
+                .work(false)
+                .active(true)
+                .createdDate(Instant.now())
+                .build();
         chatRepository.save(chat);
 
         var connectionDto = connectionService.createInitialConnection(chat, chatRequest.message(), currentUser);
@@ -225,7 +265,10 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(CHAT_NOT_FOUND, HttpStatus.NOT_FOUND));
 
-        var user = AuthUtil.getAuthenticatedUser();
+        User user = AuthUtil.getOptionalAuthenticatedUser()
+                .flatMap(u -> userRepo.findById(u.getId()))
+                .orElse(null);
+
         Message newMessage = connectionService.addClientMessage(chat, messageCreateDto.getText(), user, files);
         setActiveChat(chat);
         notifyChatUpdated(chat, newMessage);
@@ -279,7 +322,18 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatDto> getByUserLogin(String login) {
-        var chats = chatRepository.findOpenChatsByName(login);
+        String targetLogin = login;
+        if (targetLogin == null || targetLogin.isBlank()) {
+            User currentUser = AuthUtil.getOptionalAuthenticatedUser().orElse(null);
+            if (currentUser != null) {
+                targetLogin = currentUser.getUsername();
+            }
+        }
+        if (targetLogin == null || targetLogin.isBlank()) {
+            throw new AppException("Login parameter is required", HttpStatus.BAD_REQUEST);
+        }
+
+        var chats = chatRepository.findOpenChatsByName(targetLogin);
         var newChatDtos = new ArrayList<ChatDto>();
 
         for (Chat chat : chats) {

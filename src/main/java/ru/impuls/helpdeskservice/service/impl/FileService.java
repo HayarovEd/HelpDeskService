@@ -38,7 +38,6 @@ public class FileService {
             throw new AppException("Превышен максимальный размер файла", HttpStatus.PAYLOAD_TOO_LARGE);
         }
         try {
-            file.getInputStream().readAllBytes();
             var fileName = localStorageService.storeFile(
                     file.getInputStream(),
                     originalFilename,

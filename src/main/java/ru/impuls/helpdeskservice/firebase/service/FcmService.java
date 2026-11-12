@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 @Slf4j
 public class FcmService {
     private final FirebaseMessaging firebaseMessaging;
@@ -29,11 +28,35 @@ public class FcmService {
     private final UserRepo userRepo;
     private final FcmMapper fcmMapper;
 
+    public FcmService(
+            @org.springframework.beans.factory.annotation.Autowired(required = false) FirebaseMessaging firebaseMessaging,
+            FireBaseRepo tokenRepo,
+            UserRepo userRepo,
+            FcmMapper fcmMapper
+    ) {
+        this.firebaseMessaging = firebaseMessaging;
+        this.tokenRepo = tokenRepo;
+        this.userRepo = userRepo;
+        this.fcmMapper = fcmMapper;
+    }
+
 
     public void registerToken(TokenRegistrationRequest tokenRegistrationRequest) {
         var user = AuthUtil.getAuthenticatedUser();
         User currentUser = userRepo.findById(user.getId())
                 .orElseThrow(() -> new AppException(ErrorMessage.USER_NOT_FOUND, HttpStatus.NOT_FOUND));
+
+        var existingToken = tokenRepo.findByToken(tokenRegistrationRequest.token());
+        if (existingToken.isPresent()) {
+            var token = existingToken.get();
+            token.setUser(currentUser);
+            token.setPlatform(fcmMapper.mapPlatform(tokenRegistrationRequest.platform()));
+            token.setDeviceId(tokenRegistrationRequest.deviceId());
+            token.setDeviceName(tokenRegistrationRequest.deviceName());
+            tokenRepo.save(token);
+            return;
+        }
+
         var fcmToken = fcmMapper.toEntity(tokenRegistrationRequest, currentUser);
         tokenRepo.save(fcmToken);
     }
@@ -45,6 +68,10 @@ public class FcmService {
             String body,
             @Nullable UUID chatId
     ) {
+        if (firebaseMessaging == null) {
+            log.warn("FirebaseMessaging is not available, skipping FCM notification for token: {}", token);
+            return;
+        }
         log.info("Sending FCM notification: token={}, title={}, chatId={}", token, title, chatId);
 
         Notification notification = Notification.builder()
@@ -80,6 +107,10 @@ public class FcmService {
             String body,
             @Nullable String chatId
     ) {
+        if (firebaseMessaging == null) {
+            log.warn("FirebaseMessaging is not available, skipping FCM notification for {} tokens", tokens.size());
+            return;
+        }
         log.info("FCM: sending to {} tokens, chatId={}", tokens.size(), chatId);
 
         Map<String, String> data = new HashMap<>();
@@ -114,6 +145,10 @@ public class FcmService {
             String title,
             String body
     ) {
+        if (firebaseMessaging == null) {
+            log.warn("FirebaseMessaging is not available, skipping FCM notification for topic: {}", topic);
+            return;
+        }
         Notification notification = Notification.builder()
                 .setTitle(title)
                 .setBody(body)

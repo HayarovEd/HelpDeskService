@@ -32,7 +32,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
     private final ObjectMapper objectMapper;
-    private final Map<UUID, WebSocketSession> userSessions = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
+    private final Map<String, WebSocketSession> decoratedSessions = new ConcurrentHashMap<>();
 
     private final Map<UUID, Set<WebSocketSession>> chatConnectionsSubscribers = new ConcurrentHashMap<>();
     private final Map<UUID, Set<WebSocketSession>> chatMessagesSubscribers = new ConcurrentHashMap<>();
@@ -45,10 +46,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) {
-        sessions.add(session);
+        WebSocketSession decoratedSession = new org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator(
+                session, 10000, 64 * 1024);
+        decoratedSessions.put(session.getId(), decoratedSession);
+        sessions.add(decoratedSession);
+
         UUID userId = extractUserIdFromSession(session);
         if (userId != null) {
-            userSessions.put(userId, session);
+            userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(decoratedSession);
         }
 
         String path = Objects.requireNonNull(session.getUri()).getPath();
@@ -58,10 +63,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 if (chatId != null) {
                     if (path.contains("/connections")) {
                         chatConnectionsSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
-                                .add(session);
+                                .add(decoratedSession);
                     } else if (path.contains("/messages")) {
                         chatMessagesSubscribers.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet())
-                                .add(session);
+                                .add(decoratedSession);
                     }
                 }
             } catch (Exception e) {
@@ -72,14 +77,26 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(@NotNull WebSocketSession session, @NotNull CloseStatus status) {
-        sessions.remove(session);
-        UUID userId = extractUserIdFromSession(session);
-        if (userId != null) {
-            userSessions.remove(userId);
+        WebSocketSession decorated = decoratedSessions.remove(session.getId());
+        if (decorated != null) {
+            sessions.remove(decorated);
+        } else {
+            sessions.remove(session);
         }
 
-        chatConnectionsSubscribers.values().forEach(set -> set.remove(session));
-        chatMessagesSubscribers.values().forEach(set -> set.remove(session));
+        UUID userId = extractUserIdFromSession(session);
+        if (userId != null) {
+            Set<WebSocketSession> set = userSessions.get(userId);
+            if (set != null) {
+                set.removeIf(s -> s.getId().equals(session.getId()));
+                if (set.isEmpty()) {
+                    userSessions.remove(userId);
+                }
+            }
+        }
+
+        chatConnectionsSubscribers.values().forEach(set -> set.removeIf(s -> s.getId().equals(session.getId())));
+        chatMessagesSubscribers.values().forEach(set -> set.removeIf(s -> s.getId().equals(session.getId())));
     }
 
     public <T> void notifyChangeAfterCommit(String path, T data, WebsocketEventType eventType) {
@@ -141,14 +158,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     public <T> void notifyUser(UUID userId, String path, T data, WebsocketEventType eventType) {
-        WebSocketSession userSession = userSessions.get(userId);
-        if (userSession != null && userSession.isOpen()) {
-            try {
-                String message = createMessage(path, data, eventType);
-                userSession.sendMessage(new TextMessage(message));
-            } catch (IOException e) {
-                log.info(e.getMessage());
-            }
+        Set<WebSocketSession> userSessionSet = userSessions.get(userId);
+        if (userSessionSet != null && !userSessionSet.isEmpty()) {
+            String message = createMessage(path, data, eventType);
+            userSessionSet.forEach(userSession -> {
+                if (userSession.isOpen()) {
+                    try {
+                        userSession.sendMessage(new TextMessage(message));
+                    } catch (IOException e) {
+                        log.error("Error sending message to user session {}: {}", userSession.getId(), e.getMessage());
+                    }
+                }
+            });
         }
     }
 

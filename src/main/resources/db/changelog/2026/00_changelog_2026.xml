@@ -34,4 +34,16 @@
                  splitStatements="false"/>
     </changeSet>
 
+    <changeSet author="Antigravity" id="20261111-fix-text-columns-and-indexes">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="messages"/>
+                <tableExists tableName="logs"/>
+            </and>
+        </preConditions>
+        <sqlFile path="09_fix_text_columns_and_add_indexes.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+    </changeSet>
+
 </databaseChangeLog>

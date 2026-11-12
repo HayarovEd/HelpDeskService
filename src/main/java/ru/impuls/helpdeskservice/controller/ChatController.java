@@ -58,7 +58,7 @@ public class ChatController {
     @GetMapping("/user_chats")
     @ResponseStatus(HttpStatus.OK)
     public List<ChatDto> getByUserLogin(
-            @RequestParam(name = "login") String login) {
+            @RequestParam(name = "login", required = false) String login) {
         return chatService.getByUserLogin(login);
     }
 

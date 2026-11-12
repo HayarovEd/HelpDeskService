@@ -65,7 +65,9 @@
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = ''; // Clear previous messages
 
-            fetch('/api/auth/login', {
+            const basePath = window.location.pathname.startsWith('/bc') ? '/bc' : '';
+
+            fetch(basePath + '/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -82,7 +84,8 @@
                 const token = data.token;
                 const decodedToken = parseJwt(token);
 
-                if (decodedToken && decodedToken.roles && decodedToken.roles.includes('USER')) {
+                const role = decodedToken ? (decodedToken.role || (decodedToken.roles && decodedToken.roles[0])) : null;
+                if (role === 'USER' || role === 'UNREGISTERED_USER') {
                     messageDiv.textContent = 'Access Denied: Users with the USER role are not permitted.';
                     return; // Stop the login process
                 }
@@ -90,7 +93,7 @@
                 // If role is not USER or roles are not defined, proceed
                 messageDiv.textContent = 'Login successful!';
                 localStorage.setItem('accessToken', token);
-                window.location.href = '/bc/home.html';
+                window.location.href = basePath + '/home.html';
             })
             .catch(error => {
                 messageDiv.textContent = error.message;

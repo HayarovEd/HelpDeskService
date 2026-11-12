@@ -1,5 +1,6 @@
 package ru.impuls.helpdeskservice.exception.handler;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -8,13 +9,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import ru.impuls.helpdeskservice.exception.AppException;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleMethodArgumentNotValidException(NoResourceFoundException ex) {
+    public Map<String, String> handleNoResourceFoundException(NoResourceFoundException ex) {
         Map<String, String> errors = new HashMap<>();
         errors.put("message", ex.getMessage());
 
@@ -39,6 +40,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<Map<String, String>> handleAppException(AppException ex) {
+        log.warn("Application exception: {} (status: {})", ex.getMessage(), ex.getStatus());
         Map<String, String> error = new HashMap<>();
         error.put("message", ex.getMessage());
 
@@ -47,6 +49,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
         Map<String, String> error = new HashMap<>();
         error.put("message", "Access Denied: You don't have permission to perform this action.");
 
@@ -55,6 +58,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, String>> handleAuthenticationException(AuthenticationException ex) {
+        log.warn("Authentication failed: {}", ex.getMessage());
         Map<String, String> error = new HashMap<>();
         error.put("message", "Unauthorized: Please log in to access this resource.");
 
@@ -63,10 +67,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        log.error("Unhandled internal server error: ", ex);
         Map<String, String> error = new HashMap<>();
         error.put("message", "An unexpected error occurred. Please try again later.");
-        error.put("stacktrace", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
-}
+}

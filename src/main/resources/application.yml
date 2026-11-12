@@ -30,8 +30,8 @@ application:
         length: 32
         expiration: 14400 #minute -> 10 day
       keys:
-        public: ${JWT_PUBLIC_KEY_PATH:./src/main/resources/static/security/public_key.pem}
-        private: ${JWT_PRIVATE_KEY_PATH:./src/main/resources/static/security/private_key.pem}
+        public: ${JWT_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
+        private: ${JWT_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}
     admin:
       password: ${ADMIN_PASSWORD}
     cors-allowed-origins:
@@ -50,11 +50,17 @@ application:
       - method: GET
         path: /api/chats/*
       - method: POST
+        path: /api/chats
+      - method: POST
         path: /api/chats/{id}/messages
+      - method: POST
+        path: /api/chats/{id}/message/client
       - method: POST
         path: /api/chats/{id}/connections
       - method: POST
         path: /api/chats/{id}/close
+      - method: GET
+        path: /api/files/**
       - method: GET
         path: /login.html
       - method: GET
@@ -82,11 +88,17 @@ application:
       - method: GET
         path: /bc/api/chats/*
       - method: POST
+        path: /bc/api/chats
+      - method: POST
         path: /bc/api/chats/{id}/messages
+      - method: POST
+        path: /bc/api/chats/{id}/message/client
       - method: POST
         path: /bc/api/chats/{id}/connections
       - method: POST
         path: /bc/api/chats/{id}/close
+      - method: GET
+        path: /bc/api/files/**
       - method: GET
         path: /bc/login.html
       - method: GET
@@ -145,7 +157,7 @@ debug: true
 
 server:
   port: 9092
-  address: 10.222.222.174
+  address: ${SERVER_ADDRESS:0.0.0.0}
 
 logging:
   level:
@@ -172,7 +184,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD_PROD}
   jpa:
     hibernate:
-      ddl-auto: update # Safer for production
+      ddl-auto: validate # Safer for production
   liquibase:
     change-log: classpath:/db/changelog/master.yml
     enabled: true # Enabled for production

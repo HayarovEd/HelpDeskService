@@ -71,7 +71,9 @@ public class User extends BaseEntity implements UserDetails {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User user)) return false;
-        if (!super.equals(o)) return false;
+        if (getId() != null && user.getId() != null) {
+            return Objects.equals(getId(), user.getId());
+        }
         return disabled == user.disabled &&
                 Objects.equals(username, user.username) &&
                 Objects.equals(tokenVersion, user.tokenVersion);
@@ -79,6 +81,6 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), username, disabled, tokenVersion);
+        return getId() != null ? getId().hashCode() : Objects.hash(username, disabled, tokenVersion);
     }
 }

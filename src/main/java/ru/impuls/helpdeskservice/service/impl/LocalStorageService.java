@@ -33,37 +33,44 @@ public class LocalStorageService {
             String basePath
     ) {
         try {
-            Path uploadPath = Paths.get(FILES_UPLOAD_DIR + "/" + basePath);
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            Path uploadPath = Paths.get(FILES_UPLOAD_DIR, basePath).normalize();
+            int dotIndex = originalFilename != null ? originalFilename.lastIndexOf(".") : -1;
+            String extension = dotIndex >= 0 ? originalFilename.substring(dotIndex) : "";
+
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
             String newFilename = UUID.randomUUID() + extension;
-            OutputStream outputStream = Files.newOutputStream(uploadPath.resolve(newFilename), StandardOpenOption.CREATE_NEW);
-            StreamUtils.copy(inputStream, outputStream);
-            return /*FILES_UPLOAD_DIR + "/" + basePath + "/" + */newFilename;
-        } catch (
-                IOException e
-        ) {
-            throw new AppException("Ошибка записи файла" + originalFilename + "в хранилище", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+            Path destinationFile = uploadPath.resolve(newFilename);
 
-    public void deleteFile(
-            String path
-    ) {
-        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + path);
-        try {
-            Files.deleteIfExists(filePath.resolve(path));
+            try (OutputStream outputStream = Files.newOutputStream(destinationFile, StandardOpenOption.CREATE_NEW)) {
+                StreamUtils.copy(inputStream, outputStream);
+            }
+            return newFilename;
         } catch (IOException e) {
-            throw new AppException("Ошибка уделения файла" + path, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new AppException("Ошибка записи файла " + originalFilename + " в хранилище", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public Resource loadFilePath(
-            String path
-    ) {
-        Path filePath = Paths.get(FILES_UPLOAD_DIR + "/" + path);
+    public void deleteFile(String path) {
+        Path uploadBase = Paths.get(FILES_UPLOAD_DIR).toAbsolutePath().normalize();
+        Path filePath = uploadBase.resolve(path).normalize();
+        if (!filePath.startsWith(uploadBase)) {
+            throw new AppException("Недопустимый путь к файлу", HttpStatus.FORBIDDEN);
+        }
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            throw new AppException("Ошибка удаления файла: " + path, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public Resource loadFilePath(String path) {
+        Path uploadBase = Paths.get(FILES_UPLOAD_DIR).toAbsolutePath().normalize();
+        Path filePath = uploadBase.resolve(path).normalize();
+        if (!filePath.startsWith(uploadBase)) {
+            throw new AppException("Недопустимый путь к файлу", HttpStatus.FORBIDDEN);
+        }
 
         if (!Files.exists(filePath)) {
             throw new AppException("Файл не найден на диске: " + path, HttpStatus.NOT_FOUND);

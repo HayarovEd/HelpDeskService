@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import ru.impuls.helpdeskservice.entity.FileMetaData;
 import ru.impuls.helpdeskservice.entity.FireBaseToken;
 
+import java.util.Optional;
 import java.util.UUID;
 
-public interface FireBaseRepo extends JpaRepository<FireBaseToken, UUID>, JpaSpecificationExecutor<FileMetaData> {
+public interface FireBaseRepo extends JpaRepository<FireBaseToken, UUID>, JpaSpecificationExecutor<FireBaseToken> {
+    Optional<FireBaseToken> findByToken(String token);
 }

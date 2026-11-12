@@ -125,6 +125,31 @@ public class JwtServiceImpl implements JwtService {
         return TokenGeneratorUtil.generateAlphaNumericToken(refreshTokenLength);
     }
 
+    private volatile PublicKey cachedPublicKey;
+    private volatile PrivateKey cachedPrivateKey;
+
+    private PublicKey getPublicKey() throws Exception {
+        if (cachedPublicKey == null) {
+            synchronized (this) {
+                if (cachedPublicKey == null) {
+                    cachedPublicKey = KeyProviderUtil.getPublicKey(this.publicKeyFromFile);
+                }
+            }
+        }
+        return cachedPublicKey;
+    }
+
+    private PrivateKey getPrivateKey() throws Exception {
+        if (cachedPrivateKey == null) {
+            synchronized (this) {
+                if (cachedPrivateKey == null) {
+                    cachedPrivateKey = KeyProviderUtil.getPrivateKey(this.privateKeyFromFile);
+                }
+            }
+        }
+        return cachedPrivateKey;
+    }
+
     private String generateToken(UUID sub,
                                  long expirationMinutes,
                                  Map<String, Object> customClaims) {
@@ -133,7 +158,7 @@ public class JwtServiceImpl implements JwtService {
         Date expiration = Date.from(now.plus(Duration.ofMinutes(expirationMinutes)));
 
         try {
-            PrivateKey privateKey = KeyProviderUtil.getPrivateKey(this.privateKeyFromFile);
+            PrivateKey privateKey = getPrivateKey();
 
             return Jwts.builder()
                     .subject(String.valueOf(sub))
@@ -185,7 +210,7 @@ public class JwtServiceImpl implements JwtService {
 
     private Claims extractAllClaims(String token) {
         try {
-            PublicKey publicKey = KeyProviderUtil.getPublicKey(this.publicKeyFromFile);
+            PublicKey publicKey = getPublicKey();
             return Jwts.parser()
                     .verifyWith(publicKey)
                     .build()

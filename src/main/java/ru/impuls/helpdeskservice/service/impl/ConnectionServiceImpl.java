@@ -111,6 +111,14 @@ public class ConnectionServiceImpl implements ConnectionService {
         }
 
         currentConnection = getCurrentConnection(chat);
+        if (currentConnection == null) {
+            currentConnection = Connection.builder()
+                    .chat(chat)
+                    .startDate(Instant.now())
+                    .user(user)
+                    .build();
+            currentConnection = connectionRepository.save(currentConnection);
+        }
         Message message = Message.builder()
                 .connection(currentConnection)
                 .text(text)

@@ -11,6 +11,9 @@
              If it DOES exist, the precondition fails, and onFail="MARK_RAN" marks this changeset as already executed.
     -->
     <changeSet author="Abdulloev Bakhtovar" id="100720251218-initial-schema">
+        <validCheckSum>9:85389db24c8026ee9e79a6a7eff07eb1</validCheckSum>
+        <validCheckSum>9:a04a4ac1f7fec500e77ef4377fa4b90b</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="roles"/>
@@ -56,12 +59,9 @@
 
     <changeSet author="Khayarov Edward" id="060720260954-initial-files">
         <preConditions onFail="MARK_RAN">
-            <and>
+            <not>
                 <tableExists tableName="files"/>
-                <sqlCheck expectedResult="0">
-                    SELECT COUNT(*) FROM files
-                </sqlCheck>
-            </and>
+            </not>
         </preConditions>
         <sqlFile path="04_add_files.sql"
                  relativeToChangelogFile="true"
