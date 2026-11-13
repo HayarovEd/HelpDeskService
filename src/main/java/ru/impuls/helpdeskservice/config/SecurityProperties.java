@@ -24,6 +24,25 @@ public class SecurityProperties {
     private List<String> corsAllowedOrigins = new ArrayList<>();
     private List<PublicEndpoint> publicEndpoints = new ArrayList<>();
 
+    public void setCorsAllowedOrigins(List<String> corsAllowedOrigins) {
+        if (corsAllowedOrigins == null) {
+            this.corsAllowedOrigins = new ArrayList<>();
+            return;
+        }
+        List<String> cleaned = new ArrayList<>();
+        for (String origin : corsAllowedOrigins) {
+            if (origin != null && !origin.isBlank()) {
+                for (String part : origin.split(",")) {
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        cleaned.add(trimmed);
+                    }
+                }
+            }
+        }
+        this.corsAllowedOrigins = cleaned;
+    }
+
     public boolean isPublicEndpoint(HttpMethod method, String uri) {
         return publicEndpoints.stream()
                 .anyMatch(endpoint ->

@@ -78,10 +78,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        List<String> allowedOrigins = securityProperties.getCorsAllowedOrigins();
 
         // Конфигурация для WebSocket
         CorsConfiguration wsConfig = new CorsConfiguration();
-        wsConfig.addAllowedOriginPattern("*");
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            for (String origin : allowedOrigins) {
+                if (!origin.isBlank()) {
+                    wsConfig.addAllowedOriginPattern(origin.trim());
+                }
+            }
+        } else {
+            wsConfig.addAllowedOriginPattern("*");
+        }
         wsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
         wsConfig.setAllowedHeaders(List.of("*"));
         wsConfig.setAllowCredentials(true);
@@ -97,12 +106,15 @@ public class SecurityConfig {
 
     private @NonNull CorsConfiguration createSecuredConfig() {
         CorsConfiguration securedConfig = new CorsConfiguration();
-        securedConfig.addAllowedOriginPattern("*");
         List<String> allowedOrigins = securityProperties.getCorsAllowedOrigins();
-        if (allowedOrigins != null) {
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
             for (String origin : allowedOrigins) {
-                securedConfig.addAllowedOriginPattern(origin);
+                if (!origin.isBlank()) {
+                    securedConfig.addAllowedOriginPattern(origin.trim());
+                }
             }
+        } else {
+            securedConfig.addAllowedOriginPattern("*");
         }
         securedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         securedConfig.setAllowCredentials(true);
