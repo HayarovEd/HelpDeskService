@@ -1,48 +1,227 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Панель поддержки</title>
     <style>
+        :root {
+            --bg-color: #0f141c;
+            --card-bg: #1a2230;
+            --card-border: #2a3547;
+            --text-primary: #f0f4f8;
+            --text-secondary: #94a3b8;
+            --accent-green: #a3e635;
+            --accent-green-hover: #bef264;
+            --accent-green-text: #0f172a;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --input-focus: #38bdf8;
+            --error-color: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: sans-serif;
-        }
-        #login-container {
-            border: 1px solid #ccc;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, var(--bg-color) 70%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-primary);
             padding: 20px;
-            border-radius: 5px;
-            text-align: center;
         }
-        div {
-            margin-bottom: 10px;
+
+        .login-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(163, 230, 53, 0.12);
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .brand-badge span.icon {
+            font-size: 15px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-password:hover {
+            color: var(--text-primary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background-color: var(--accent-green);
+            color: var(--accent-green-text);
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background-color: var(--accent-green-hover);
+        }
+
+        .submit-btn:active:not(:disabled) {
+            transform: scale(0.99);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 13px;
+            margin-top: 14px;
+            min-height: 18px;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .footer-note {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
-    <div id="login-container">
-        <h2>Login</h2>
-        <form id="loginForm">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required/>
+    <div class="login-card">
+        <div class="brand-badge">
+            <span class="icon">🎧</span> Панель оператора
+        </div>
+        <h1>Вход в систему</h1>
+        <p class="subtitle">Сервис технической поддержки HelpDesk</p>
+
+        <form id="loginForm" autocomplete="on">
+            <div class="form-group">
+                <label for="username">Имя пользователя / Логин</label>
+                <div class="input-wrapper">
+                    <input type="text" id="username" name="username" placeholder="operator_admin" required autofocus />
+                </div>
             </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required/>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" name="password" placeholder="••••••••" required />
+                    <button type="button" class="toggle-password" id="togglePassword" title="Показать/скрыть пароль">👁</button>
+                </div>
             </div>
-            <div>
-                <button type="submit">Log In</button>
-            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span id="btnText">Войти</span>
+            </button>
         </form>
-        <div id="message" style="color: red;"></div>
+
+        <div id="message" class="error-message"></div>
+
+        <div class="footer-note">
+            Доступ только для сотрудников ролей SUPPORT и ADMIN
+        </div>
     </div>
 
     <script>
+        const basePath = window.location.pathname.startsWith('/bc') ? '/bc' : '';
+
         function parseJwt(token) {
             try {
                 const base64Url = token.split('.')[1];
@@ -52,53 +231,78 @@
                 }).join(''));
                 return JSON.parse(jsonPayload);
             } catch (e) {
-                console.error("Invalid token:", e);
                 return null;
             }
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
+        // Авто-перенаправление, если пользователь уже авторизован
+        (function checkExistingToken() {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                const decoded = parseJwt(token);
+                if (decoded && decoded.exp * 1000 > Date.now()) {
+                    const role = decoded.role || (decoded.roles && decoded.roles[0]);
+                    if (role === 'ADMIN' || role === 'SUPPORT') {
+                        window.location.href = basePath + '/home.html';
+                    }
+                }
+            }
+        })();
+
+        // Переключение видимости пароля
+        const togglePasswordBtn = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        togglePasswordBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            togglePasswordBtn.textContent = isPassword ? '🙈' : '👁';
+        });
+
+        // Отправка формы входа
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const messageDiv = document.getElementById('message');
+
+        form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = ''; // Clear previous messages
+            messageDiv.textContent = '';
 
-            const basePath = window.location.pathname.startsWith('/bc') ? '/bc' : '';
+            submitBtn.disabled = true;
+            btnText.textContent = 'Вход...';
 
-            fetch(basePath + '/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username: username, password: password })
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
+            try {
+                const response = await fetch(basePath + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                if (!response.ok) {
+                    const errorJson = await response.json().catch(() => null);
+                    const serverMsg = errorJson && (errorJson.message || errorJson.error);
+                    throw new Error(serverMsg || 'Неверный логин или пароль');
                 }
-                throw new Error('Login failed! Check username or password.');
-            })
-            .then(data => {
+
+                const data = await response.json();
                 const token = data.token;
                 const decodedToken = parseJwt(token);
 
                 const role = decodedToken ? (decodedToken.role || (decodedToken.roles && decodedToken.roles[0])) : null;
                 if (role === 'USER' || role === 'UNREGISTERED_USER') {
-                    messageDiv.textContent = 'Access Denied: Users with the USER role are not permitted.';
-                    return; // Stop the login process
+                    throw new Error('Доступ запрещен: панель предназначена только для операторов и администраторов.');
                 }
 
-                // If role is not USER or roles are not defined, proceed
-                messageDiv.textContent = 'Login successful!';
                 localStorage.setItem('accessToken', token);
                 window.location.href = basePath + '/home.html';
-            })
-            .catch(error => {
+            } catch (error) {
                 messageDiv.textContent = error.message;
-                console.error('Error:', error);
-            });
+                submitBtn.disabled = false;
+                btnText.textContent = 'Войти';
+            }
         });
     </script>
 </body>
