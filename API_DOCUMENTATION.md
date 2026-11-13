@@ -2,6 +2,9 @@
 
 Сервис технической поддержки и чатов (HelpDeskService).
 
+> [!TIP]
+> **Android разработчикам:** Полное руководство по интеграции мобильного приложения на **Kotlin + Ktor Client** (с DTO, Multipart-отправкой файлов, Flow WebSocket и Push-уведомлениями) вынесено в отдельный документ: [ANDROID_KTOR_API.md](file:///D:/intellig_progects1/HelpDeskService/ANDROID_KTOR_API.md).
+
 ---
 
 ## 1. Общие сведения
