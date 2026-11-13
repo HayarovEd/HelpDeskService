@@ -76,7 +76,7 @@
 ---
 
 ### 3.3. Вход незарегистрированного пользователя
-* **Метод:** `POST /api/auth/unregistered_login`
+* **Метод:** `POST /api/auth/unregistered-login` (также доступен alias `POST /api/auth/unregistered_login`)
 * **Доступ:** Публичный
 * **Тело запроса:**
 ```json

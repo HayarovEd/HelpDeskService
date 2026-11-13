@@ -42,9 +42,11 @@ public class SecurityConfig {
                     }
 
                     auth.requestMatchers("/ws/**").permitAll()
-                            .requestMatchers("/api/ws/**").permitAll()  // Добавьте это
+                            .requestMatchers("/api/ws/**").permitAll()
                             .requestMatchers("/websocket/**").permitAll()
                             .requestMatchers("/api/auth/**").permitAll()
+                            .requestMatchers("/unregistered*").permitAll()
+                            .requestMatchers("/unregistered/**").permitAll()
                             .requestMatchers(
                                     "/swagger-ui.html",
                                     "/swagger-ui/**",
@@ -56,6 +58,8 @@ public class SecurityConfig {
                                     "/bc/api/ws/**",
                                     "/bc/websocket/**",
                                     "/bc/api/auth/**",
+                                    "/bc/unregistered*",
+                                    "/bc/unregistered/**",
                                     "/bc/swagger-ui.html",
                                     "/bc/swagger-ui/**",
                                     "/bc/v3/api-docs/**",
@@ -84,7 +88,7 @@ public class SecurityConfig {
         wsConfig.setMaxAge(3600L);
         source.registerCorsConfiguration("/ws/**", wsConfig);
 
-        // Остальные — с ограничениями
+        // Конфигурация для всех эндпоинтов (REST API и веб-виджетов поддержки)
         CorsConfiguration securedConfig = createSecuredConfig();
         source.registerCorsConfiguration("/**", securedConfig);
 
@@ -93,16 +97,17 @@ public class SecurityConfig {
 
     private @NonNull CorsConfiguration createSecuredConfig() {
         CorsConfiguration securedConfig = new CorsConfiguration();
+        securedConfig.addAllowedOriginPattern("*");
         List<String> allowedOrigins = securityProperties.getCorsAllowedOrigins();
-        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
-            securedConfig.setAllowedOrigins(allowedOrigins);
-        } else {
-            securedConfig.setAllowedOriginPatterns(List.of("*"));
+        if (allowedOrigins != null) {
+            for (String origin : allowedOrigins) {
+                securedConfig.addAllowedOriginPattern(origin);
+            }
         }
-        securedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        securedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         securedConfig.setAllowCredentials(true);
         securedConfig.setAllowedHeaders(List.of("*"));
-        securedConfig.setExposedHeaders(List.of("Content-Disposition", "Authorization"));
+        securedConfig.setExposedHeaders(List.of("Content-Disposition", "Authorization", "Set-Cookie"));
         securedConfig.setMaxAge(3600L);
         return securedConfig;
     }

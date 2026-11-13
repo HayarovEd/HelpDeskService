@@ -144,7 +144,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 isWebSocketPath(path) ||
                 isWebSocketPath(request.getRequestURI()) ||
                 path.startsWith("/api/auth") ||
-                request.getRequestURI().contains("/api/auth");
+                request.getRequestURI().contains("/api/auth") ||
+                path.contains("unregistered");
     }
 
     private boolean isWebSocketPath(String path) {

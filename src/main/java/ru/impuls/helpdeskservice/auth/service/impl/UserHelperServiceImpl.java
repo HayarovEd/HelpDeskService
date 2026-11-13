@@ -100,6 +100,7 @@ public class UserHelperServiceImpl implements UserHelperService {
 
     private Role getUnregisteredRole() {
         return roleRepo.findByName("UNREGISTERED_USER")
+                .or(() -> roleRepo.findByName("USER"))
                 .orElseThrow(() -> new AppException(ErrorMessage.ROLE_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 }
